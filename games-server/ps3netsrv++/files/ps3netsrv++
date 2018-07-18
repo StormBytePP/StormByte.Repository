@@ -1,0 +1,22 @@
+#!/sbin/openrc-run
+# Copyright 1999-2015 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+depend() {
+	need net mountWarehouse
+}
+
+start() {
+	ebegin "Starting ${SVCNAME}"
+	start-stop-daemon --start --exec /usr/bin/ps3netsrv++ \
+		--make-pidfile --user nobody --group nobody --pidfile /var/run/ps3netsrv++.pid -b \
+		-- /warehouse/Multimedia/Games/PS3
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping ${SVCNAME}"
+	start-stop-daemon --stop --exec /usr/bin/ps3netsrv++ \
+		--pidfile /var/run/ps3netsrv++.pid
+	eend $?
+}
