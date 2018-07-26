@@ -3,14 +3,9 @@
 
 EAPI=6
 
-inherit cmake-utils git-r3
+inherit cmake-utils
 
-EGIT_REPO_URI="https://github.com/jmcnamara/libxlsxwriter.git"
-EGIT_BRANCH="origin/HEAD"
-EGIT_COMMIT="HEAD"
-EGIT_CHECKOUT_DIR="${S}"
-
-SRC_URI=""
+SRC_URI="https://github.com/jmcnamara/libxlsxwriter/archive/RELEASE_${PV}.zip -> ${PV}.zip"
 
 
 DESCRIPTION="A C library for creating Excel XLSX files"
@@ -21,6 +16,7 @@ LICENSE="LGPL-2.1"
 SLOT="1"
 IUSE="+system-minizip +minizip +standard-tmpfile"
 REQUIRED_USE="minizip"
+KEYWORDS="~x86 ~amd64"
 
 
 COMMON_DEPEND="
@@ -35,7 +31,9 @@ RDEPEND="
 "
 
 src_unpack() {
-	git-r3_src_unpack
+	unpack ${A}
+	#Workaround to have the folder created with the expected name
+	mv ${WORKDIR}/* ${WORKDIR}/${PF}
 }
 
 src_configure() {
