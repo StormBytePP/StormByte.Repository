@@ -33,7 +33,7 @@ LICENSE="UoI-NCSA rc BSD public-domain
 	llvm_targets_ARM? ( LLVM-Grant )"
 SLOT="$(ver_cut 1)"
 KEYWORDS="amd64 arm arm64 ~ppc64 x86 ~amd64-fbsd ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
-IUSE="debug doc gold libedit +libffi ncurses test xar xml lld lto
+IUSE="debug doc gold libedit +libffi ncurses test xar xml lld lto libunwind
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
 
@@ -45,7 +45,8 @@ RDEPEND="
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
 	xar? ( app-arch/xar )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
-	lld? ( sys-devel/lld )"
+	lld? ( sys-devel/lld )
+	libunwind? ( sys-libs/libunwind )"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
 	dev-lang/perl
@@ -61,7 +62,8 @@ DEPEND="${RDEPEND}
 	libffi? ( virtual/pkgconfig )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}
-	lld? ( sys-devel/lld )"
+	lld? ( sys-devel/lld )
+	libunwind? ( sys-libs/libunwind )"
 # There are no file collisions between these versions but having :0
 # installed means llvm-config there will take precedence.
 RDEPEND="${RDEPEND}
@@ -87,6 +89,9 @@ src_prepare() {
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
+
+	# Correct _Unwind_Backtrace detection
+	use libunwind && epatch "${FILESDIR}/fix-libunwind-detection.patch"
 
 	# User patches + QA
 	cmake-utils_src_prepare
@@ -186,6 +191,10 @@ multilib_src_configure() {
 
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
+
+	# If building with libunwind we need to link with gcc_s.so to prevent failures
+	use libunwind && local -x LDFLAGS="${LDFLAGS} -lgcc_s"
+
 	cmake-utils_src_configure
 }
 
