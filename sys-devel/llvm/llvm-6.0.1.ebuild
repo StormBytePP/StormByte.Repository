@@ -192,8 +192,9 @@ multilib_src_configure() {
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
-	# If building with libunwind we need to link with gcc_s.so to prevent failures
-	use libunwind && local -x LDFLAGS="${LDFLAGS} -lgcc_s"
+	# If building with libunwind we need to link with gcc_s.so to prevent failures,
+	# if not, then libc++ (if using clang) will be already linked to gcc_s
+	! use libunwind && local -x LDFLAGS="${LDFLAGS} -lgcc_s"
 
 	cmake-utils_src_configure
 }
