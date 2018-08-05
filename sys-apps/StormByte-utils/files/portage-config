@@ -1,0 +1,32 @@
+#! /bin/bash
+
+function usage {
+	echo "This program will add to /etc/portage/package.<section>/package the provided options"
+        echo "Usage: $1 <section> <category/package> <package_options>"
+        echo "<section> is one of the following: env, use"
+        echo "<category/package> is the complete package name, example: sys-libs/glibc"
+        echo "<package_options> are the desired options to add, like USE changes, ENV variables, etc"
+}
+
+if [ "$#" -lt 3 ]; then
+	usage
+	exit
+fi
+
+section=$1
+category=`dirname $2`
+package=`basename $2`
+destfolder="/etc/portage/package.${section}"
+shift 2 #Remove first 2 parameters
+
+if ! ( [ "${section}" = "env" ] || [ "${section}" = "use" ] ); then
+	echo "Invalid section ${section}"
+	usage
+	exit
+fi
+
+if [ ! -d "/etc/portage/package.${section}" ]; then
+	mkdir -p "/etc/portage/package.${section}"
+fi
+
+echo "${category}/${package} $@" >> "${destfolder}/${package}"

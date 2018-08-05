@@ -26,5 +26,6 @@ src_unpack() {
 
 src_install() {
 	dobin "${FILESDIR}/findcontent"
+	dobin "${FILESDIR}/portage-config"
 }
 
