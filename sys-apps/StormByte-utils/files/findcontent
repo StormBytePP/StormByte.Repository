@@ -1,0 +1,8 @@
+#! /bin/bash
+
+if [ "$#" -ne 2 ]; then
+	echo "Usage $0 <search_path> <content_to_search>"
+	exit
+fi
+
+for file in `find "$1" -type f`; do cat "$file" | grep "$2"; if [ $? -eq 0 ]; then echo "Matched string in file: $file"; fi done
