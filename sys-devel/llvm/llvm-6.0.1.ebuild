@@ -46,7 +46,7 @@ RDEPEND="
 	xar? ( app-arch/xar )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
 	lld? ( sys-devel/lld )
-	libunwind? ( sys-libs/libunwind )"
+	libunwind? ( || ( sys-libs/llvm-libunwind sys-libs/libunwind ) )"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
 	dev-lang/perl
@@ -63,7 +63,7 @@ DEPEND="${RDEPEND}
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}
 	lld? ( sys-devel/lld )
-	libunwind? ( sys-libs/libunwind )"
+	libunwind? ( || ( sys-libs/llvm-libunwind sys-libs/libunwind ) )"
 # There are no file collisions between these versions but having :0
 # installed means llvm-config there will take precedence.
 RDEPEND="${RDEPEND}
@@ -89,9 +89,6 @@ src_prepare() {
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
-
-	# Correct _Unwind_Backtrace detection
-	use libunwind && epatch "${FILESDIR}/fix-libunwind-detection.patch"
 
 	# User patches + QA
 	cmake-utils_src_prepare
@@ -192,8 +189,7 @@ multilib_src_configure() {
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
-	# If building with libunwind we need to link with gcc_s.so to prevent failures,
-	# if not, then libc++ (if using clang) will be already linked to gcc_s
+	# If not building with libunwind we need to link with gcc_s.so to prevent failures,
 	! use libunwind && local -x LDFLAGS="${LDFLAGS} -lgcc_s"
 
 	cmake-utils_src_configure
