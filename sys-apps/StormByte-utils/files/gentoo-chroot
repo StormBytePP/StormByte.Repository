@@ -81,7 +81,7 @@ function setAndCheckFile() {
 			;;
 	esac
 
-	if [ -f ${tarball_file} ]; then
+	if [ ! -f "${tarball_file}" ]; then
 		echo "File for $mode not set or it does not exist"
 		exit 1
 	fi
