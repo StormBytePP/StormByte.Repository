@@ -3,6 +3,7 @@
 source "/etc/conf.d/gentoo-chroot.conf"
 
 tarball_file=""
+mode="$1"
 
 function checkVars() {
 	local errors=0
@@ -61,14 +62,14 @@ function unmountAll() {
 }
 
 function checkArgs() {
-	if [ $# -ne 2 ] || [ $1 != "stage3" ] || [ $1 != "stage4" ] || [ "1" != "stage5" ]; then
+	if [ "$mode" != "stage3" ] && [ "$mode" != "stage4" ] && [ "$mode" != "stage5" ]; then
 		usage
 		exit 1
 	fi
 }
 
 function setAndCheckFile() {
-	case "$1" in
+	case "$mode" in
 		"stage3")
 			tarball_file="${STAGE3_FILE}"
 			;;
@@ -81,7 +82,7 @@ function setAndCheckFile() {
 	esac
 
 	if [ -f ${tarball_file} ]; then
-		echo "File for $1 not set or it does not exist"
+		echo "File for $mode not set or it does not exist"
 		exit 1
 	fi
 }
@@ -98,6 +99,9 @@ function unmountArchive() {
 }
 
 function doChroot() {
+	if [ -d "${BASE_FOLDER}" ]; then
+		mkdir -p "${BASE_FOLDER}"
+	fi
 	echo "Going to enter chroot, please remember to update environment with: env-update && . /etc/profile"
 	chroot "${BASE_FOLDER}" /bin/bash
 }
@@ -111,5 +115,3 @@ doChroot
 unmountAll
 unmountArchive
 
-
-	
