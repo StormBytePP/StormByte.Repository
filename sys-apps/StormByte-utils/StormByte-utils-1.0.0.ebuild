@@ -15,6 +15,8 @@ RDEPEND="
 	sys-apps/coreutils
 	sys-apps/findutils
 	app-shells/bash
+	sys-fs/archivemount
+	app-arch/libarchive[acl,xattr]
 "
 DEPEND="${RDEPEND}
 "
@@ -27,5 +29,7 @@ src_unpack() {
 src_install() {
 	dobin "${FILESDIR}/findcontent"
 	dobin "${FILESDIR}/portage-config"
+	dobin "${FILESDIR}/gentoo-chroot"
+	doconfd "${FILESDIR}/gentoo-chroot.conf"
 }
 

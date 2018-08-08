@@ -1,0 +1,115 @@
+#! /bin/bash
+
+source "/etc/conf.d/gentoo-chroot.conf"
+
+tarball_file=""
+
+function checkVars() {
+	local errors=0
+	if [ -z "${BASE_FOLDER}" ]; then
+		echo "BASE_FOLDER variable is not set or empty!"
+		errors=1
+	fi
+	if [ -z "${USE_TMPFS}" ]; then
+		echo "USE_TMPFS variable is not set or empty!"
+		errors=1
+	fi
+	if [ "${USE_TMPFS}" = "yes" ] && [ -z "${TMPFS_SIZE}" ]; then
+		echo "TMPFS_SIZE variable is not set or empty!"
+		errors=1
+	fi
+	if [ "${errors}" -eq 1 ]; then
+		exit 1
+	fi
+}
+
+
+function usage() {
+	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
+	echo "Configuration is located in /etc/conf.d/gentoo-chroot.conf"
+	echo "Usage is $0 <mode>"
+	echo "Where mode is"
+	echo " * stage3 - Contains an updated stage3 to be used with Gentoo Handbook"
+	echo " * stage4 - Contains an updated stage3, configured, and with a CLI only system that can run (root password set)"
+	echo " * stage5 - Contains a whole running system with users, desktop and programs"
+	echo "See configuration file for binding those modes to tarball files"
+}
+
+function mountAll() {
+	mount -t proc /proc "${BASE_FOLDER}/proc" > /dev/null 2>&1 &&
+	mount --rbind /dev "${BASE_FOLDER}/dev"  > /dev/null 2>&1 &&
+	mount --make-rslave "${BASE_FOLDER}/dev" > /dev/null 2>&1 &&
+	mount --rbind /sys "${BASE_FOLDER}/sys" > /dev/null 2>&1 &&
+	mount --make-rslave "${BASE_FOLDER}/sys" > /dev/null 2>&1 &&
+	if [ $? -ne 0 ]; then echo "Failed to mount special mountpoints, check config!"; exit 1; fi
+	if [ "${USE_TMPFS}" = "yes" ]; then	
+		mount -t tmpfs -o size="${TMPFS_SIZE}" tmpfs "${BASE_FOLDER}/tmp"
+		if [ $? -ne 0 ]; then echo "Failed to mount tmpfs!"; exit 1; fi
+	fi
+}
+
+function unmountAll() {
+	grep /"${BASE_FOLDER}/proc" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
+	grep /"${BASE_FOLDER}/dev" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
+	grep /"${BASE_FOLDER}/sys" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
+	grep /"${BASE_FOLDER}/proc" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
+	if [ "${USE_TMPFS}" = "yes" ]; then
+		umount "{BASE_FOLDER}/tmp"
+	else
+		rm -Rf "{BASE_FOLDER}/tmp"/*
+	fi
+}
+
+function checkArgs() {
+	if [ $# -ne 2 ] || [ $1 != "stage3" ] || [ $1 != "stage4" ] || [ "1" != "stage5" ]; then
+		usage
+		exit 1
+	fi
+}
+
+function setAndCheckFile() {
+	case "$1" in
+		"stage3")
+			tarball_file="${STAGE3_FILE}"
+			;;
+		"stage4")
+			tarball_file="${STAGE4_FILE}"
+			;;
+		"stage5")
+			tarball_file="${STAGE5_FILE}"
+			;;
+	esac
+
+	if [ -f ${tarball_file} ]; then
+		echo "File for $1 not set or it does not exist"
+		exit 1
+	fi
+}
+
+function mountArchive() {
+	archivemount "${tarball_file}" "${BASE_FOLDER}" -o nobackup
+	if [ $? -ne 0 ]; then echo "Failed to mount tarball!"; exit 1; fi
+}
+
+function unmountArchive() {
+	umount "${BASE_FOLDER}"
+	sync
+	rm -f "${tarball_file}".orig
+}
+
+function doChroot() {
+	echo "Going to enter chroot, please remember to update environment with: env-update && . /etc/profile"
+	chroot "${BASE_FOLDER}" /bin/bash
+}
+
+checkArgs
+checkVars
+setAndCheckFile
+mountArchive
+mountAll
+doChroot
+unmountAll
+unmountArchive
+
+
+	
