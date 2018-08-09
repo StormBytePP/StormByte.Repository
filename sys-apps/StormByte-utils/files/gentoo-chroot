@@ -88,7 +88,7 @@ function setAndCheckFile() {
 }
 
 function mountArchive() {
-	if [ -d "${BASE_FOLDER}" ]; then
+	if [ ! -d "${BASE_FOLDER}" ]; then
 		mkdir -p "${BASE_FOLDER}"
 	fi
 	archivemount "${tarball_file}" "${BASE_FOLDER}" -o nobackup
