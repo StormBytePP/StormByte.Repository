@@ -88,6 +88,9 @@ function setAndCheckFile() {
 }
 
 function mountArchive() {
+	if [ -d "${BASE_FOLDER}" ]; then
+		mkdir -p "${BASE_FOLDER}"
+	fi
 	archivemount "${tarball_file}" "${BASE_FOLDER}" -o nobackup
 	if [ $? -ne 0 ]; then echo "Failed to mount tarball!"; exit 1; fi
 }
@@ -99,9 +102,6 @@ function unmountArchive() {
 }
 
 function doChroot() {
-	if [ -d "${BASE_FOLDER}" ]; then
-		mkdir -p "${BASE_FOLDER}"
-	fi
 	echo "Going to enter chroot, please remember to update environment with: env-update && . /etc/profile"
 	chroot "${BASE_FOLDER}" /bin/bash
 }
