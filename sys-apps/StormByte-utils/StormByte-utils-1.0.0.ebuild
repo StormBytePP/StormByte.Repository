@@ -15,8 +15,9 @@ RDEPEND="
 	sys-apps/coreutils
 	sys-apps/findutils
 	app-shells/bash
-	sys-fs/archivemount
-	app-arch/libarchive[acl,xattr]
+	app-arch/pigz
+	app-arch/pbzip2
+	app-arch/pxz
 "
 DEPEND="${RDEPEND}
 "
