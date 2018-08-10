@@ -30,7 +30,7 @@ src_unpack() {
 src_install() {
 	dobin "${FILESDIR}/findcontent"
 	dobin "${FILESDIR}/portage-config"
-	dobin "${FILESDIR}/gentoo-chroot"
-	doconfd "${FILESDIR}/gentoo-chroot.conf"
+	dobin "${FILESDIR}/stormbyte-stage-manager"
+	doconfd "${FILESDIR}/stormbyte-stage-manager.conf"
 }
 

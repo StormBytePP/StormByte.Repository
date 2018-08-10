@@ -1,8 +1,8 @@
 #! /bin/bash
 
-source "/etc/conf.d/gentoo-chroot.conf"
+source "/etc/conf.d/stormbyte-stage-manager.conf"
 
-version="1.0.1"
+version="1.0.2"
 current_folder=`pwd`
 file_list=""
 tarball_file_fullpath=""
@@ -13,7 +13,8 @@ arguments="$2"
 tmp_folder=""
 
 function header() {
-	echo "StormByte Gentoo CHROOT Manager Version ${version}"
+	echo "StormByte Gentoo Stage Manager Version ${version}"
+	echo "Author: David C. Manuelda a.k.a StormByte <StormByte@gmail.com>"
 	echo ""
 }
 
@@ -140,7 +141,7 @@ function extractArchive() {
 
 function saveChanges() {
 	local reply=""
-	while [[ ! reply =~ ^[YyNn]$ ]]; do
+	while [[ ! $reply =~ ^[YyNn]$ ]]; do
 		read -p "Do you want to save the changes? [Y/N]: " -r
 		reply=$REPLY
 	done
