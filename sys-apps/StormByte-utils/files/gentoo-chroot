@@ -2,6 +2,7 @@
 
 source "/etc/conf.d/gentoo-chroot.conf"
 
+version="1.0.1"
 current_folder=`pwd`
 file_list=""
 tarball_file_fullpath=""
@@ -10,6 +11,10 @@ tar="tar" # Default to tar, but will be overwriten with a parallel version for t
 command="$1"
 arguments="$2"
 tmp_folder=""
+
+function header() {
+	echo "StormByte Gentoo CHROOT Manager Version ${version}"
+}
 
 function usage() {
 	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
@@ -203,6 +208,6 @@ function doInit() {
 	fi
 }
 
+header
 doInit
-	
 
