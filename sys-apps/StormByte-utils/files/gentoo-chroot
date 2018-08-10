@@ -133,9 +133,12 @@ function extractArchive() {
 }
 
 function saveChanges() {
-	read -p "Do you want to save the changes? [Y/N]:" -n 1 -r
-	echo ""
-	if [[ $REPLY =~ ^[Yy]$ ]]; then
+	local reply=""
+	while [[ ! reply =~ ^[YyNn]$ ]]; do
+		read -p "Do you want to save the changes? [Y/N]: " -r
+		reply=$REPLY
+	done
+	if [[ $reply =~ ^[Yy]$ ]]; then
 		compressArchive
 	fi
 }
