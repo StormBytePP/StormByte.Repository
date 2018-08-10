@@ -14,6 +14,7 @@ tmp_folder=""
 
 function header() {
 	echo "StormByte Gentoo CHROOT Manager Version ${version}"
+	echo ""
 }
 
 function usage() {
