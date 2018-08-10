@@ -2,21 +2,83 @@
 
 source "/etc/conf.d/gentoo-chroot.conf"
 
+current_folder=`pwd`
+file_list=""
+tarball_file_fullpath=""
 tarball_file=""
-mode="$1"
+tar="tar" # Default to tar, but will be overwriten with a parallel version for the compressors
+command="$1"
+arguments="$2"
+tmp_folder=""
+
+function usage() {
+	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
+	echo "Configuration is located in /etc/conf.d/gentoo-chroot.conf"
+	echo "Usage is $0 <command> <arguments>"
+	echo "Where command is"
+	echo " * list - will list all usable files"
+	echo " * use <filename|index> - Uses a filename from list (or its index) for chrooting (as set in config, only ${COMPRESS_FORMAT} files are supported)"
+	echo "See configuration file for more tweaking options"
+}
+
+function handleCommand() {
+	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
+	# Example
+	# executeAndHandleCommandOutput 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
+	echo -n "${2} ... "
+	eval $1 > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		echo "OK"
+	else
+		echo "ERROR in command '$1'"
+		cd "${current_folder}"
+		exit 1
+	fi
+}
+
+function checkArgs() {
+	if [ "$command" != "list" ] && [ "$command" != "use" ]; then
+		usage
+		exit 1
+	fi
+}
 
 function checkVars() {
 	local errors=0
-	if [ -z "${BASE_FOLDER}" ]; then
-		echo "BASE_FOLDER variable is not set or empty!"
+	local re='^[1-9]$' # For checking compression level
+	if [ -z "${COMPRESSION_LEVEL}" ] || ! [[ "${COMPRESSION_LEVEL}" =~ $re ]]; then
+		echo "COMPRESSION_LEVEL is either empty or invalid, check if it is in a range between 1 and 9!"
 		errors=1
 	fi
-	if [ -z "${USE_TMPFS}" ]; then
-		echo "USE_TMPFS variable is not set or empty!"
+	if [ -z "${COMPRESS_FORMAT}" ]; then
+		echo "COMPRESS_FORMAT variable is not set or empty!"
 		errors=1
+	else
+		case "${COMPRESS_FORMAT}" in
+			gzip)
+			tar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
+			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" \)`)
+			;;
+			bzip2)
+			tar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
+			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.bz2" -o -iname "*.tbz2" \)`)
+			;;
+			xz)
+			tar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
+			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.xz" -o -iname "*.txz" \)`)
+			;;
+			*)
+			echo "COMPRESS_FORMAT has value ${COMPRESS_FORMAT} which is not accepted. Accepted values are gzip, bzip2 and xz"
+			errors=1
+			;;
+		esac
 	fi
-	if [ "${USE_TMPFS}" = "yes" ] && [ -z "${TMPFS_SIZE}" ]; then
+	if [ -z "${TMPFS_SIZE}" ]; then
 		echo "TMPFS_SIZE variable is not set or empty!"
+		errors=1
+	fi
+	if [ -z "${TARBALL_FOLDER}" ]; then
+		echo "TARBALL_FOLDER variable is not set or empty!"
 		errors=1
 	fi
 	if [ "${errors}" -eq 1 ]; then
@@ -24,93 +86,120 @@ function checkVars() {
 	fi
 }
 
-
-function usage() {
-	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
-	echo "Configuration is located in /etc/conf.d/gentoo-chroot.conf"
-	echo "Usage is $0 <mode>"
-	echo "Where mode is"
-	echo " * stage3 - Contains an updated stage3 to be used with Gentoo Handbook"
-	echo " * stage4 - Contains an updated stage3, configured, and with a CLI only system that can run (root password set)"
-	echo " * stage5 - Contains a whole running system with users, desktop and programs"
-	echo "See configuration file for binding those modes to tarball files"
+function mountSystem() {
+	handleCommand "mount -t proc /proc ${tmp_folder}/proc && mount --rbind /dev ${tmp_folder}/dev && mount --make-rslave ${tmp_folder}/dev && mount --rbind /sys ${tmp_folder}/sys && mount --make-rslave ${tmp_folder}/sys" "Mounting system structures"
 }
 
-function mountAll() {
-	mount -t proc /proc "${BASE_FOLDER}/proc" > /dev/null 2>&1 &&
-	mount --rbind /dev "${BASE_FOLDER}/dev"  > /dev/null 2>&1 &&
-	mount --make-rslave "${BASE_FOLDER}/dev" > /dev/null 2>&1 &&
-	mount --rbind /sys "${BASE_FOLDER}/sys" > /dev/null 2>&1 &&
-	mount --make-rslave "${BASE_FOLDER}/sys" > /dev/null 2>&1 &&
-	if [ $? -ne 0 ]; then echo "Failed to mount special mountpoints, check config!"; exit 1; fi
-	if [ "${USE_TMPFS}" = "yes" ]; then	
-		mount -t tmpfs -o size="${TMPFS_SIZE}" tmpfs "${BASE_FOLDER}/tmp"
-		if [ $? -ne 0 ]; then echo "Failed to mount tmpfs!"; exit 1; fi
-	fi
-}
-
-function unmountAll() {
-	grep /"${BASE_FOLDER}/proc" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
-	grep /"${BASE_FOLDER}/dev" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
-	grep /"${BASE_FOLDER}/sys" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
-	grep /"${BASE_FOLDER}/proc" /proc/mounts | cut -f2 -d" " | sort -r | xargs umount -n
-	if [ "${USE_TMPFS}" = "yes" ]; then
-		umount "{BASE_FOLDER}/tmp"
-	else
-		rm -Rf "{BASE_FOLDER}/tmp"/*
-	fi
-}
-
-function checkArgs() {
-	if [ "$mode" != "stage3" ] && [ "$mode" != "stage4" ] && [ "$mode" != "stage5" ]; then
-		usage
-		exit 1
-	fi
+function unmountSystem() {
+	cd "${current_folder}"
+	handleCommand "umount -R ${tmp_folder}/proc && umount -R ${tmp_folder}/dev && umount -R ${tmp_folder}/sys && rm -Rf {tmp_folder}/tmp/*" "Unmounting system structures and cleaning"
 }
 
 function setAndCheckFile() {
-	case "$mode" in
-		"stage3")
-			tarball_file="${STAGE3_FILE}"
-			;;
-		"stage4")
-			tarball_file="${STAGE4_FILE}"
-			;;
-		"stage5")
-			tarball_file="${STAGE5_FILE}"
-			;;
-	esac
+	# We check if it is an integer first
+	re='^[0-9]+$'
+	if [[ $arguments =~ $re ]] ; then
+		tarball_file_fullpath="${file_list[$arguments]}"
+	else
+		tarball_file_fullpath="${TARBALL_FOLDER}/$arguments"
+	fi
 
-	if [ ! -f "${tarball_file}" ]; then
-		echo "File for $mode not set or it does not exist"
+	if [ ! -f "${tarball_file_fullpath}" ]; then
+		echo "File $tarball_file_fullpath does not exist"
 		exit 1
 	fi
+
+	tarball_file=`basename "${tarball_file_fullpath}"`
 }
 
-function mountArchive() {
-	if [ ! -d "${BASE_FOLDER}" ]; then
-		mkdir -p "${BASE_FOLDER}"
+function mountTMPFS() {
+	# If it is already mounted then we unmount it for cleaning
+	if grep -qs "${tmp_folder} " /proc/mounts; then
+		umount -R "${tmp_folder}"
 	fi
-	archivemount "${tarball_file}" "${BASE_FOLDER}" -o nobackup
-	if [ $? -ne 0 ]; then echo "Failed to mount tarball!"; exit 1; fi
+	mkdir -p "${tmp_folder}"
+	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder}" "Mounting tmpfs storage"
 }
 
-function unmountArchive() {
-	umount "${BASE_FOLDER}"
-	sync
-	rm -f "${tarball_file}".orig
+function unmountTMPFS() {
+	cd "${current_folder}"
+	handleCommand "umount -R ${tmp_folder}" "Unmounting tmpfs storage"
+	rm -Rf "${tmp_folder}"
+}
+
+function extractArchive() {
+	cd "${tmp_folder}"
+	handleCommand "${tar} -xpf ${tarball_file_fullpath} --xattrs-include='*.*' --numeric-owner" "Extracting system files from ${tarball_file}"
+}
+
+function saveChanges() {
+	read -p "Do you want to save the changes? [Y/N]:" -n 1 -r
+	echo ""
+	if [[ $REPLY =~ ^[Yy]$ ]]; then
+		compressArchive
+	fi
+}
+
+
+function compressArchive() {
+	rm -Rf "${tmp_folder}"/tmp/*
+	cd "${tmp_folder}"
+	handleCommand "${tar} -cpf ${tarball_file_fullpath} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_file}"
 }
 
 function doChroot() {
 	echo "Going to enter chroot, please remember to update environment with: env-update && . /etc/profile"
-	chroot "${BASE_FOLDER}" /bin/bash
+	chroot "${tmp_folder}" /bin/bash
 }
 
-checkArgs
-checkVars
-setAndCheckFile
-mountArchive
-mountAll
-doChroot
-unmountAll
-unmountArchive
+function doList() {
+	if [ -z "${file_list}" ]; then
+		echo "File list is empty, check ${TARBALL_FOLDER} contents!"
+		exit 1
+	fi
+	echo -e "File Index\tFile Name"
+	for i in "${!file_list[@]}"; do
+		tarball_file=`basename ${file_list[$i]}`
+		echo -en "$i\t\t${tarball_file}"
+		if [ -f "/tmp/.${tarball_file}" ]; then
+			echo " (in use)"
+		else
+			echo ""
+		fi
+	done
+}
+
+function doUse() {
+	setAndCheckFile
+	local lockfile="/tmp/.${tarball_file}"
+	if [ -f "/tmp/.${tarball_file}" ]; then
+		echo "Another instance is running using file ${tarball_file}"
+		echo "If this is an error manually delete /tmp/.${tarball_file} file"
+		exit 1
+	fi
+	touch "${lockfile}"
+	tmp_folder=`mktemp -d`
+	mountTMPFS
+	extractArchive
+	mountSystem
+	doChroot
+	unmountSystem
+	saveChanges
+	unmountTMPFS
+	rm -f "${lockfile}"
+}
+
+function doInit() {
+	checkArgs
+	checkVars
+
+	if [ $command = "list" ]; then
+		doList
+	elif [ $command = "use" ]; then
+		doUse
+	fi
+}
+
+doInit
+	
+
