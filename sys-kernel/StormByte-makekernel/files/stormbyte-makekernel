@@ -31,6 +31,10 @@ function checkVars() {
 		echo "POSTCLEAN_KERNEL variable is not set or contains invalid value (accepted values are yes or no)!"
 		errors=1
 	fi
+	if [ -z "${REBUILD_MODULES}" ] || ([ "${REBUILD_MODULES}" != "yes" ] && [ "${REBUILD_MODULES}" != "no" ]); then
+		echo "REBUILD_MODULES variable is not set or contains invalid value (accepted values are yes or no)!"
+		errors=1
+	fi
 	if [ "${errors}" -eq 1 ]; then
 		exit 1
 	fi
@@ -44,6 +48,9 @@ function doMake() {
 		handleCommand "rm -f /boot/*" "Cleaning old kernel files"
 	fi
 	handleCommand "genkernel ${GENKERNEL_DEFAULT_OPTIONS} ${arguments} all" "Compiling kernel and initrd"
+	if [ "${REBUILD_MODULES}" = "yes" ]; then
+		handleCommand "emerge @module-rebuild --ask n" "Rebuilding external modules"
+	fi
 	if [ "${POSTCLEAN_KERNEL}" = "yes" ]; then
 		cd "/usr/src/linux"
 		handleCommand "make clean && make modules_prepare" "Postcleaning kernel build"
