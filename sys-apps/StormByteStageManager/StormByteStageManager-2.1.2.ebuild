@@ -3,7 +3,7 @@
 
 EAPI=7
 
-DESCRIPTION="Utils from StormByte"
+DESCRIPTION="StormByte's Stage Manager"
 HOMEPAGE="https://blog.stormbyte.org"
 SRC_URI=""
 
@@ -13,7 +13,6 @@ IUSE=""
 
 RDEPEND="
 	sys-apps/coreutils
-	sys-apps/findutils
 	app-shells/bash
 	app-arch/pigz
 	app-arch/pbzip2
@@ -28,8 +27,6 @@ src_unpack() {
 }
 
 src_install() {
-	dobin "${FILESDIR}/findcontent"
-	dobin "${FILESDIR}/portage-config"
 	dobin "${FILESDIR}/stormbyte-stage-manager"
 	doconfd "${FILESDIR}/stormbyte-stage-manager.conf"
 }
