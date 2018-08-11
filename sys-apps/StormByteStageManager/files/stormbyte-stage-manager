@@ -19,6 +19,7 @@ command="$1"
 arguments=("${@:2}")
 tmp_folder=""
 lockfile=""
+output_folder=""
 
 function header() {
 	echo "StormByte Gentoo Stage Manager Version ${version}"
@@ -35,7 +36,7 @@ function usage() {
 	echo " * use <index> - Uses a filename from list (or its index) for chrooting"
 	echo " * rebase <index> <new_filename> - Same than above but it makes a copy first and will use that copy for chroot"
 	echo " * convert <index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
-	echo " * export <index> <compression_format> - Same than above but adding YYYYmmdd to the filename"
+	echo " * export <index> <destination_folder> <compression_format> - Same than above but saving in a custom folder and adding YYYYmmdd to the filename"
 	echo " * delete <index> - Permanently deletes the file"
 	echo " * rename <index> <newname> - Renames the file"
 	echo " * help - Show this help message"
@@ -75,6 +76,18 @@ function checkVars() {
 	fi
 	if [ "${errors}" -eq 1 ]; then
 		exit 1
+	fi
+}
+
+function setOutputFolder() {
+	if [ "$#" -eq 0 ]; then
+		output_folder="${TARBALL_FOLDER}"
+	else
+		output_folder="$1"
+		if [ ! -d "${output_folder}" ]; then
+			echo "Output folder ${output_folder} does not exist!"
+			exit 1
+		fi
 	fi
 }
 
@@ -157,6 +170,10 @@ function setAndCheckFile() {
 	setCompression ${tarball_extension}
 	setDecompression ${tarball_extension}
 	lockfile="/tmp/.${tarball}.lock"
+	if [ -z "${tarball_extension}" ]; then
+		echo "Tarball extension is empty, did you specified correctly the file name?"
+		exit 1
+	fi
 }
 
 function checkFileCopy() {
@@ -209,8 +226,8 @@ function saveChanges() {
 function compressArchive() {
 	rm -Rf "${tmp_folder}"/tmp/*
 	cd "${tmp_folder}"
-	handleCommand "${compress} -cpf ${TARBALL_FOLDER}/.${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
-	mv "${TARBALL_FOLDER}/.${tarball_output}" "${TARBALL_FOLDER}/${tarball_output}"
+	handleCommand "${compress} -cpf ${output_folder}/.${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
+	mv "${output_folder}/.${tarball_output}" "${output_folder}/${tarball_output}"
 }
 
 function doChroot() {
@@ -279,10 +296,22 @@ function doConvert() {
 }
 
 function doExport() {
+	setOutputFolder "${arguments[1]}"
 	setAndCheckFile
-	setCompression ${arguments[1]}
+	setCompression ${arguments[2]}
 	setDecompression ${tarball_extension}
-	tarball_output="${tarball_filename}-`date +%Y%m%d`.${tarball_output##*.}"
+	tarball_output="${tarball_filename}-`date +%Y%m%d`.${tarball_extension}"
+	if [ -f "${output_folder}/${tarball_output}" ]; then
+		local reply=""
+		while [[ ! $reply =~ ^[YyNn]$ ]]; do
+			read -p "File ${tarball_output} already exists, overwrite? [Y/N]: " -r
+			reply=$REPLY
+		done
+		if [[ $reply =~ ^[Nn]$ ]]; then
+			echo "No action was done"
+			exit 1
+		fi
+	fi
 	doLock
 	createTMPFolder
 	mountTMPFS
@@ -318,7 +347,10 @@ function doRebase() {
 }
 
 function doInit() {
+	header
 	checkVars
+	setOutputFolder
+
 	case $command in
 		list)
 			doList
@@ -348,8 +380,8 @@ function doInit() {
 			usage
 			exit 1
 	esac
+	exit 0
 }
 
-header
 doInit
 
