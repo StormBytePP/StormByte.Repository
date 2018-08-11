@@ -2,15 +2,21 @@
 
 source "/etc/conf.d/stormbyte-stage-manager.conf"
 
-version="1.0.2"
+version="2.0.0"
 current_folder=`pwd`
-file_list=""
+file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_file_fullpath=""
 tarball_file=""
-tar="tar" # Default to tar, but will be overwriten with a parallel version for the compressors
+tarball_extension=""
+tarball_output=""
+tar=""
+gtar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
+btar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
+xtar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
 command="$1"
 arguments="$2"
 tmp_folder=""
+lockfile=""
 
 function header() {
 	echo "StormByte Gentoo Stage Manager Version ${version}"
@@ -24,7 +30,8 @@ function usage() {
 	echo "Usage is $0 <command> <arguments>"
 	echo "Where command is"
 	echo " * list - will list all usable files"
-	echo " * use <filename|index> - Uses a filename from list (or its index) for chrooting (as set in config, only ${COMPRESS_FORMAT} files are supported)"
+	echo " * use <filename|index> - Uses a filename from list (or its index) for chrooting"
+	echo " * convert <filename|index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
 	echo "See configuration file for more tweaking options"
 }
 
@@ -43,8 +50,8 @@ function handleCommand() {
 	fi
 }
 
-function checkArgs() {
-	if [ "$command" != "list" ] && [ "$command" != "use" ]; then
+function checArgs() {
+	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ]; then
 		usage
 		exit 1
 	fi
@@ -56,29 +63,6 @@ function checkVars() {
 	if [ -z "${COMPRESSION_LEVEL}" ] || ! [[ "${COMPRESSION_LEVEL}" =~ $re ]]; then
 		echo "COMPRESSION_LEVEL is either empty or invalid, check if it is in a range between 1 and 9!"
 		errors=1
-	fi
-	if [ -z "${COMPRESS_FORMAT}" ]; then
-		echo "COMPRESS_FORMAT variable is not set or empty!"
-		errors=1
-	else
-		case "${COMPRESS_FORMAT}" in
-			gzip)
-			tar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
-			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" \)`)
-			;;
-			bzip2)
-			tar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
-			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.bz2" -o -iname "*.tbz2" \)`)
-			;;
-			xz)
-			tar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
-			file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.xz" -o -iname "*.txz" \)`)
-			;;
-			*)
-			echo "COMPRESS_FORMAT has value ${COMPRESS_FORMAT} which is not accepted. Accepted values are gzip, bzip2 and xz"
-			errors=1
-			;;
-		esac
 	fi
 	if [ -z "${TMPFS_SIZE}" ]; then
 		echo "TMPFS_SIZE variable is not set or empty!"
@@ -93,6 +77,35 @@ function checkVars() {
 	fi
 }
 
+function setCompression() {
+	case "$1" in
+		case tar.gz)
+		case tgz)
+		case gzip)
+		tar=${gtar}
+		tarball_output="${tarball_file}.tgz"
+		;;
+
+		case tar.bz2)
+		case tbz2)
+		case bzip2)
+		tar=${btar}
+		tarball_output="${tarball_file}.tbz2"
+		;;
+
+		case tar.xz)
+		case txz)
+		case xz)
+		tar=${xtar}
+		tarball_output="${tarball_file}.txz"
+		;;
+
+		*)
+		echo "Error: compression method $1 unknown"
+		exit 1
+	esac
+}
+
 function mountSystem() {
 	handleCommand "mount -t proc /proc ${tmp_folder}/proc && mount --rbind /dev ${tmp_folder}/dev && mount --make-rslave ${tmp_folder}/dev && mount --rbind /sys ${tmp_folder}/sys && mount --make-rslave ${tmp_folder}/sys" "Mounting system structures"
 }
@@ -103,8 +116,8 @@ function unmountSystem() {
 }
 
 function setAndCheckFile() {
-	# We check if it is an integer first
-	re='^[0-9]+$'
+	local tarball_extension=""
+	local re='^[0-9]+$'
 	if [[ $arguments =~ $re ]] ; then
 		tarball_file_fullpath="${file_list[$arguments]}"
 	else
@@ -116,7 +129,18 @@ function setAndCheckFile() {
 		exit 1
 	fi
 
-	tarball_file=`basename "${tarball_file_fullpath}"`
+	tarball_file="${tarball_file_fullpath%.*}"
+	tarball_extension=${tarball_file##*.}
+	setCompression ${tarball_extension}
+	lockfile="/tmp/.${tarball_file}.${tarball_extension}"
+}
+
+function createTMPFolder() {
+	tmp_folder=`mktemp -d`
+}
+
+function deleteTMPFolder() {
+	rm -Rf "${tmp_folder}"
 }
 
 function mountTMPFS() {
@@ -131,7 +155,6 @@ function mountTMPFS() {
 function unmountTMPFS() {
 	cd "${current_folder}"
 	handleCommand "umount -R ${tmp_folder}" "Unmounting tmpfs storage"
-	rm -Rf "${tmp_folder}"
 }
 
 function extractArchive() {
@@ -150,11 +173,10 @@ function saveChanges() {
 	fi
 }
 
-
 function compressArchive() {
 	rm -Rf "${tmp_folder}"/tmp/*
 	cd "${tmp_folder}"
-	handleCommand "${tar} -cpf ${tarball_file_fullpath} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_file}"
+	handleCommand "${tar} -cpf ${TARBALL_FOLDER}/${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
 }
 
 function doChroot() {
@@ -179,16 +201,23 @@ function doList() {
 	done
 }
 
-function doUse() {
-	setAndCheckFile
-	local lockfile="/tmp/.${tarball_file}"
-	if [ -f "/tmp/.${tarball_file}" ]; then
-		echo "Another instance is running using file ${tarball_file}"
-		echo "If this is an error manually delete /tmp/.${tarball_file} file"
+doLock() {
+	if [ -f "${lockfile}" ]; then
+		echo "Another instance is running using file ${lockfile}"
+		echo "If this is an error manually delete /tmp/.${lockfile} file"
 		exit 1
 	fi
 	touch "${lockfile}"
-	tmp_folder=`mktemp -d`
+}
+
+doUnlock() {
+	rm -f "${lockfile}"
+}
+
+function doUse() {
+	setAndCheckFile
+	doLock
+	createTMPFolder
 	mountTMPFS
 	extractArchive
 	mountSystem
@@ -196,7 +225,21 @@ function doUse() {
 	unmountSystem
 	saveChanges
 	unmountTMPFS
-	rm -f "${lockfile}"
+	deleteTMPFolder
+	doUnlock
+}
+
+function doConvert() {
+	setAndCheckFile
+	doLock
+	setCompression $1
+	createTMPFolder
+	mountTMPFS
+	extractArchive
+	compressArchive
+	unmountTMPFS
+	deleteTMPFolder
+	doUnlock
 }
 
 function doInit() {
@@ -207,6 +250,8 @@ function doInit() {
 		doList
 	elif [ $command = "use" ]; then
 		doUse
+	elif [ $command = "convert" ]; then
+		doConvert
 	fi
 }
 
