@@ -46,16 +46,11 @@ function handleCommand() {
 	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
 	# Example
 	# handleCommand 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
-	# If we receive a third parameters is for avoid redirection to /dev/null
-	if [ "$#" -eq 2 ]; then
-		echo -n "${2} ... "
-		eval $1 > /dev/null 2>&1
-	else
-		echo "${2} ... "
-		eval $1
-	fi
+	echo -n "${2} ... "
+	eval $1 > /dev/null 2>&1
+	
 	if [ $? -eq 0 ]; then
-		if [ "$#" -eq 2 ]; then echo "OK"; fi
+		echo "OK"
 	else
 		echo "ERROR in command '$1'"
 		cd "${current_folder}"
@@ -134,7 +129,7 @@ function mountSystem() {
 
 function unmountSystem() {
 	cd "${current_folder}"
-	handleCommand "umount -R ${tmp_folder}/proc && umount -R ${tmp_folder}/dev && umount -R ${tmp_folder}/sys && rm -Rf {tmp_folder}/tmp/*" "Unmounting system structures and cleaning"
+	handleCommand "umount -R ${tmp_folder}/proc && umount -R ${tmp_folder}/dev && umount -R ${tmp_folder}/sys && rm -Rf {tmp_folder}/tmp/* && rm -f ${tmp_folder}/root/.bash_history" "Unmounting system structures and cleaning"
 }
 
 function setAndCheckFile() {
@@ -219,7 +214,8 @@ function compressArchive() {
 }
 
 function doChroot() {
-	handleCommand "chroot ${tmp_folder} /bin/bash" "Entering chroot, don't forget to run env-update && . /etc/profile" "noDevNull"
+	echo "Entering chroot, don't forget to run env-update && . /etc/profile"
+	chroot "${tmp_folder}" "/bin/bash"
 }
 
 function doList() {
