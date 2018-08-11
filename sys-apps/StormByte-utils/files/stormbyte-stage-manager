@@ -2,7 +2,7 @@
 
 source "/etc/conf.d/stormbyte-stage-manager.conf"
 
-version="2.0.0"
+version="2.1.0"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -36,6 +36,7 @@ function usage() {
 	echo " * convert <index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
 	echo " * export <index> <compression_format> - Same than above but adding YYYYmmdd to the filename"
 	echo " * delete <index> - Permanently deletes the file"
+	echo " * rename <index> <newname> - Renames the file"
 	echo "See configuration file for more tweaking options"
 }
 
@@ -55,7 +56,7 @@ function handleCommand() {
 }
 
 function checkArgs() {
-	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ] && [ "$command" != "export" ] && [ "$command" != "delete" ]; then
+	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ] && [ "$command" != "export" ] && [ "$command" != "delete" ] && [ "$command" != "rename" ]; then
 		usage
 		exit 1
 	fi
@@ -288,20 +289,42 @@ function doDelete() {
 	doUnlock
 }
 
+function doRename() {
+	local new_filename=`basename "${arguments[1]}"`
+	if [ -f "${TARBALL_FOLDER}/${new_filename}" ]; then
+		echo "Destination file ${new_filename} already exists"
+		exit 1
+	fi
+	setAndCheckFile
+	doLock
+	mv "${tarball_filename_fullpath}" "${TARBALL_FOLDER}/${new_filename}"
+	echo "File ${tarball} was renamed to ${new_filename}"
+	doUnlock
+}
+
 function doInit() {
 	checkArgs
 	checkVars
-	if [ $command = "list" ]; then
-		doList
-	elif [ $command = "use" ]; then
-		doUse
-	elif [ $command = "convert" ]; then
-		doConvert
-	elif [ $command = "export" ]; then
-		doExport
-	elif [ $command = "delete" ]; then
-		doDelete
-	fi
+	case $command in
+		list)
+			doList
+			;;
+		use)
+			doUse
+			;;
+		convert)
+			doConvert
+			;;
+		export)
+			doExport
+			;;
+		delete)
+			doDelete
+			;;
+		rename)
+			doRename
+			;;
+	esac
 }
 
 header
