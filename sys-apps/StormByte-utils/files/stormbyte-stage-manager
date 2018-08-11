@@ -2,7 +2,7 @@
 
 source "/etc/conf.d/stormbyte-stage-manager.conf"
 
-version="2.1.0"
+version="2.1.1"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -33,31 +33,32 @@ function usage() {
 	echo "Where command is"
 	echo " * list - will list all usable files"
 	echo " * use <index> - Uses a filename from list (or its index) for chrooting"
+	echo " * rebase <index> <new_filename> - Same than above but it makes a copy first and will use that copy for chroot"
 	echo " * convert <index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
 	echo " * export <index> <compression_format> - Same than above but adding YYYYmmdd to the filename"
 	echo " * delete <index> - Permanently deletes the file"
 	echo " * rename <index> <newname> - Renames the file"
+	echo " * help - Show this help message"
 	echo "See configuration file for more tweaking options"
 }
 
 function handleCommand() {
 	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
 	# Example
-	# executeAndHandleCommandOutput 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
-	echo -n "${2} ... "
-	eval $1 > /dev/null 2>&1
+	# handleCommand 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
+	# If we receive a third parameters is for avoid redirection to /dev/null
+	if [ "$#" -eq 2 ]; then
+		echo -n "${2} ... "
+		eval $1 > /dev/null 2>&1
+	else
+		echo "${2} ... "
+		eval $1
+	fi
 	if [ $? -eq 0 ]; then
-		echo "OK"
+		if [ "$#" -eq 2 ]; then echo "OK"; fi
 	else
 		echo "ERROR in command '$1'"
 		cd "${current_folder}"
-		exit 1
-	fi
-}
-
-function checkArgs() {
-	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ] && [ "$command" != "export" ] && [ "$command" != "delete" ] && [ "$command" != "rename" ]; then
-		usage
 		exit 1
 	fi
 }
@@ -137,12 +138,17 @@ function unmountSystem() {
 }
 
 function setAndCheckFile() {
-	local re='^[0-9]+$'
-	if [[ ${arguments[0]} =~ $re ]] ; then
-		tarball_filename_fullpath="${file_list[${arguments[0]}]}"
+	# If this received a parameter then will ignore selected index and will use the file provided in parameter
+	if [ "$#" -eq 0 ]; then
+		local re='^[0-9]+$'
+		if [[ ${arguments[0]} =~ $re ]] ; then
+			tarball_filename_fullpath="${file_list[${arguments[0]}]}"
+		else
+			echo "Parameter should be an integer for the index"
+			exit 1
+		fi
 	else
-		echo "Parameter should be an integer for the index"
-		exit 1
+		tarball_filename_fullpath="$1"
 	fi
 
 	if [ ! -f "${tarball_filename_fullpath}" ]; then
@@ -155,22 +161,31 @@ function setAndCheckFile() {
 	tarball_extension="${tarball##*.}"
 	setCompression ${tarball_extension}
 	setDecompression ${tarball_extension}
-	lockfile="/tmp/.${tarball}"
+	lockfile="/tmp/.${tarball}.lock"
+}
+
+function checkFileCopy() {
+	# Received 2 parameters: origin destination
+	origin="${TARBALL_FOLDER}/`basename $1`"
+	destination="${TARBALL_FOLDER}/`basename $2`"
+	if [ ! -f "$origin" ]; then
+		echo "Origin file `basename $origin` does not exist"
+		exit 1
+	elif [ -f "$destination" ]; then
+		echo "Destination file `basename $destination` already exist"
+		exit 1
+	fi
 }
 
 function createTMPFolder() {
-	tmp_folder=`mktemp -d`
+	handleCommand "tmp_folder=`mktemp -d`" "Creating temporary folder"
 }
 
 function deleteTMPFolder() {
-	rm -Rf "${tmp_folder}"
+	handleCommand "rm -Rf ${tmp_folder}" "Deleting temporary folder"
 }
 
 function mountTMPFS() {
-	# If it is already mounted then we unmount it for cleaning
-	if grep -qs "${tmp_folder} " /proc/mounts; then
-		umount -R "${tmp_folder}"
-	fi
 	mkdir -p "${tmp_folder}"
 	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder}" "Mounting tmpfs storage"
 }
@@ -199,12 +214,12 @@ function saveChanges() {
 function compressArchive() {
 	rm -Rf "${tmp_folder}"/tmp/*
 	cd "${tmp_folder}"
-	handleCommand "${compress} -cpf ${TARBALL_FOLDER}/${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
+	handleCommand "${compress} -cpf ${TARBALL_FOLDER}/.${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
+	mv "${TARBALL_FOLDER}/.${tarball_output}" "${TARBALL_FOLDER}/${tarball_output}"
 }
 
 function doChroot() {
-	echo "Going to enter chroot, please remember to update environment with: env-update && . /etc/profile"
-	chroot "${tmp_folder}" /bin/bash
+	handleCommand "chroot ${tmp_folder} /bin/bash" "Entering chroot, don't forget to run env-update && . /etc/profile" "noDevNull"
 }
 
 function doList() {
@@ -227,18 +242,19 @@ function doList() {
 doLock() {
 	if [ -f "${lockfile}" ]; then
 		echo "Another instance is running using file ${lockfile}"
-		echo "If this is an error manually delete /tmp/.${lockfile} file"
+		echo "If this is an error manually delete ${lockfile} file"
 		exit 1
 	fi
-	touch "${lockfile}"
+	handleCommand "touch ${lockfile}" "Setting lockfile"
 }
 
 doUnlock() {
-	rm -f "${lockfile}"
+	handleCommand "rm -f ${lockfile}" "Removing lockfile"
 }
 
 function doUse() {
-	setAndCheckFile
+	# If no parameter if received, it will autodetect from script arguments, otherwise it will use provided filename as parameter
+	setAndCheckFile "$@"
 	doLock
 	createTMPFolder
 	mountTMPFS
@@ -284,26 +300,28 @@ function doExport() {
 function doDelete() {
 	setAndCheckFile
 	doLock
-	rm -f "${tarball_filename_fullpath}"
-	echo "${tarball} was deleted successfully"
+	handleCommand "rm -f ${tarball_filename_fullpath}" "Deleting file ${tarball}"
 	doUnlock
 }
 
 function doRename() {
 	local new_filename=`basename "${arguments[1]}"`
-	if [ -f "${TARBALL_FOLDER}/${new_filename}" ]; then
-		echo "Destination file ${new_filename} already exists"
-		exit 1
-	fi
 	setAndCheckFile
+	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
 	doLock
-	mv "${tarball_filename_fullpath}" "${TARBALL_FOLDER}/${new_filename}"
-	echo "File ${tarball} was renamed to ${new_filename}"
+	handleCommand "mv '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}" "Renaming ${tarball} to ${new_filename}"
 	doUnlock
 }
 
+function doRebase() {
+	local new_filename=`basename "${arguments[1]}"`	
+	setAndCheckFile
+	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
+	handleCommand "cp '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Rebasing ${tarball} to ${new_filename}"
+	doUse "${TARBALL_FOLDER}/${new_filename}"
+}
+
 function doInit() {
-	checkArgs
 	checkVars
 	case $command in
 		list)
@@ -324,6 +342,15 @@ function doInit() {
 		rename)
 			doRename
 			;;
+		rebase)
+			doRebase
+			;;
+		help)
+			usage
+			;;
+		*)
+			usage
+			exit 1
 	esac
 }
 
