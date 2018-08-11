@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>stormbyte@gmail.com</email>
+		<name>David C. Manuelda</name>
+	</maintainer>
+	<use>
+		<flag name="stagemanager">Install StormByte's Stage Manager script</flag>
+		<flag name="makekernel">Install StormByte's Genkernel Helper Layer script</flag>
+		<flag name="portageconfig">Install StormByte's Portage Config Helper script</flag>
+	</use>
+</pkgmetadata>

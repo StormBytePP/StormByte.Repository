@@ -3,20 +3,16 @@
 
 EAPI=7
 
-DESCRIPTION="StormByte's utils"
+DESCRIPTION="StormByte's Genkernel Helper Layout"
 HOMEPAGE="https://blog.stormbyte.org"
 SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="stagemanager portageconfig makekernel"
+IUSE=""
 
 RDEPEND="
-	sys-apps/StormByte-functions
-	sys-apps/findutils
-	stagemanager? ( sys-apps/StormByte-stagemanager )
-	makekernel? ( sys-kernel/StormByte-makekernel )
-	portageconfig? ( app-portage/StormByte-portageconfig )
+	|| ( sys-kernel/genkernel sys-kernel/genkernel-next )
 "
 DEPEND="${RDEPEND}
 "
@@ -27,6 +23,7 @@ src_unpack() {
 }
 
 src_install() {
-	dobin "${FILESDIR}/stormbyte-findcontent"
+	dobin "${FILESDIR}/stormbyte-makekernel"
+	doconfd "${FILESDIR}/stormbyte-makekernel.conf"
 }
 

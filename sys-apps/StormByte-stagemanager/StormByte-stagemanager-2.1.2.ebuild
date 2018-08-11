@@ -27,7 +27,7 @@ src_unpack() {
 }
 
 src_install() {
-	dobin "${FILESDIR}/stormbyte-stage-manager"
-	doconfd "${FILESDIR}/stormbyte-stage-manager.conf"
+	dobin "${FILESDIR}/stormbyte-stagemanager"
+	doconfd "${FILESDIR}/stormbyte-stagemanager.conf"
 }
 

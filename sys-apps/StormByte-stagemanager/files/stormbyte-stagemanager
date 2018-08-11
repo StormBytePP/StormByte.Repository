@@ -1,6 +1,6 @@
 #! /bin/bash
 
-source "/etc/conf.d/stormbyte-stage-manager.conf"
+source "/etc/conf.d/stormbyte-stagemanager.conf"
 
 version="2.1.2"
 current_folder=`pwd`
@@ -29,7 +29,7 @@ function header() {
 
 function usage() {
 	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
-	echo "Configuration is located in /etc/conf.d/gentoo-chroot.conf"
+	echo "Configuration is located in /etc/conf.d/stormbyte-stagemanager.conf"
 	echo "Usage is $0 <command> <arguments>"
 	echo "Where command is"
 	echo " * list - will list all usable files"
