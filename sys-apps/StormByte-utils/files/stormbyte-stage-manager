@@ -5,16 +5,18 @@ source "/etc/conf.d/stormbyte-stage-manager.conf"
 version="2.0.0"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
-tarball_file_fullpath=""
-tarball_file=""
+tarball_filename_fullpath=""
+tarball_filename=""
 tarball_extension=""
+tarball=""
 tarball_output=""
-tar=""
+compress=""
+extract=""
 gtar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
 btar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
 xtar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
 command="$1"
-arguments="$2"
+arguments=("${@:2}")
 tmp_folder=""
 lockfile=""
 
@@ -30,8 +32,10 @@ function usage() {
 	echo "Usage is $0 <command> <arguments>"
 	echo "Where command is"
 	echo " * list - will list all usable files"
-	echo " * use <filename|index> - Uses a filename from list (or its index) for chrooting"
-	echo " * convert <filename|index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
+	echo " * use <index> - Uses a filename from list (or its index) for chrooting"
+	echo " * convert <index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
+	echo " * export <index> <compression_format> - Same than above but adding YYYYmmdd to the filename"
+	echo " * delete <index> - Permanently deletes the file"
 	echo "See configuration file for more tweaking options"
 }
 
@@ -50,8 +54,8 @@ function handleCommand() {
 	fi
 }
 
-function checArgs() {
-	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ]; then
+function checkArgs() {
+	if [ "$command" != "list" ] && [ "$command" != "use" ] && [ "$command" != "convert" ] && [ "$command" != "export" ] && [ "$command" != "delete" ]; then
 		usage
 		exit 1
 	fi
@@ -77,32 +81,48 @@ function checkVars() {
 	fi
 }
 
-function setCompression() {
+function setDecompression() {
 	case "$1" in
-		case tar.gz)
-		case tgz)
-		case gzip)
-		tar=${gtar}
-		tarball_output="${tarball_file}.tgz"
-		;;
+		tar.gz|tgz|gzip)
+			extract=${gtar}
+			;;
 
-		case tar.bz2)
-		case tbz2)
-		case bzip2)
-		tar=${btar}
-		tarball_output="${tarball_file}.tbz2"
-		;;
+		tar.bz2|tbz2|bzip2)
+			extract=${btar}
+			;;
 
-		case tar.xz)
-		case txz)
-		case xz)
-		tar=${xtar}
-		tarball_output="${tarball_file}.txz"
-		;;
+		tar.xz|txz|xz)
+			extract=${xtar}
+			;;
 
 		*)
-		echo "Error: compression method $1 unknown"
-		exit 1
+			echo "Error: compression method $1 unknown"
+			exit 1
+			;;
+	esac
+}
+
+function setCompression() {
+	case "$1" in
+		tar.gz|tgz|gzip)
+			compress=${gtar}
+			tarball_output="${tarball_filename}.tgz"
+			;;
+
+		tar.bz2|tbz2|bzip2)
+			compress=${btar}
+			tarball_output="${tarball_filename}.tbz2"
+			;;
+
+		tar.xz|txz|xz)
+			compress=${xtar}
+			tarball_output="${tarball_filename}.txz"
+			;;
+
+		*)
+			echo "Error: compression method $1 unknown"
+			exit 1
+			;;
 	esac
 }
 
@@ -116,23 +136,25 @@ function unmountSystem() {
 }
 
 function setAndCheckFile() {
-	local tarball_extension=""
 	local re='^[0-9]+$'
-	if [[ $arguments =~ $re ]] ; then
-		tarball_file_fullpath="${file_list[$arguments]}"
+	if [[ ${arguments[0]} =~ $re ]] ; then
+		tarball_filename_fullpath="${file_list[${arguments[0]}]}"
 	else
-		tarball_file_fullpath="${TARBALL_FOLDER}/$arguments"
-	fi
-
-	if [ ! -f "${tarball_file_fullpath}" ]; then
-		echo "File $tarball_file_fullpath does not exist"
+		echo "Parameter should be an integer for the index"
 		exit 1
 	fi
 
-	tarball_file="${tarball_file_fullpath%.*}"
-	tarball_extension=${tarball_file##*.}
+	if [ ! -f "${tarball_filename_fullpath}" ]; then
+		echo "File $tarball_filename_fullpath does not exist"
+		exit 1
+	fi
+
+	tarball=`basename "${tarball_filename_fullpath}"`
+	tarball_filename="${tarball%.*}"
+	tarball_extension="${tarball##*.}"
 	setCompression ${tarball_extension}
-	lockfile="/tmp/.${tarball_file}.${tarball_extension}"
+	setDecompression ${tarball_extension}
+	lockfile="/tmp/.${tarball}"
 }
 
 function createTMPFolder() {
@@ -159,7 +181,7 @@ function unmountTMPFS() {
 
 function extractArchive() {
 	cd "${tmp_folder}"
-	handleCommand "${tar} -xpf ${tarball_file_fullpath} --xattrs-include='*.*' --numeric-owner" "Extracting system files from ${tarball_file}"
+	handleCommand "${extract} -xpf ${tarball_filename_fullpath} --xattrs-include='*.*' --numeric-owner" "Extracting system files from ${tarball}"
 }
 
 function saveChanges() {
@@ -176,7 +198,7 @@ function saveChanges() {
 function compressArchive() {
 	rm -Rf "${tmp_folder}"/tmp/*
 	cd "${tmp_folder}"
-	handleCommand "${tar} -cpf ${TARBALL_FOLDER}/${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
+	handleCommand "${compress} -cpf ${TARBALL_FOLDER}/${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
 }
 
 function doChroot() {
@@ -189,11 +211,11 @@ function doList() {
 		echo "File list is empty, check ${TARBALL_FOLDER} contents!"
 		exit 1
 	fi
-	echo -e "File Index\tFile Name"
+	echo -e "Index\tSize\t\tFile Name"
 	for i in "${!file_list[@]}"; do
-		tarball_file=`basename ${file_list[$i]}`
-		echo -en "$i\t\t${tarball_file}"
-		if [ -f "/tmp/.${tarball_file}" ]; then
+		tarball_filename=`basename ${file_list[$i]}`
+		echo -en "$i\t`ls -s --block-size=1048576 ${file_list[$i]} | cut -d' ' -f1` MiB\t\t${tarball_filename}"
+		if [ -f "/tmp/.${tarball_filename}" ]; then
 			echo " (in use)"
 		else
 			echo ""
@@ -231,8 +253,9 @@ function doUse() {
 
 function doConvert() {
 	setAndCheckFile
+	setCompression ${arguments[1]}
+	setDecompression ${tarball_extension}
 	doLock
-	setCompression $1
 	createTMPFolder
 	mountTMPFS
 	extractArchive
@@ -242,16 +265,42 @@ function doConvert() {
 	doUnlock
 }
 
+function doExport() {
+	setAndCheckFile
+	setCompression ${arguments[1]}
+	setDecompression ${tarball_extension}
+	tarball_output="${tarball_filename}-`date +%Y%m%d`.${tarball_output##*.}"
+	doLock
+	createTMPFolder
+	mountTMPFS
+	extractArchive
+	compressArchive
+	unmountTMPFS
+	deleteTMPFolder
+	doUnlock
+}
+
+function doDelete() {
+	setAndCheckFile
+	doLock
+	rm -f "${tarball_filename_fullpath}"
+	echo "${tarball} was deleted successfully"
+	doUnlock
+}
+
 function doInit() {
 	checkArgs
 	checkVars
-
 	if [ $command = "list" ]; then
 		doList
 	elif [ $command = "use" ]; then
 		doUse
 	elif [ $command = "convert" ]; then
 		doConvert
+	elif [ $command = "export" ]; then
+		doExport
+	elif [ $command = "delete" ]; then
+		doDelete
 	fi
 }
 
