@@ -44,7 +44,7 @@ function usage() {
 	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
 	echo "Configuration is located in /etc/conf.d/stormbyte-stagemanager.conf"
 	echo "Usage is $self <command> <arguments>"
-	echo "Available commands are: ${available_commands[0]}"
+	echo "Available commands are: ${available_commands[*]}"
 	echo "For more detailed help, use $self help <command> or $self help compression for more information about compression"
 	echo "See configuration file $config_file for more tweaking options"
 }
