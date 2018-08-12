@@ -30,7 +30,7 @@ command="${parameters[0]}"
 tmp_folder=""
 lockfile=""
 output_folder=""
-available_commands=(list use rebase convert export delete rename download help)
+available_commands=(list use rebase convert export delete rename download copy help)
 available_compression_formats=( gzip bzip2 xz )
 available_compression_extensions=( tar.gz tgz tar.bz2 tbz2 tar.xz txz )
 
@@ -124,6 +124,10 @@ function helpDownload() {
 	echo "  * default"
 }
 
+function helpCopy() {
+	echo "Usage: $self copy <index> <new_filename>"
+	echo "This command will copy a file identified by its index (see list command) to new_filename under the same path"
+}
 
 function checkVars() {
 	local errors=0
@@ -405,10 +409,7 @@ function doRename() {
 }
 
 function doRebase() {
-	local new_filename=`basename "${parameters[2]}"`	
-	setAndCheckFile
-	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
-	handleCommand "cp '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Rebasing ${tarball} to ${new_filename}"
+	doCopy
 	doUse "${TARBALL_FOLDER}/${new_filename}"
 }
 
@@ -531,8 +532,14 @@ function doDownload() {
 	echo "`basename ${stage_file}` downloaded to ${TARBALL_FOLDER}"
 }
 
-function doHelp() {
+function doCopy() {
+	new_filename=`basename "${parameters[2]}"`	
+	setAndCheckFile
+	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
+	handleCommand "cp '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Rebasing ${tarball} to ${new_filename}"
+}
 
+function doHelp() {
 	case "${parameters[1]}" in
 		list)
 			helpList
@@ -560,6 +567,9 @@ function doHelp() {
 			;;
 		compression)
 			helpCompression
+			;;
+		copy)
+			helpCopy
 			;;
 		*)
 			usage
@@ -597,6 +607,9 @@ function doInit() {
 			;;
 		download)
 			doDownload
+			;;
+		copy)
+			doCopy
 			;;
 		help)
 			doHelp
