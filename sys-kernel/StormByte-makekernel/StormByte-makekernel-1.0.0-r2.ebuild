@@ -12,6 +12,7 @@ KEYWORDS="amd64 x86"
 IUSE=""
 
 RDEPEND="
+	sys-libs/StormByte-functions
 	|| ( sys-kernel/genkernel sys-kernel/genkernel-next )
 "
 DEPEND="${RDEPEND}

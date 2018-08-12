@@ -9,20 +9,15 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE=""
+IUSE="utils stagemanager portageconfig makekernel"
 
 RDEPEND="
-	sys-apps/findutils
+	utils? ( sys-apps/StormByte-utils )
+	stagemanager? ( sys-apps/StormByte-stagemanager )
+	makekernel? ( sys-kernel/StormByte-makekernel )
+	portageconfig? ( app-portage/StormByte-portageconfig )
 "
 DEPEND="${RDEPEND}
 "
 
-src_unpack() {
-	#Since there are no downloaded files, this is dummy to prevent folder not exist error
-	mkdir "${S}"
-}
-
-src_install() {
-	dobin "${FILESDIR}/stormbyte-findcontent"
-}
 

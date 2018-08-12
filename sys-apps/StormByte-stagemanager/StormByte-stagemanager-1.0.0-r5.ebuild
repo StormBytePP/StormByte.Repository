@@ -12,8 +12,8 @@ KEYWORDS="amd64 x86"
 IUSE=""
 
 RDEPEND="
+	sys-libs/StormByte-functions
 	sys-apps/coreutils
-	app-shells/bash
 	app-arch/pigz
 	app-arch/pbzip2
 	app-arch/pxz
