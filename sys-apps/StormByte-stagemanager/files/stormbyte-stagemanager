@@ -292,8 +292,8 @@ function saveChanges() {
 function compressArchive() {
 	rm -Rf "${tmp_folder}"/tmp/*
 	cd "${tmp_folder}"
-	handleCommand "${compress} -cpf ${output_folder}/.${tarball_output} . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
-	mv "${output_folder}/.${tarball_output}" "${output_folder}/${tarball_output}"
+	handleCommand "${compress} -cpf ${output_folder}/.${tarball_output}.compress . --xattrs-include='*.*' --numeric-owner" "Compressing system files to ${tarball_output}"
+	mv "${output_folder}/.${tarball_output}.compress" "${output_folder}/${tarball_output}"
 }
 
 function doChroot() {
