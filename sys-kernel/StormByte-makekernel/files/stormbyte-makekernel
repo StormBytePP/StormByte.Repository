@@ -4,8 +4,6 @@ source "/lib/StormByte/functions.sh"
 loadConfig
 
 version="1.0.0"
-current_dir=`pwd`
-arguments=("${@:1}")
 
 function header() {
 	echo "StormByte Make Kernel Version ${version}"
@@ -47,7 +45,7 @@ function doMake() {
 	if [ "${CLEAN_OLD}" = "yes" ]; then
 		handleCommand "rm -f `find . -maxdepth 1 -type f`" "Cleaning old kernel files"
 	fi
-	handleCommand "genkernel ${GENKERNEL_DEFAULT_OPTIONS} ${arguments} all" "Compiling kernel and initrd"
+	handleCommand "genkernel ${GENKERNEL_DEFAULT_OPTIONS} ${parameters[*]} all" "Compiling kernel and initrd"
 	if [ "${REBUILD_MODULES}" = "yes" ]; then
 		handleCommand "emerge @module-rebuild --ask n" "Rebuilding external modules"
 	fi
@@ -60,6 +58,7 @@ function doMake() {
 		handleCommand "grub-mkconfig -o /boot/grub/grub.cfg" "Configuring grub entries"
 	fi
 	if [ "${MOUNT_BOOT}" = "yes" ]; then
+		cd "${current_dir}"
 		handleCommand "mount -R /boot" "Unmounting boot"
 	fi
 }

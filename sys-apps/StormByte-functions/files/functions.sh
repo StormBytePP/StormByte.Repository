@@ -37,3 +37,4 @@ function loadConfig() {
 workdir="${0%/*}"
 self=`basename $0`
 parameters=("${@:1}")
+current_dir=`pwd`
