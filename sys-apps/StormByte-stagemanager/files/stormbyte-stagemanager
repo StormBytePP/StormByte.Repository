@@ -1,8 +1,19 @@
 #! /bin/bash
 
-source "/etc/conf.d/stormbyte-stagemanager.conf"
+# This script can run standalone if its config and functions are in its folder
+workdir="${0%/*}"
+if [ -f "${workdir}/functions.sh" ]; then
+	source "${workdir}/functions.sh"
+elif [ -f "/lib/StormByte/functions.sh" ]; then
+	source "/lib/StormByte/functions.sh"
+else
+	echo "Can't find functions.sh file in neither current directory neither /lib/StormByte"
+	exit 1
+fi
 
-version="2.1.3"
+loadConfig
+
+version="1.0.0"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -15,11 +26,13 @@ extract=""
 gtar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
 btar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
 xtar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
-command="$1"
-arguments=("${@:2}")
+command="${parameters[0]}"
 tmp_folder=""
 lockfile=""
 output_folder=""
+available_commands=(list use rebase convert export delete rename download help)
+available_compression_formats=( gzip bzip2 xz )
+available_compression_extensions=( tar.gz tgz tar.bz2 tbz2 tar.xz txz )
 
 function header() {
 	echo "StormByte Gentoo Stage Manager Version ${version}"
@@ -30,34 +43,87 @@ function header() {
 function usage() {
 	echo "This script will handle a gentoo chroot from a compressed tarball, it will mount all the needed points, chroot to it, clean, and make changes to compressed file again"
 	echo "Configuration is located in /etc/conf.d/stormbyte-stagemanager.conf"
-	echo "Usage is $0 <command> <arguments>"
-	echo "Where command is"
-	echo " * list - will list all usable files"
-	echo " * use <index> - Uses a filename from list (or its index) for chrooting"
-	echo " * rebase <index> <new_filename> - Same than above but it makes a copy first and will use that copy for chroot"
-	echo " * convert <index> <compression_format> - Converts to another compression format, accepted values are: gzip, bzip2 and xz"
-	echo " * export <index> <destination_folder> <compression_format> - Same than above but saving in a custom folder and adding YYYYmmdd to the filename"
-	echo " * delete <index> - Permanently deletes the file"
-	echo " * rename <index> <newname> - Renames the file"
-	echo " * help - Show this help message"
-	echo "See configuration file for more tweaking options"
+	echo "Usage is $self <command> <arguments>"
+	echo "Available commands are: ${available_commands[0]}"
+	echo "For more detailed help, use $self help <command> or $self help compression for more information about compression"
+	echo "See configuration file $config_file for more tweaking options"
 }
 
-function handleCommand() {
-	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
-	# Example
-	# handleCommand 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
-	echo -n "${2} ... "
-	eval $1 > /dev/null 2>&1
-	
-	if [ $? -eq 0 ]; then
-		echo "OK"
-	else
-		echo "ERROR in command '$1'"
-		cd "${current_folder}"
-		exit 1
-	fi
+function helpList() {
+	echo "Usage: $self list"
+	echo "This command will list the files in the folder specified which is ${TARBALL_FOLDER}, showing index number, size and filename."
+	echo "Use that index name to refer to the file in other commands"
 }
+
+function helpUse() {
+	echo "Usage: $self use <index>"
+	echo "This command will use file specified as index (see list command) for configuring and entering a chroot"
+}
+
+function helpRebase() {
+	echo "Usage: $self rebase <index> <new_file_name>"
+	echo "This command is similar to use command, but before entering chroot, it copies file specified from index (see list command) to destination folder set in $config under new_file_name."
+	echo "Compression method is determined by the extension, see $self help compression for more details"
+}
+
+function helpConvert() {
+	echo "Usage: $self convert <index> <compression_format>"
+	echo "This command will copy file specified by index and recompress to selected compression_format, an error will be raised if target filename determined by compression already exists"
+	echo "For more info about compression use $self help compression"
+}
+
+function helpExport() {
+	echo "Usage: $self export <index> <destination_folder> <compression_format>"
+	echo "This command is similar to convert, but it allows to specify a destination folder for the new file. This folder has to exist or an error will be raised"
+}
+
+function helpDelete() {
+	echo "Usage: $self delete <index>"
+	echo "This command will delete a file specified by its index (see list command)"
+}
+
+function helpRename() {
+	echo "Usage: $self rename <index> <new_file_name>"
+	echo "This command allows renaming a file specified by index (see list command) to a new_file_name under the same folder."
+}
+
+function helpCompression() {
+	echo "This utility uses compression for keeping storage of its files, some times, depending on the command, compression is determined by the file extension or by the name of the compressor algorithm"
+	echo "Available extensions are: ${available_compression_extensions[*]}"
+	echo "Available compression formats are: ${available_compression_formats[*]}"
+}
+
+function helpDownload() {
+	echo "Usage: $self download <arch> <profile>"
+	echo "This command will download a stage3 for selected arch and profile. If profile is not specified, a default one will be chosen"
+	echo "Available arches are i486, i686, amd64 and x32"
+	echo "Available profiles depends on selected arch:"
+	echo ""
+	echo "i486:"
+	echo "  * default"
+	echo ""
+	echo "i686:"
+	echo "  * default"
+	echo "  * hardened"
+	echo "  * systemd"
+	echo "  * uclibc-hardened"
+	echo "  * uclibc-vanilla"
+	echo ""
+	echo "amd64:"
+	echo "  * default (multilib)"
+	echo "  * hardened"
+	echo "  * nomultilib"
+	echo "  * systemd"
+	echo "  * hardened+nomultilib"
+	echo "  * hardened-selinux"
+	echo "  * hardened-selinux+nomultilib"
+	echo "  * uclibc-hardened"
+	echo "  * uclibc-vanilla"
+	echo ""
+	echo "x32:"
+	echo "  * default"
+}
+
 
 function checkVars() {
 	local errors=0
@@ -149,8 +215,8 @@ function setAndCheckFile() {
 	# If this received a parameter then will ignore selected index and will use the file provided in parameter
 	if [ "$#" -eq 0 ]; then
 		local re='^[0-9]+$'
-		if [[ ${arguments[0]} =~ $re ]] ; then
-			tarball_filename_fullpath="${file_list[${arguments[0]}]}"
+		if [[ ${parameters[1]} =~ $re ]] ; then
+			tarball_filename_fullpath="${file_list[${parameters[1]}]}"
 		else
 			echo "Parameter should be an integer for the index"
 			exit 1
@@ -283,7 +349,7 @@ function doUse() {
 
 function doConvert() {
 	setAndCheckFile
-	setCompression ${arguments[1]}
+	setCompression ${parameters[1]}
 	setDecompression ${tarball_extension}
 	doLock
 	createTMPFolder
@@ -296,9 +362,9 @@ function doConvert() {
 }
 
 function doExport() {
-	setOutputFolder "${arguments[1]}"
+	setOutputFolder "${parameters[1]}"
 	setAndCheckFile
-	setCompression ${arguments[2]}
+	setCompression ${parameters[2]}
 	setDecompression ${tarball_extension}
 	tarball_output="${tarball_output%.*}-`date +%Y%m%d`.${tarball_output##*.}"
 	if [ -f "${output_folder}/${tarball_output}" ]; then
@@ -330,21 +396,177 @@ function doDelete() {
 }
 
 function doRename() {
-	local new_filename=`basename "${arguments[1]}"`
+	local new_filename=`basename "${parameters[1]}"`
 	setAndCheckFile
 	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
 	doLock
-	handleCommand "mv '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}" "Renaming ${tarball} to ${new_filename}"
+	handleCommand "mv '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Renaming ${tarball} to ${new_filename}"
 	doUnlock
 }
 
 function doRebase() {
-	local new_filename=`basename "${arguments[1]}"`	
+	local new_filename=`basename "${parameters[1]}"`	
 	setAndCheckFile
 	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
 	handleCommand "cp '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Rebasing ${tarball} to ${new_filename}"
 	doUse "${TARBALL_FOLDER}/${new_filename}"
 }
+
+function checkDownloadParameters() {
+	arch="${parameters[1]}"
+	profile="${parameters[2]}"
+	profile_error=0
+	arch_error=0
+	if [ -z "${profile}" ]; then
+		profile="default"
+	fi
+	case "${arch}" in
+		i486)
+			stage_base_url="http://distfiles.gentoo.org/releases/x86/autobuilds"
+			case "${profile}" in
+				default)
+					stage_info_file="latest-stage3-i486.txt"
+					;;
+				*)
+					profile_error=1
+					;;
+			esac
+			;;
+		i686)
+			stage_base_url="http://distfiles.gentoo.org/releases/x86/autobuilds"
+			case "${profile}" in
+				default)
+					stage_info_file="latest-stage3-i686.txt"
+					;;
+				hardened)
+					stage_info_file="latest-stage3-i686-hardened.txt"
+					;;
+				systemd)
+					stage_info_file="latest-stage3-i686-systemd.txt"
+					;;
+				uclibc-hardened)
+					stage_info_file="latest-stage3-i686-uclibc-hardened.txt	"
+					;;
+				uclibc-vanilla)
+					stage_info_file="latest-stage3-i686-uclibc-vanilla.txt"
+					;;
+				*)
+					profile_error=1
+					;;
+			esac
+			;;
+		amd64)
+			stage_base_url="http://distfiles.gentoo.org/releases/amd64/autobuilds"
+			case "${profile}" in
+				default)
+					stage_info_file="latest-stage3-amd64.txt"
+					;;
+				hardened)
+					stage_info_file="latest-stage3-amd64-hardened.txt"
+					;;
+				nomultilib)
+					stage_info_file="latest-stage3-amd64-nomultilib.txt"
+					;;
+				systemd)
+					stage_info_file="latest-stage3-amd64-systemd.txt"
+					;;
+				hardened+nomultilib)
+					stage_info_file="latest-stage3-amd64-hardened+nomultilib.txt"
+					;;
+				hardened-selinux)
+					stage_info_file="latest-stage3-amd64-hardened-selinux.txt"
+					;;
+				hardened-selinux+nomultilib)
+					stage_info_file="latest-stage3-amd64-hardened-selinux+nomultilib.txt"
+					;;
+				uclibc-hardened)
+					stage_info_file="latest-stage3-amd64-uclibc-hardened.txt"
+					;;
+				uclibc-vanilla)
+					stage_info_file="latest-stage3-amd64-uclibc-vanilla.txt"
+					;;
+				*)
+					profile_error=1
+					;;
+			esac
+			;;
+		x32)
+			stage_base_url="http://distfiles.gentoo.org/releases/amd64/autobuilds"
+			case "${profile}" in
+				default)
+					stage_info_file="latest-stage3-x32.txt"
+					;;
+				*)
+					profile_error=1
+					;;
+			esac
+			;;
+		*)
+			arch_error=1
+			;;
+	esac
+
+	if [ "${arch_error}" -eq 1 ]; then
+		displayError "Arch '${arch}' is not available for download, consult $self help download"
+	fi
+	if [ "${profile_error}" -eq 1 ]; then
+		displayError "Profile '${profile}' is not available for arch '${arch}', consult $self help download"
+	fi		
+}
+
+function doDownload() {
+	arch="${parameters[1]}"
+	profile="${parameters[2]}"
+	if [ -z "${profile}" ]; then
+		profile="default"
+	fi
+
+	checkDownloadParameters
+	createTMPFolder
+	handleCommand "curl -o ${tmp_folder}/${stage_info_file} ${stage_base_url}/${stage_info_file}" "Downloading stage information"
+	stage_file="`sed -r -e 's/(^[^#]*$)/\1/g; /^#.*$/d;' ${tmp_folder}/${stage_info_file} | awk '{print $1}'`"
+	handleCommand "curl -o ${tmp_folder}/`basename ${stage_file}` ${stage_base_url}/${stage_file}" "Downloading `basename ${stage_file}`"
+	handleCommand "mv '${tmp_folder}/`basename ${stage_file}`' '${TARBALL_FOLDER}/`basename ${stage_file}`'" "Moving stage data from temporary folder"
+	deleteTMPFolder
+	echo "`basename ${stage_file}` downloaded to ${TARBALL_FOLDER}"
+}
+
+function doHelp() {
+
+	case "${parameters[1]}" in
+		list)
+			helpList
+			;;
+		use)
+			helpUse
+			;;
+		convert)
+			helpConvert
+			;;
+		export)
+			helpExport
+			;;
+		delete)
+			helpDelete
+			;;
+		rename)
+			helpRename
+			;;
+		rebase)
+			helpRebase
+			;;
+		download)
+			helpDownload
+			;;
+		compression)
+			helpCompression
+			;;
+		*)
+			usage
+			;;
+	esac
+}
+	
 
 function doInit() {
 	header
@@ -373,8 +595,11 @@ function doInit() {
 		rebase)
 			doRebase
 			;;
+		download)
+			doDownload
+			;;
 		help)
-			usage
+			doHelp
 			;;
 		*)
 			usage

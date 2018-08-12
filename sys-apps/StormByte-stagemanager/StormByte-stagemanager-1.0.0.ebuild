@@ -17,6 +17,8 @@ RDEPEND="
 	app-arch/pigz
 	app-arch/pbzip2
 	app-arch/pxz
+	app-arch/tar
+	net-misc/curl
 "
 DEPEND="${RDEPEND}
 "
