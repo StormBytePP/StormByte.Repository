@@ -1,7 +1,7 @@
 #! /bin/bash
 
 source "/lib/StormByte/functions.sh"
-source "/etc/conf.d/stormbyte-makekernel.conf"
+loadConfig
 
 version="1.0.0"
 current_dir=`pwd`
@@ -55,6 +55,12 @@ function doMake() {
 		cd "/usr/src/linux"
 		handleCommand "make clean && make modules_prepare" "Postcleaning kernel build"
 		cd "${current_dir}"
+	fi
+	if [ "${USE_GRUB_MKCONFIG}" = "yes" ]; then
+		handleCommand "grub-mkconfig -o /boot/grub/grub.cfg" "Configuring grub entries"
+	fi
+	if [ "${MOUNT_BOOT}" = "yes" ]; then
+		handleCommand "mount -R /boot" "Unmounting boot"
 	fi
 }
 
