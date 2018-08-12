@@ -349,7 +349,7 @@ function doUse() {
 
 function doConvert() {
 	setAndCheckFile
-	setCompression ${parameters[1]}
+	setCompression ${parameters[2]}
 	setDecompression ${tarball_extension}
 	doLock
 	createTMPFolder
@@ -362,9 +362,9 @@ function doConvert() {
 }
 
 function doExport() {
-	setOutputFolder "${parameters[1]}"
+	setOutputFolder "${parameters[2]}"
 	setAndCheckFile
-	setCompression ${parameters[2]}
+	setCompression ${parameters[3]}
 	setDecompression ${tarball_extension}
 	tarball_output="${tarball_output%.*}-`date +%Y%m%d`.${tarball_output##*.}"
 	if [ -f "${output_folder}/${tarball_output}" ]; then
@@ -396,7 +396,7 @@ function doDelete() {
 }
 
 function doRename() {
-	local new_filename=`basename "${parameters[1]}"`
+	local new_filename=`basename "${parameters[2]}"`
 	setAndCheckFile
 	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
 	doLock
@@ -405,7 +405,7 @@ function doRename() {
 }
 
 function doRebase() {
-	local new_filename=`basename "${parameters[1]}"`	
+	local new_filename=`basename "${parameters[2]}"`	
 	setAndCheckFile
 	checkFileCopy "${tarball_filename_fullpath}" "${new_filename}"
 	handleCommand "cp '${tarball_filename_fullpath}' '${TARBALL_FOLDER}/${new_filename}'" "Rebasing ${tarball} to ${new_filename}"
