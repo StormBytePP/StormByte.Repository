@@ -265,7 +265,7 @@ function deleteTMPFolder() {
 
 function mountTMPFS() {
 	mkdir -p "${tmp_folder}"
-	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder}" "Mounting tmpfs storage"
+	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder} -o nr_inodes=0" "Mounting tmpfs storage"
 }
 
 function unmountTMPFS() {
