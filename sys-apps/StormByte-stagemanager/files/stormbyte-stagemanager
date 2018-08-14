@@ -13,7 +13,7 @@ fi
 
 loadConfig
 
-version="1.0.0"
+version="1.0.1"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -313,7 +313,14 @@ function doList() {
 	echo -e "Index\tSize\t\tFile Name"
 	for i in "${!file_list[@]}"; do
 		tarball_filename=`basename ${file_list[$i]}`
-		echo -en "$i\t`ls -s --block-size=1048576 ${file_list[$i]} | cut -d' ' -f1` MiB\t\t${tarball_filename}"
+		local size=`ls -s --block-size=1048576 "${file_list[$i]}" | cut -d' ' -f1`
+		echo -en "$i\t${size} MiB"
+		if [ "${#size}" -gt 3 ]; then
+			echo -en "\t"
+		else
+			echo -en "\t\t"
+		fi
+		echo -n "${tarball_filename}"
 		if [ -f "/tmp/.${tarball_filename}.lock" ]; then
 			echo " (in use)"
 		else
