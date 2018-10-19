@@ -19,6 +19,7 @@ RDEPEND="
 	app-arch/pxz
 	app-arch/tar
 	net-misc/curl
+	sys-fs/btrfs-progs
 "
 DEPEND="${RDEPEND}
 "

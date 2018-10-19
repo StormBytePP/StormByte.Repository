@@ -13,7 +13,7 @@ fi
 
 loadConfig
 
-version="1.0.1"
+version="1.1.0"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -23,9 +23,9 @@ tarball=""
 tarball_output=""
 compress=""
 extract=""
-gtar="tar -I 'pigz -${COMPRESSION_LEVEL}'"
-btar="tar -I 'pbzip2 -${COMPRESSION_LEVEL}'"
-xtar="tar -I 'pxz -${COMPRESSION_LEVEL}eT0'"
+gtar="tar -I 'pigz -9'"
+btar="tar -I 'pbzip2 -9'"
+xtar="tar -I 'pxz -9eT0'"
 command="${parameters[0]}"
 tmp_folder=""
 lockfile=""
@@ -131,14 +131,17 @@ function helpCopy() {
 
 function checkVars() {
 	local errors=0
-	local re='^[1-9]$' # For checking compression level
-	if [ -z "${COMPRESSION_LEVEL}" ] || ! [[ "${COMPRESSION_LEVEL}" =~ $re ]]; then
-		echo "COMPRESSION_LEVEL is either empty or invalid, check if it is in a range between 1 and 9!"
+	if [ -z "${STORAGE_SYSTEM}" ] || [ "${STORAGE_SYSTEM}" != "zram" ] && [ "${STORAGE_SYSTEM}" != "tmpfs" ] && [ "${STORAGE_SYSTEM}" != "folder" ]; then
+		echo "STORAGE_SYSTEM variable is not set, is empty or contains an invalid value!"
 		errors=1
 	fi
-	if [ -z "${TMPFS_SIZE}" ]; then
-		echo "TMPFS_SIZE variable is not set or empty!"
-		errors=1
+	# We only check for STORAGE_SIZE if zram or tmpfs is set to be used
+	if [ "${STORAGE_SYSTEM}" = "zram" ] || [ "${STORAGE_SYSTEM}" = "tmpfs" ]; then
+		local re="^[0-9]+[MG]$" # For checking storage size
+		if ! [[ "${STORAGE_SIZE}" =~ $re ]]; then
+			echo "STORAGE_SIZE is either empty or invalid, check if its value is correct!"
+			errors=1
+		fi
 	fi
 	if [ -z "${TARBALL_FOLDER}" ]; then
 		echo "TARBALL_FOLDER variable is not set or empty!"
@@ -267,9 +270,60 @@ function deleteTMPFolder() {
 	handleCommand "rm -Rf ${tmp_folder}" "Deleting temporary folder"
 }
 
+function mountTEMP() {
+	case "${STORAGE_SYSTEM}" in
+		folder)
+			mountFOLDER
+			;;
+		tmpfs)
+			mountTMPFS
+			;;
+		zram)
+			mountZRAM
+			;;
+	esac
+}
+
+function unmountTEMP() {
+	case "${STORAGE_SYSTEM}" in
+		folder)
+			unmountFOLDER
+			;;
+		tmpfs)
+			unmountTMPFS
+			;;
+		zram)
+			unmountZRAM
+			;;
+	esac
+}
+
+function mountFOLDER() {
+	mkdir -p "${tmp_folder}"
+}
+
+function mountZRAM() {
+	mkdir -p "${tmp_folder}"
+	handleCommand "echo 1 > /sys/block/zram0/reset" "Resetting ZRAM..."
+	handleCommand "echo '${STORAGE_SIZE}' > /sys/block/zram0/disksize" "Setting ZRAM size to ${STORAGE_SIZE}..."
+	handleCommand "mkfs.btrfs /dev/zram0" "Initializing ZRAM with btrfs..."
+	handleCommand "mount /dev/zram0 '${tmp_folder}' -o nodatacow,compress=lzo" "Mounting ZRAM storage"
+}
+
 function mountTMPFS() {
 	mkdir -p "${tmp_folder}"
 	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder} -o nr_inodes=0" "Mounting tmpfs storage"
+}
+
+function unmountFOLDER() {
+	cd "${current_folder}"
+	# This is a NO OP function as it will be just deleted later
+}
+
+function unmountZRAM() {
+	cd "${current_folder}"
+	handleCommand "umount -R ${tmp_folder}" "Unmounting ZRAM storage"
+	handleCommand "echo 1 > /sys/block/zram0/reset" "Deactivating ZRAM..."
 }
 
 function unmountTMPFS() {
@@ -347,13 +401,13 @@ function doUse() {
 	setAndCheckFile "$@"
 	doLock
 	createTMPFolder
-	mountTMPFS
+	mountTEMP
 	extractArchive
 	mountSystem
 	doChroot
 	unmountSystem
 	saveChanges
-	unmountTMPFS
+	unmountTEMP
 	deleteTMPFolder
 	doUnlock
 }
@@ -364,10 +418,10 @@ function doConvert() {
 	setDecompression ${tarball_extension}
 	doLock
 	createTMPFolder
-	mountTMPFS
+	mountTEMP
 	extractArchive
 	compressArchive
-	unmountTMPFS
+	unmountTEMP
 	deleteTMPFolder
 	doUnlock
 }
@@ -391,10 +445,10 @@ function doExport() {
 	fi
 	doLock
 	createTMPFolder
-	mountTMPFS
+	mountTEMP
 	extractArchive
 	compressArchive
-	unmountTMPFS
+	unmountTEMP
 	deleteTMPFolder
 	doUnlock
 }
