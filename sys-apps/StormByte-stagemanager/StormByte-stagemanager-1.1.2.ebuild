@@ -5,7 +5,7 @@ EAPI=7
 
 DESCRIPTION="StormByte's Stage Manager"
 HOMEPAGE="https://blog.stormbyte.org"
-SRC_URI=""
+SRC_URI="https://github.com/StormBytePP/StormByte-stagemanager/archive/${PV}.tar.gz"
 
 SLOT="0"
 KEYWORDS="amd64 x86"
@@ -25,13 +25,8 @@ RDEPEND="
 DEPEND="${RDEPEND}
 "
 
-src_unpack() {
-	#Since there are no downloaded files, this is dummy to prevent folder not exist error
-	mkdir "${S}"
-}
-
 src_install() {
-	dobin "${FILESDIR}/stormbyte-stagemanager"
-	doconfd "${FILESDIR}/stormbyte-stagemanager.conf"
+	dobin "${S}/stormbyte-stagemanager"
+	doconfd "${S}/stormbyte-stagemanager.conf"
 }
 
