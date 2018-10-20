@@ -13,7 +13,7 @@ fi
 
 loadConfig
 
-version="1.1.0"
+version="1.1.1"
 current_folder=`pwd`
 file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
 tarball_filename_fullpath=""
@@ -312,7 +312,7 @@ function mountZRAM() {
 
 function mountTMPFS() {
 	mkdir -p "${tmp_folder}"
-	handleCommand "mount -t tmpfs -o size=${TMPFS_SIZE} tmpfs ${tmp_folder} -o nr_inodes=0" "Mounting tmpfs storage"
+	handleCommand "mount -t tmpfs -o size=${STORAGE_SIZE} tmpfs ${tmp_folder} -o nr_inodes=0" "Mounting tmpfs storage"
 }
 
 function unmountFOLDER() {
