@@ -13,9 +13,9 @@ fi
 
 loadConfig
 
-version="1.1.1"
+version="1.1.2"
 current_folder=`pwd`
-file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" \)`)
+file_list=(`find "${TARBALL_FOLDER}" -type f \( -iname "*.tar.gz" -o -iname "*.tgz" -o -iname "*.tar.bz2" -o -iname "*.tbz2" -o -iname "*.tar.xz" -o -iname "*.txz" -o -iname "*.tar.zstd" -o -iname "*.tzd" \)`)
 tarball_filename_fullpath=""
 tarball_filename=""
 tarball_extension=""
@@ -26,13 +26,14 @@ extract=""
 gtar="tar -I 'pigz -9'"
 btar="tar -I 'pbzip2 -9'"
 xtar="tar -I 'pxz -9eT0'"
+zdtar="tar -I 'pzstd -19 -q'"
 command="${parameters[0]}"
 tmp_folder=""
 lockfile=""
 output_folder=""
 available_commands=(list use rebase convert export delete rename download copy help)
-available_compression_formats=( gzip bzip2 xz )
-available_compression_extensions=( tar.gz tgz tar.bz2 tbz2 tar.xz txz )
+available_compression_formats=( gzip bzip2 xz zstd )
+available_compression_extensions=( tar.gz tgz tar.bz2 tbz2 tar.xz txz tar.zstd tzd )
 
 function header() {
 	echo "StormByte Gentoo Stage Manager Version ${version}"
@@ -178,6 +179,10 @@ function setDecompression() {
 			extract=${xtar}
 			;;
 
+		tar.zstd|tzd|zstd)
+			extract=${zdtar}
+			;;
+
 		*)
 			echo "Error: compression method $1 unknown"
 			exit 1
@@ -200,6 +205,11 @@ function setCompression() {
 		tar.xz|txz|xz)
 			compress=${xtar}
 			tarball_output="${tarball_filename}.txz"
+			;;
+
+		tar.zstd|tzd|zstd)
+			compress=${zdtar}
+			tarball_output="${tarball_filename}.tzd"
 			;;
 
 		*)
@@ -307,7 +317,7 @@ function mountZRAM() {
 	handleCommand "echo 1 > /sys/block/zram0/reset" "Resetting ZRAM..."
 	handleCommand "echo '${STORAGE_SIZE}' > /sys/block/zram0/disksize" "Setting ZRAM size to ${STORAGE_SIZE}..."
 	handleCommand "mkfs.btrfs /dev/zram0" "Initializing ZRAM with btrfs..."
-	handleCommand "mount /dev/zram0 '${tmp_folder}' -o nodatacow,compress=lzo" "Mounting ZRAM storage"
+	handleCommand "mount /dev/zram0 '${tmp_folder}' -o noatime,compress=zstd" "Mounting ZRAM storage"
 }
 
 function mountTMPFS() {

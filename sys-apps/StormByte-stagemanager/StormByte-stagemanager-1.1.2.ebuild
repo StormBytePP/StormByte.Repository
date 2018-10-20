@@ -17,6 +17,7 @@ RDEPEND="
 	app-arch/pigz
 	app-arch/pbzip2
 	app-arch/pxz
+	app-arch/zstd
 	app-arch/tar
 	net-misc/curl
 	sys-fs/btrfs-progs
