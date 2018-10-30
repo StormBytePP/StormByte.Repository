@@ -31,6 +31,7 @@ DEPEND="
 	dev-libs/nss
 	sys-apps/pciutils
 	x11-libs/gtk+:3
+	virtual/krb5
 "
 RDEPEND="${DEPEND}"
 
