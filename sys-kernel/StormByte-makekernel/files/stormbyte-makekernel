@@ -3,7 +3,7 @@
 source "/lib/StormByte/functions.sh"
 loadConfig
 
-version="1.0.1"
+version="1.1.0"
 
 function header() {
 	echo "StormByte Make Kernel Version ${version}"
@@ -33,6 +33,10 @@ function checkVars() {
 		echo "REBUILD_MODULES variable is not set or contains invalid value (accepted values are yes or no)!"
 		errors=1
 	fi
+	if [ -z "${RECOMPRESS_BTRFS_LZO}" ] || ([ "${RECOMPRESS_BTRFS_LZO}" != "yes" ] && [ "${RECOMPRESS_BTRFS_LZO}" != "no" ]); then
+		echo "RECOMPRESS_BTRFS_LZO variable is not set or contains invalid value (accepted values are yes or no)!"
+		errors=1
+	fi
 	if [ "${errors}" -eq 1 ]; then
 		exit 1
 	fi
@@ -56,6 +60,9 @@ function doMake() {
 	fi
 	if [ "${USE_GRUB_MKCONFIG}" = "yes" ]; then
 		handleCommand "grub-mkconfig -o /boot/grub/grub.cfg" "Configuring grub entries"
+	fi
+	if [ "${RECOMPRESS_BTRFS_LZO}" = "yes" ]; then
+		handleCommand "btrfs filesystem defragment -r -clzo /boot/*" "Recompressing boot data to lzo"
 	fi
 	if [ "${MOUNT_BOOT}" = "yes" ]; then
 		cd "${current_dir}"
