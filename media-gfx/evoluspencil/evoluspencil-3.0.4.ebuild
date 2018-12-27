@@ -25,7 +25,7 @@ S=${WORKDIR}/${MY_P}
 
 src_unpack() {
 	# convert first to tgz package
-	alien --to-tgz "${DISTDIR}/${A}" || die "Can't convert deb package via alien!"
+	alien --to-tgz "${DISTDIR}/${A}" > /dev/null 2>&1 || die "Can't convert deb package via alien!"
 	A="pencil-${PV}.tgz"
 	mkdir -p ${S}
 	cd ${S}
