@@ -1,0 +1,8 @@
+#Put your game root folder here
+ROOT="/warehouse"
+
+#Put port here
+PORT="38008"
+
+#Put white list here in the form of IP or wildcard example: 192.168.1.*
+WHITELIST="192.168.1.*"
