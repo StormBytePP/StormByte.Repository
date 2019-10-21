@@ -36,7 +36,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
-IUSE="debug default-compiler-rt default-libcxx doc +static-analyzer polly
+IUSE="debug default-compiler-rt default-libcxx doc +static-analyzer polly -lto
 	test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
@@ -160,6 +160,9 @@ multilib_src_configure() {
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
 		-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
+	)
+	use lto && mycmakeargs+=(
+		-DLLVM_ENABLE_LTO=ON
 	)
 
 	if multilib_is_native_abi; then
