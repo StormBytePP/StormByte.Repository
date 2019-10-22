@@ -162,7 +162,7 @@ multilib_src_configure() {
 		-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 	)
 	use lto && mycmakeargs+=(
-		-DLLVM_ENABLE_LTO=ON
+		-DLLVM_ENABLE_LTO=Thin
 	)
 
 	if multilib_is_native_abi; then

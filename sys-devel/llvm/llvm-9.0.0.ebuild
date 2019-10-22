@@ -205,7 +205,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_PROJECTS='polly'
 	)
 	use lto && mycmakeargs+=(
-		-DLLVM_ENABLE_LTO=ON
+		-DLLVM_ENABLE_LTO=Thin
 	)
 
 	if tc-is-cross-compiler; then
