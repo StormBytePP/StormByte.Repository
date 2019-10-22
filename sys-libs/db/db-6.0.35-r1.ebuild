@@ -154,6 +154,9 @@ multilib_src_configure() {
 	# See Gentoo bug #605688
 	ECONF_SOURCE="${S_BASE}"/dist \
 	STRIP="true" \
+	
+	# Disable DBM for CLang and LibC++
+	tc-is-clang && myconf+=(--disable-dbm)
 	econf \
 		--enable-compat185 \
 		--enable-dbm \
