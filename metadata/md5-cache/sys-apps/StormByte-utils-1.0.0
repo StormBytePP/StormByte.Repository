@@ -1,0 +1,9 @@
+DEFINED_PHASES=install unpack
+DEPEND=sys-apps/findutils
+DESCRIPTION=StormByte's utils
+EAPI=7
+HOMEPAGE=https://blog.stormbyte.org
+KEYWORDS=amd64 x86
+RDEPEND=sys-apps/findutils
+SLOT=0
+_md5_=db8e7cf7a1ff88db92d4a04f44aa06da

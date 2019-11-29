@@ -1,0 +1,13 @@
+DEFINED_PHASES=install setup
+DEPEND=>=gnome-base/gconf-3.2.6-r4:2 >=media-libs/libpng-1.2.46:0 >=x11-libs/cairo-1.14.12:0 >=x11-libs/gtk+-2.24.31-r1:2 >=x11-libs/libXtst-1.2.3:0
+DESCRIPTION=Multiplatform Visual Studio Code from Microsoft
+EAPI=7
+HOMEPAGE=https://code.visualstudio.com
+KEYWORDS=~amd64
+LICENSE=MIT
+RDEPEND=>=gnome-base/gconf-3.2.6-r4:2 >=media-libs/libpng-1.2.46:0 >=x11-libs/cairo-1.14.12:0 >=x11-libs/gtk+-2.24.31-r1:2 >=x11-libs/libXtst-1.2.3:0 >=app-crypt/libsecret-0.18.5:0[crypt] >=net-print/cups-2.1.4:0 >=x11-libs/libnotify-0.7.7:0 >=x11-libs/libXScrnSaver-1.2.2-r1:0
+RESTRICT=mirror strip bindist
+SLOT=0
+SRC_URI=https://vscode-update.azurewebsites.net/1.38.0/linux-x64/stable -> visual-studio-code-1.38.0-amd64.tar.gz
+_eclasses_=desktop	b1d22ac8bdd4679ab79c71aca235009d	eutils	fcb2aa98e1948b835b5ae66ca52868c5
+_md5_=7dedd8064955711cde95dab29e9c513a

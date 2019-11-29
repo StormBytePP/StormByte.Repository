@@ -1,0 +1,113 @@
+--- a/kernel/common/inc/nv-linux.h	2019-11-03 19:00:22.808470936 +0100
++++ b/kernel/common/inc/nv-linux.h	2019-11-03 19:00:53.119471688 +0100
+@@ -127,7 +127,7 @@
+ #include <linux/pm_runtime.h>       /* pm_runtime_*                     */
+ 
+ #include <asm/div64.h>              /* do_div()                         */
+-#if defined(NV_ASM_SYSTEM_H_PRESENT)
++#if 0
+ #include <asm/system.h>             /* cli, sli, save_flags             */
+ #endif
+ #include <asm/io.h>                 /* ioremap, virt_to_phys            */
+--- a/kernel/nvidia-uvm/uvm_linux.h	2019-11-03 19:06:49.302480520 +0100
++++ b/kernel/nvidia-uvm/uvm_linux.h	2019-11-03 19:07:38.719481745 +0100
+@@ -76,7 +76,7 @@
+ #include <linux/ratelimit.h>
+ #endif
+ 
+-#if defined(NV_PNV_NPU2_INIT_CONTEXT_PRESENT)
++#if 0
+ #include <asm/powernv.h>
+ #endif
+ 
+--- a/kernel/nvidia-drm/nvidia-dma-fence-helper.h	2019-11-03 19:30:46.432516154 +0100
++++ b/kernel/nvidia-drm/nvidia-dma-fence-helper.h	2019-11-03 19:32:29.057518699 +0100
+@@ -34,7 +34,7 @@
+  *      2016-10-25 : f54d1867005c3323f5d8ad83eed823e84226c429
+  */
+ 
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+ #include <linux/fence.h>
+ #else
+ #include <linux/dma-fence.h>
+@@ -42,7 +42,7 @@
+ 
+ #include <linux/reservation.h>
+ 
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+ typedef struct fence nv_dma_fence_t;
+ typedef struct fence_ops nv_dma_fence_ops_t;
+ #else
+@@ -50,14 +50,14 @@
+ typedef struct dma_fence_ops nv_dma_fence_ops_t;
+ #endif
+ 
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+ #define NV_DMA_FENCE_FLAG_ENABLE_SIGNAL_BIT FENCE_FLAG_ENABLE_SIGNAL_BIT
+ #else
+ #define NV_DMA_FENCE_FLAG_ENABLE_SIGNAL_BIT DMA_FENCE_FLAG_ENABLE_SIGNAL_BIT
+ #endif
+ 
+ static inline bool nv_dma_fence_is_signaled(nv_dma_fence_t *fence) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     return fence_is_signaled(fence);
+ #else
+     return dma_fence_is_signaled(fence);
+@@ -66,7 +66,7 @@
+ 
+ static inline nv_dma_fence_t *nv_dma_fence_get(nv_dma_fence_t *fence)
+ {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     return fence_get(fence);
+ #else
+     return dma_fence_get(fence);
+@@ -74,7 +74,7 @@
+ }
+ 
+ static inline void nv_dma_fence_put(nv_dma_fence_t *fence) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     fence_put(fence);
+ #else
+     dma_fence_put(fence);
+@@ -84,7 +84,7 @@
+ static inline signed long
+ nv_dma_fence_default_wait(nv_dma_fence_t *fence,
+                           bool intr, signed long timeout) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     return fence_default_wait(fence, intr, timeout);
+ #else
+     return dma_fence_default_wait(fence, intr, timeout);
+@@ -92,7 +92,7 @@
+ }
+ 
+ static inline int nv_dma_fence_signal(nv_dma_fence_t *fence) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     return fence_signal(fence);
+ #else
+     return dma_fence_signal(fence);
+@@ -100,7 +100,7 @@
+ }
+ 
+ static inline u64 nv_dma_fence_context_alloc(unsigned num) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     return fence_context_alloc(num);
+ #else
+     return dma_fence_context_alloc(num);
+@@ -111,7 +111,7 @@
+ nv_dma_fence_init(nv_dma_fence_t *fence,
+                   const nv_dma_fence_ops_t *ops,
+                   spinlock_t *lock, u64 context, unsigned seqno) {
+-#if defined(NV_LINUX_FENCE_H_PRESENT)
++#if 0
+     fence_init(fence, ops, lock, context, seqno);
+ #else
+     dma_fence_init(fence, ops, lock, context, seqno);

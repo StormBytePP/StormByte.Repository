@@ -1,0 +1,10 @@
+DEFINED_PHASES=compile install unpack
+DEPEND=sys-libs/libcxx sys-devel/clang >=dev-vcs/git-1.8.2.1[curl]
+DESCRIPTION=XXXXX
+EAPI=6
+HOMEPAGE=XXXXX
+LICENSE=LGPL-2.1
+PROPERTIES=live
+SLOT=9999
+_eclasses_=git-r3	562b380fc59ae6a8622171d0acb777d1
+_md5_=7c9f3982bb44cd3a4dc5c116f9331c3e
