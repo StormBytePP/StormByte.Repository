@@ -8,7 +8,7 @@ inherit eutils unpacker
 
 DESCRIPTION="Additional proprietary codecs for opera"
 HOMEPAGE="http://ffmpeg.org/"
-SRC_URI="http://security.ubuntu.com/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${PV}-0ubuntu0.18.04.1_amd64.deb"
+SRC_URI="http://security.ubuntu.com/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${PV}-0ubuntu0.19.04.1_amd64.deb"
 
 LICENSE="LGPL2.1"
 SLOT="0"
