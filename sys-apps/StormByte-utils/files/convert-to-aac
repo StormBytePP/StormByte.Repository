@@ -1,0 +1,25 @@
+#! /bin/bash
+
+# Version 1.0
+
+if [[ $# -ne 2 ]]; then
+    echo "It should be used with 2 parameters: first source folder, second destination folder"
+    exit 1
+fi
+
+current_folder=`pwd`
+cd $1
+extensions=(ogg flac wma aac mp3)
+
+for extension in ${extensions[*]}; do
+	echo "Converting from $extension"
+	file_count=`find . -type f -name "*.$extension" 2> /dev/null | wc -l`
+	find . -type f -name "*.$extension" | parallel "echo \"{#}/$file_count\" && ffmpeg -y -i {} -c:v copy -c:a libfdk_aac -vbr 3 $2/{.}.m4a &> /dev/null"
+done
+cd "$current_folder"
+echo
+echo "============================================="
+echo "|               Process done!               |"
+echo "============================================="
+
+

@@ -13,6 +13,7 @@ IUSE=""
 
 RDEPEND="
 	sys-apps/findutils
+	sys-process/parallel
 "
 DEPEND="${RDEPEND}
 "
@@ -23,6 +24,8 @@ src_unpack() {
 }
 
 src_install() {
-	dobin "${FILESDIR}/stormbyte-findcontent"
+	for i in ${FILESDIR}/*; do
+		dobin "$i"
+	done
 }
 
