@@ -23,14 +23,13 @@ current_folder=`pwd`
 cd "$source_folder"
 
 echo "Creating folders..."
-find . -not -empty -type d | parallel --bar "mkdir -p \"$destination_folder\"/{}"
+folder_count=`find . -type d | wc -l`
+
+find . -type d | parallel --bar "mkdir -p \"$destination_folder\"/{}"
 echo -e "\033[2A \033[2K\rCreating folders... OK"
 echo -e "\033[2K\rReencoding..."
-find . -type f -regextype posix-extended -regex '.*\.(mp3|ogg|flac|wma|aac|wav|m4a|mp4|mkv)$' | parallel --bar "ffmpeg -y -i {} -map 0 -c:v copy -c:a flac -f flac - 2> /dev/null | opusenc --vbr - \"$destination_folder\"/{.}.opus &> /dev/null $delete_code"
+find . -type f -regextype posix-extended -regex '.*\.(mp3|ogg|flac|wma|aac|wav|m4a|mp4|mkv|opus)$' | parallel --bar "ffmpeg -y -i {} -map 0 -c:v copy -c:a flac -f flac - 2> /dev/null | opusenc --vbr - \"$destination_folder\"/{.}.ogg &> /dev/null $delete_code"
 echo -e "\033[2A \033[2K\rReencoding... OK"
-echo -e "\033[2K\rCopying source opus files (not reencoded)..."
-find . -type f -iname '*.opus' | parallel --bar "cp {} \"$destination_folder\"/{}"
-echo -e "\033[2A \033[2K \rCopying source opus files (not reencoded)... OK"
 
 cd "$current_folder"
 
