@@ -14,7 +14,6 @@ IUSE=""
 RDEPEND="
 	sys-apps/findutils
 	sys-process/parallel
-	media-sound/opus-tools[flac]
 	media-video/ffmpeg
 "
 DEPEND="${RDEPEND}
