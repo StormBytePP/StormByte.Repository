@@ -294,7 +294,6 @@ multilib_src_configure() {
 	)
 	use polly && mycmakeargs+=(
 			-DLLVM_ENABLE_PROJECTS='polly'
-			-DPOLLY_BUNDLED_ISL=OFF
 	)
 
 	if is_libcxx_linked; then
