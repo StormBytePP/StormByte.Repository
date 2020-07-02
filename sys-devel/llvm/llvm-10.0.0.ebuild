@@ -85,6 +85,11 @@ python_check_deps() {
 }
 
 src_unpack() {
+	if use polly; then
+		LLVM_COMPONENTS+=(
+			polly
+		)
+	fi
 	llvm.org_src_unpack
 
 	if ! use doc; then
@@ -239,9 +244,6 @@ get_distribution_components() {
 }
 
 multilib_src_configure() {
-	if use polly; then
-		LLVM_COMPONENTS+=(polly)
-	fi
 	local ffi_cflags ffi_ldflags
 	if use libffi; then
 		ffi_cflags=$($(tc-getPKG_CONFIG) --cflags-only-I libffi)
@@ -287,6 +289,11 @@ multilib_src_configure() {
 		# disable OCaml bindings (now in dev-ml/llvm-ocaml)
 		-DOCAMLFIND=NO
 	)
+	if use polly; then
+		mycmakeargs+=(
+			-DLLVM_ENABLE_PROJECTS='polly'
+		)
+	fi
 
 	if is_libcxx_linked; then
 		# Smart hack: alter version suffix -> SOVERSION when linking
