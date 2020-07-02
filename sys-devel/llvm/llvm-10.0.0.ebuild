@@ -11,7 +11,8 @@ MANPAGE_P=llvm-10.0.0-manpages
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
 SRC_URI="
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${MANPAGE_P}.tar.bz2 )"
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${MANPAGE_P}.tar.bz2 )
+"
 LLVM_COMPONENTS=( llvm )
 llvm.org_set_globals
 
@@ -51,7 +52,8 @@ RDEPEND="
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
 	xar? ( app-arch/xar )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
-	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )"
+	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )
+	polly? ( dev-libs/isl )"
 DEPEND="${RDEPEND}
 	gold? ( sys-libs/binutils-libs )"
 BDEPEND="
@@ -85,11 +87,10 @@ python_check_deps() {
 }
 
 src_unpack() {
-	if use polly; then
-		LLVM_COMPONENTS+=(
-			polly
-		)
+	if use polly ; then
+		LLVM_COMPONENTS+=( polly )
 	fi
+
 	llvm.org_src_unpack
 
 	if ! use doc; then
@@ -147,6 +148,8 @@ get_distribution_components() {
 		LLVMSupport
 		LLVMTableGen
 	)
+
+	use polly && out+=(Polly)
 
 	if multilib_is_native_abi; then
 		out+=(
@@ -289,11 +292,9 @@ multilib_src_configure() {
 		# disable OCaml bindings (now in dev-ml/llvm-ocaml)
 		-DOCAMLFIND=NO
 	)
-	if use polly; then
-		mycmakeargs+=(
+	use polly && mycmakeargs+=(
 			-DLLVM_ENABLE_PROJECTS='polly'
-		)
-	fi
+	)
 
 	if is_libcxx_linked; then
 		# Smart hack: alter version suffix -> SOVERSION when linking
