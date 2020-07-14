@@ -2,13 +2,13 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=7
 
 inherit eutils unpacker
 
 DESCRIPTION="Additional proprietary codecs for opera"
 HOMEPAGE="http://ffmpeg.org/"
-SRC_URI="http://security.ubuntu.com/ubuntu/pool/universe/c/chromium-browser/chromium-codecs-ffmpeg-extra_${PV}-0ubuntu1_amd64.deb"
+SRC_URI="https://ftp5.gwdg.de/pub/linux/archlinux/community/os/x86_64/opera-ffmpeg-codecs-83.0.4103.116-1-x86_64.pkg.tar.zst"
 
 LICENSE="LGPL2.1"
 SLOT="0"
@@ -22,20 +22,8 @@ RESTRICT="mirror strip"
 
 S="${WORKDIR}"
 
-src_unpack() {
-	unpack_deb ${A}
-}
-
-src_prepare() {
-	:
-}
-
-src_compile() {
-	:
-}
-
 src_install() {
-	dodir usr/$(get_libdir)/opera/lib_extra
-	insinto usr/$(get_libdir)/opera/lib_extra
-	doins ${S}/usr/lib/chromium-browser/libffmpeg.so
+	cd "${S}"
+	cp -R * "${D}"
 }
+
