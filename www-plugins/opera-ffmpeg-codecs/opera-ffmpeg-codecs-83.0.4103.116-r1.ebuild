@@ -25,5 +25,6 @@ S="${WORKDIR}"
 src_install() {
 	cd "${S}"
 	cp -R * "${D}"
+	mv "${D}/usr/lib" "${D}/usr/lib64"
 }
 
