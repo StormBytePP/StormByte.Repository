@@ -211,7 +211,7 @@ src_configure() {
 	fi
 
 	rust_target="$(rust_abi)"
-	local llvm_libunwind="false"
+	llvm_libunwind="false"
 	if tc-is-clang; then
 		local compiler_rt=$($(tc-getCC) ${CPPFLAGS} ${CFLAGS} ${LDFLAGS} -print-libgcc-file-name)
 		if [[ ${compiler_rt} == *libclang_rt* ]]; then
@@ -275,7 +275,7 @@ src_configure() {
 		lld = $(usex system-llvm false $(toml_usex wasm))
 		backtrace-on-ice = true
 		jemalloc = false
-		llvm-libunwind = $(llvm_libunwind)
+		llvm-libunwind = ${llvm_libunwind}
 		[dist]
 		src-tarball = false
 	EOF
