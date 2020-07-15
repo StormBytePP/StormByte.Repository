@@ -455,9 +455,9 @@ src_install() {
 	fi
 
 	dodoc COPYRIGHT
-	rm "${ED}/usr/share/doc/${P}"/*.old || die
-	rm "${ED}/usr/share/doc/${P}/LICENSE-APACHE" || die
-	rm "${ED}/usr/share/doc/${P}/LICENSE-MIT" || die
+	rm -f "${ED}/usr/share/doc/${P}"/*.old || die
+	rm -f "${ED}/usr/share/doc/${P}/LICENSE-APACHE" || die
+	rm -f "${ED}/usr/share/doc/${P}/LICENSE-MIT" || die
 
 	# note: eselect-rust adds EROOT to all paths below
 	cat <<-EOF > "${T}/provider-${P}"
