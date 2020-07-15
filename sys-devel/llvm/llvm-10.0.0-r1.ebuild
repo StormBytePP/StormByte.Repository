@@ -291,6 +291,7 @@ multilib_src_configure() {
 		# Smart hack: alter version suffix -> SOVERSION when linking
 		# against libc++. This way we won't end up mixing LLVM libc++
 		# libraries with libstdc++ clang, and the other way around.
+		einfo "Linking with libc++"
 		mycmakeargs+=(
 			-DLLVM_VERSION_SUFFIX="libcxx"
 		)
@@ -300,10 +301,12 @@ multilib_src_configure() {
 		local compiler_rt=$($(tc-getCC) ${CPPFLAGS} ${CFLAGS} ${LDFLAGS} -print-libgcc-file-name)
 		if [[ ${compiler_rt} == *libclang_rt* ]]; then
 			if has_version sys-libs/llvm-libunwind; then
+				einfo "Linking with llvm-libunwind"
 				mycmakeargs+=(
 					-DUNWIND_LIBRARIES=unwind
 				)
 			else
+				einfo "Linking with gcc_s unwinder"
 				mycmakeargs+=(
 					-DUNWIND_LIBRARIES=gcc_s
 				)
