@@ -8,7 +8,7 @@ inherit eutils unpacker
 
 DESCRIPTION="Additional proprietary codecs for opera"
 HOMEPAGE="http://ffmpeg.org/"
-SRC_URI="https://ftp5.gwdg.de/pub/linux/archlinux/community/os/x86_64/opera-ffmpeg-codecs-83.0.4103.116-1-x86_64.pkg.tar.zst"
+SRC_URI="https://ftp5.gwdg.de/pub/linux/archlinux/community/os/x86_64/opera-ffmpeg-codecs-84.0.4147.135-1-x86_64.pkg.tar.zst"
 
 LICENSE="LGPL2.1"
 SLOT="0"
