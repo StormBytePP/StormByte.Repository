@@ -21,6 +21,7 @@ RDEPEND="
 	app-arch/tar
 	net-misc/curl
 	sys-fs/btrfs-progs
+	sys-apps/pv
 "
 DEPEND="${RDEPEND}
 "
