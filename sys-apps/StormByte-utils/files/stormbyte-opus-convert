@@ -28,7 +28,7 @@ folder_count=`find . -type d | wc -l`
 find . -type d | parallel --bar "mkdir -p \"$destination_folder\"/{}"
 echo -e "\033[2A \033[2K\rCreating folders... OK"
 echo -e "\033[2K\rReencoding..."
-find . -type f -regextype posix-extended -regex '.*\.(mp2|mp3|ogg|flac|wma|aac|wav|m4a|mp4|mkv|opus|mpeg)$' | parallel --bar "ffmpeg -y -i {} -vn -c:a libopus -vbr on \"$destination_folder\"/{.}.ogg &> /dev/null $delete_code"
+find . -type f -regextype posix-extended -regex '.*\.(mp2|mp3|ogg|flac|wma|aac|wav|m4a|mp4|mkv|opus|mpeg)$' | parallel --bar "ffmpeg -y -i {} -vn -c:a libopus -vbr on \"$destination_folder\"/{.}.opus &> /dev/null $delete_code"
 echo -e "\033[2A \033[2K\rReencoding... OK"
 
 cd "$current_folder"
