@@ -1,0 +1,20 @@
+--- a/src/desktop/widgets/popupmessage.h	2020-11-25 16:53:35.309932460 +0100
++++ b/src/desktop/widgets/popupmessage.h	2020-11-25 16:53:56.144931766 +0100
+@@ -20,6 +20,7 @@
+ #define POPUPMESSAGE_H
+ 
+ #include <QWidget>
++#include <QPainterPath>
+ 
+ class QTextDocument;
+ class QTimer;
+--- a/src/desktop/bundled/QtColorWidgets/color_wheel.cpp	2020-11-25 16:56:38.892926350 +0100
++++ b/src/desktop/bundled/QtColorWidgets/color_wheel.cpp	2020-11-25 16:56:54.805925820 +0100
+@@ -25,6 +25,7 @@
+ #include <QtMath>
+ #include <QMouseEvent>
+ #include <QPainter>
++#include <QPainterPath>
+ #include <QLineF>
+ #include <QDragEnterEvent>
+ #include <QMimeData>

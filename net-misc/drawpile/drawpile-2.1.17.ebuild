@@ -33,6 +33,8 @@ DEPEND="dev-qt/qtnetwork:5
 
 RDEPEND="${DEPEND}"
 
+PATCHES=("${FILESDIR}/qt-fix.patch")
+
 src_configure() {
 	local mycmakeargs=(
 		-DCLIENT=$(usex client)
