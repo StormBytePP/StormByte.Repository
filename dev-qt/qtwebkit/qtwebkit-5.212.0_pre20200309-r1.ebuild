@@ -129,7 +129,9 @@ src_configure() {
 		-DENABLE_X11_TARGET=$(usex X)
 	)
 
-	if has_version "virtual/rubygems[ruby_targets_ruby27]"; then
+	if has_version "virtual/rubygems[ruby_targets_ruby30]"; then
+		mycmakeargs+=( -DRUBY_EXECUTABLE=$(type -P ruby30) )
+	elif has_version "virtual/rubygems[ruby_targets_ruby27]"; then
 		mycmakeargs+=( -DRUBY_EXECUTABLE=$(type -P ruby27) )
 	elif has_version "virtual/rubygems[ruby_targets_ruby26]"; then
 		mycmakeargs+=( -DRUBY_EXECUTABLE=$(type -P ruby26) )
