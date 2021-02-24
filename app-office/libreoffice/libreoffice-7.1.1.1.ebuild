@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -21,7 +21,7 @@ BRANDING="${PN}-branding-gentoo-0.8.tar.xz"
 # PATCHSET="${P}-patchset-01.tar.xz"
 
 [[ ${MY_PV} == *9999* ]] && inherit git-r3
-inherit autotools bash-completion-r1 check-reqs flag-o-matic java-pkg-opt-2 multiprocessing python-single-r1 qmake-utils toolchain-funcs xdg-utils
+inherit autotools bash-completion-r1 check-reqs eapi8-dosym flag-o-matic java-pkg-opt-2 multiprocessing python-single-r1 qmake-utils toolchain-funcs xdg-utils
 
 DESCRIPTION="A full office productivity suite"
 HOMEPAGE="https://www.libreoffice.org"
@@ -47,7 +47,21 @@ ADDONS_SRC=(
 	# not packaged in Gentoo, https://www.netlib.org/fp/dtoa.c
 	"${ADDONS_URI}/dtoa-20180411.tgz"
 	# not packaged in Gentoo, https://skia.org/
-	"${ADDONS_URI}/skia-m84-c1baf6e1c2a5454148adb516f0f833483b5a0353.tar.xz"
+	"${ADDONS_URI}/skia-m88-59bafeeaa7de9eb753e3778c414e01dcf013dcd8.tar.xz"
+	"base? (
+		${ADDONS_URI}/commons-logging-1.2-src.tar.gz
+		${ADDONS_URI}/ba2930200c9f019c2d93a8c88c651a0f-flow-engine-0.9.4.zip
+		${ADDONS_URI}/d8bd5eed178db6e2b18eeed243f85aa8-flute-1.1.6.zip
+		${ADDONS_URI}/eeb2c7ddf0d302fba4bfc6e97eac9624-libbase-1.1.6.zip
+		${ADDONS_URI}/3bdf40c0d199af31923e900d082ca2dd-libfonts-1.1.6.zip
+		${ADDONS_URI}/3404ab6b1792ae5f16bbd603bd1e1d03-libformula-1.1.7.zip
+		${ADDONS_URI}/db60e4fde8dd6d6807523deb71ee34dc-liblayout-0.2.10.zip
+		${ADDONS_URI}/97b2d4dba862397f446b217e2b623e71-libloader-1.1.6.zip
+		${ADDONS_URI}/8ce2fcd72becf06c41f7201d15373ed9-librepository-1.1.6.zip
+		${ADDONS_URI}/f94d9870737518e3b597f9265f4e9803-libserializer-1.1.6.zip
+		${ADDONS_URI}/ace6ab49184e329db254e454a010f56d-libxml-1.1.7.zip
+		${ADDONS_URI}/39bb3fcea1514f1369fcfc87542390fd-sacjava-1.3.zip
+	)"
 	"java? ( ${ADDONS_URI}/17410483b5b5f267aa18b7e00b65e6e0-hsqldb_1_8_0.zip )"
 	# no release for 8 years, should we package it?
 	"libreoffice_extensions_wiki-publisher? ( ${ADDONS_URI}/a7983f859eafb2677d7ff386a023bc40-xsltml_2.1.2.zip )"
@@ -66,11 +80,12 @@ unset ADDONS_SRC
 # Extensions that need extra work:
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
-IUSE="accessibility bluetooth +branding coinmp +cups +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test
+IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
+googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
+	base? ( firebird java )
 	bluetooth? ( dbus )
 	gtk? ( dbus )
 	libreoffice_extensions_nlpsolver? ( java )
@@ -85,7 +100,7 @@ LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 
 [[ ${MY_PV} == *9999* ]] || \
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~amd64-linux"
 
 BDEPEND="
 	dev-util/intltool
@@ -108,7 +123,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	app-text/liblangtag
 	>=app-text/libmspub-0.1.0
 	>=app-text/libmwaw-0.3.1
-	app-text/libnumbertext
+	>=app-text/libnumbertext-1.0.6
 	>=app-text/libodfgen-0.1.0
 	app-text/libqxp
 	app-text/libstaroffice
@@ -126,7 +141,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	dev-libs/icu:=
 	dev-libs/libassuan
 	dev-libs/libgpg-error
-	>=dev-libs/liborcus-0.15.0
+	dev-libs/liborcus:0/0.16
 	dev-libs/librevenge
 	dev-libs/libxml2
 	dev-libs/libxslt
@@ -135,6 +150,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	dev-libs/qrcodegen
 	>=dev-libs/redland-1.0.16
 	>=dev-libs/xmlsec-1.2.28[nss]
+	games-engines/box2d:=
 	media-gfx/fontforge
 	media-gfx/graphite2
 	media-libs/fontconfig
@@ -165,6 +181,19 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	bluetooth? (
 		dev-libs/glib:2
 		net-wireless/bluez
+	)
+	clang? (
+		|| (
+			(	sys-devel/clang:12
+				sys-devel/llvm:12
+				=sys-devel/lld-12*	)
+			(	sys-devel/clang:11
+				sys-devel/llvm:11
+				=sys-devel/lld-11*	)
+			(	sys-devel/clang:10
+				sys-devel/llvm:10
+				=sys-devel/lld-10*	)
+		)
 	)
 	coinmp? ( sci-libs/coinor-mp )
 	cups? ( net-print/cups )
@@ -223,7 +252,10 @@ DEPEND="${COMMON_DEPEND}
 	x11-libs/libXtst
 	java? (
 		dev-java/ant-core
-		>=virtual/jdk-1.8
+		|| (
+			dev-java/openjdk:15
+			dev-java/openjdk-bin:15
+		)
 	)
 	test? (
 		app-crypt/gnupg
@@ -238,7 +270,11 @@ RDEPEND="${COMMON_DEPEND}
 	!app-office/openoffice
 	media-fonts/liberation-fonts
 	|| ( x11-misc/xdg-utils kde-plasma/kde-cli-tools )
-	java? ( >=virtual/jre-1.8 )
+	java? ( || (
+		dev-java/openjdk:15
+		dev-java/openjdk-jre-bin:15
+		>=virtual/jre-1.8
+	) )
 	kde? ( kde-frameworks/breeze-icons:* )
 "
 if [[ ${MY_PV} != *9999* ]] && [[ ${PV} != *_* ]]; then
@@ -253,9 +289,9 @@ PATCHES=(
 	# "${WORKDIR}"/${PATCHSET/.tar.xz/}
 
 	# not upstreamable stuff
-	"${FILESDIR}/${PN}-5.4-system-pyuno.patch"
 	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
+	"${FILESDIR}/${PN}-7.0.3.1-qt5detect.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -271,7 +307,7 @@ _check_reqs() {
 }
 
 pkg_pretend() {
-	use firebird ||
+	use base ||
 		ewarn "If you plan to use Base application you must enable USE base."
 	use java ||
 		ewarn "Without USE java, several wizards are not going to be available."
@@ -317,12 +353,6 @@ src_prepare() {
 	# hack in the autogen.sh
 	touch autogen.lastrun
 
-	# system pyuno mess
-	sed -i \
-		-e "s:%eprefix%:${EPREFIX}:g" \
-		-e "s:%libdir%:$(get_libdir):g" \
-		pyuno/source/module/uno.py \
-		pyuno/source/officehelper.py || die
 	# sed in the tests
 	sed -i \
 		-e "s#all : build unitcheck#all : build#g" \
@@ -358,17 +388,57 @@ src_configure() {
 	local google_default_client_id="329227923882.apps.googleusercontent.com"
 	local google_default_client_secret="vgKG0NNv7GoDpbtoFNLxCUXu"
 
+	# Show flags set at the beginning
+	einfo "Preset CFLAGS:    ${CFLAGS}"
+	einfo "Preset LDFLAGS:   ${LDFLAGS}"
+
+	if use clang ; then
+		# Force clang
+		einfo "Enforcing the use of clang due to USE=clang ..."
+		AR=llvm-ar
+		CC=${CHOST}-clang
+		CXX=${CHOST}-clang++
+		NM=llvm-nm
+		RANLIB=llvm-ranlib
+		LDFLAGS+=" -fuse-ld=lld"
+	else
+		# Force gcc
+		einfo "Enforcing the use of gcc due to USE=-clang ..."
+		AR=gcc-ar
+		CC=${CHOST}-gcc
+		CXX=${CHOST}-g++
+		NM=gcc-nm
+		RANLIB=gcc-ranlib
+	fi
+
+	if use custom-cflags ; then
+		elog "USE=custom-cflags has been selected. You are on your own to make sure that"
+		elog "the build succeeds. Good luck!"
+	else
+		strip-flags
+	fi
+
+	export LO_CLANG_CC=${CC}
+	export LO_CLANG_CXX=${CXX}
+
+	# Show flags set at the end
+	einfo "  Used CFLAGS:    ${CFLAGS}"
+	einfo "  Used LDFLAGS:   ${LDFLAGS}"
+
+	# Ensure we use correct toolchain
+	tc-export CC CXX LD AR NM OBJDUMP RANLIB PKG_CONFIG
+
+	if use vulkan && ! use clang ; then
+		ewarn "Building skia with gcc may lead to performance issues. Disable vulkan or enable clang."
+	fi
+
 	# optimization flags
 	export GMAKE_OPTIONS="${MAKEOPTS}"
 	# System python enablement:
 	export PYTHON_CFLAGS=$(python_get_CFLAGS)
 	export PYTHON_LIBS=$(python_get_LIBS)
 
-	if use kde; then
-		export QT_SELECT=5 # bug 639620 needs proper fix though
-		export QT5DIR="$(qt5_get_bindir)/../"
-		export MOC5="$(qt5_get_bindir)/moc"
-	fi
+	use kde && export QT5DIR="$(qt5_get_bindir)/.."
 
 	local gentoo_buildid="Gentoo official package"
 	if [[ -n ${LOCOREGIT_VERSION} ]]; then
@@ -387,7 +457,7 @@ src_configure() {
 	# --without-system-sane: just sane.h header that is used for scan in writer,
 	#   not linked or anything else, worthless to depend on
 	# --disable-pdfium: not yet packaged
-	# --without-system-qrencode: has no real build system and LO is the only user
+	# --without-system-qrcodegen: has no real build system and LO is the only user
 	local myeconfargs=(
 		--with-system-dicts
 		--with-system-epoxy
@@ -411,9 +481,8 @@ src_configure() {
 		--disable-online-update
 		--disable-openssl
 		--disable-pdfium
-		--disable-report-builder
 		--disable-vlc
-		--with-build-version="${gentoo_buildid}"
+		--with-extra-buildid="${gentoo_buildid}"
 		--enable-extension-integration
 		--with-external-dict-dir="${EPREFIX}/usr/share/myspell"
 		--with-external-hyph-dir="${EPREFIX}/usr/share/myspell"
@@ -433,6 +502,7 @@ src_configure() {
 		--without-system-jfreereport
 		--without-system_apache_commons
 		--without-system-sane
+		$(use_enable base report-builder)
 		$(use_enable bluetooth sdremote-bluetooth)
 		$(use_enable coinmp)
 		$(use_enable cups)
@@ -448,6 +518,7 @@ src_configure() {
 		$(use_enable odk)
 		$(use_enable pdfimport)
 		$(use_enable postgres postgresql-sdbc)
+		$(use_enable vulkan skia)
 		$(use_with accessibility lxml)
 		$(use_with coinmp system-coinmp)
 		$(use_with googledrive gdrive-client-id ${google_default_client_id})
@@ -477,9 +548,14 @@ src_configure() {
 			--without-junit
 			--without-system-hsqldb
 			--with-ant-home="${ANT_HOME}"
-			--with-jdk-home=$(java-config --jdk-home 2>/dev/null)
+			#--with-jdk-home=$(java-config --jdk-home 2>/dev/null)
 			--with-jvm-path="${EPREFIX}/usr/lib/"
 		)
+		if has_version "dev-java/openjdk:15"; then
+			myeconfargs+=( -with-jdk-home="${EPREFIX}/usr/$(get_libdir)/openjdk-15" )
+		elif has_version "dev-java/openjdk-bin:15"; then
+			myeconfargs+=( --with-jdk-home="/opt/openjdk-bin-15" )
+		fi
 
 		use libreoffice_extensions_scripting-beanshell && \
 			myeconfargs+=( --with-beanshell-jar=$(java-pkg_getjar bsh bsh.jar) )
@@ -534,6 +610,42 @@ src_install() {
 		dodir /etc/env.d
 		echo "CONFIG_PROTECT=/usr/$(get_libdir)/${PN}/program/sofficerc" > "${ED}"/etc/env.d/99${PN} || die
 	fi
+
+	# bug 703474
+	insinto /usr/include
+	doins -r include/LibreOfficeKit
+
+	local lodir=/usr/$(get_libdir)/libreoffice
+	# patching this would break tests
+	cat <<-EOF > "${T}"/uno.py
+import sys, os
+sys.path.append('${EPREFIX}${lodir}/program')
+os.putenv('URE_BOOTSTRAP', 'vnd.sun.star.pathname:${EPREFIX}${lodir}/program/fundamentalrc')
+EOF
+	sed -e "/^import sys/d" -e "/^import os/d" \
+		-i "${D}"${lodir}/program/uno.py || die "cleanup dupl imports failed"
+	cat "${D}"${lodir}/program/uno.py >> "${T}"/uno.py || die
+	cp "${T}"/uno.py "${D}"${lodir}/program/uno.py || die
+
+	# more system pyuno mess
+	sed -e "/sOffice = \"\" # lets hope for the best/s:\"\":\"${EPREFIX}${lodir}/program\":" \
+		-i "${D}"${lodir}/program/officehelper.py || die
+
+	python_optimize "${D}"${lodir}/program
+	# link python bridge in site-packages, bug 667802
+	local py pyc loprogdir=/usr/$(get_libdir)/libreoffice/program
+	for py in uno.py unohelper.py officehelper.py; do
+		dosym8 -r ${loprogdir}/${py} $(python_get_sitedir)/${py}
+		while IFS="" read -d $'\0' -r pyc; do
+			pyc=${pyc//*\/}
+			dosym8 -r ${loprogdir}/__pycache__/${pyc} $(python_get_sitedir)/__pycache__/${pyc}
+		done < <(find "${D}"${lodir}/program -type f -name ${py/.py/*.pyc} -print0)
+	done
+
+	# bug 709450
+	#mkdir -p "${ED}"/usr/share/metainfo || die
+	#mv "${ED}"/usr/share/appdata/* "${ED}"/usr/share/metainfo/ || die
+	#rmdir "${ED}"/usr/share/appdata || die
 }
 
 pkg_postinst() {
