@@ -414,12 +414,15 @@ src_configure() {
 	if use custom-cflags ; then
 		elog "USE=custom-cflags has been selected. You are on your own to make sure that"
 		elog "the build succeeds. Good luck!"
-	else
-		strip-flags
+	#else
+	#	strip-flags
 	fi
 
 	export LO_CLANG_CC=${CC}
 	export LO_CLANG_CXX=${CXX}
+
+	use lto && append-flags -flto=thin
+	use lto && append-ldflags -flto=thin
 
 	# Show flags set at the end
 	einfo "  Used CFLAGS:    ${CFLAGS}"
@@ -519,6 +522,7 @@ src_configure() {
 		$(use_enable pdfimport)
 		$(use_enable postgres postgresql-sdbc)
 		$(use_enable vulkan skia)
+		$(use_enable lto)
 		$(use_with accessibility lxml)
 		$(use_with coinmp system-coinmp)
 		$(use_with googledrive gdrive-client-id ${google_default_client_id})
@@ -563,8 +567,6 @@ src_configure() {
 		use libreoffice_extensions_scripting-javascript && \
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 js.jar) )
 	fi
-
-	use lto && myeconfargs+=( --enable-lto ) && append-flags "-flto=thin" && append-ldflags "-flto=thin"
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
