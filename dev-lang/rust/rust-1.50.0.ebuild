@@ -260,16 +260,16 @@ src_configure() {
 	fi
 
 	rust_target="$(rust_abi)"
-	llvm_libunwind="false"
+	llvm_libunwind="no" # Formerly false, see https://github.com/rust-lang/rust/blob/master/config.toml.example
 	if tc-is-clang; then
 		local compiler_rt=$($(tc-getCC) ${CPPFLAGS} ${CFLAGS} ${LDFLAGS} -print-libgcc-file-name)
 		if [[ ${compiler_rt} == *libclang_rt* ]]; then
 			if has_version sys-libs/llvm-libunwind; then
 				einfo "Linking with llvm-libunwind"
-				llvm_libunwind="true"
+				llvm_libunwind="in-tree" # Formerly true
 			else
 				einfo "Linking with gcc_s unwinder"
-				llvm_libunwind="false"
+				llvm_libunwind="no"
 			fi
 		fi
 	fi
