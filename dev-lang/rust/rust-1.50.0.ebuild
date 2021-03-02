@@ -266,10 +266,10 @@ src_configure() {
 		if [[ ${compiler_rt} == *libclang_rt* ]]; then
 			if has_version sys-libs/llvm-libunwind; then
 				einfo "Linking with llvm-libunwind"
-				llvm_libunwind=true
+				llvm_libunwind="true"
 			else
 				einfo "Linking with gcc_s unwinder"
-				llvm_libunwind=false
+				llvm_libunwind="false"
 			fi
 		fi
 	fi
