@@ -329,7 +329,7 @@ src_configure() {
 		lld = $(usex system-llvm false $(toml_usex wasm))
 		backtrace-on-ice = true
 		jemalloc = false
-		llvm-libunwind = ${llvm_libunwind}
+		llvm-libunwind = "${llvm_libunwind}"
 		[dist]
 		src-tarball = false
 	_EOF_
