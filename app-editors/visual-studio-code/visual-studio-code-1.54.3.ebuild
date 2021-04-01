@@ -3,75 +3,44 @@
 
 EAPI=7
 
-inherit desktop eutils pax-utils xdg
+inherit desktop
 
+EXEC_NAME=vscode
 DESCRIPTION="Multiplatform Visual Studio Code from Microsoft"
 HOMEPAGE="https://code.visualstudio.com"
-SRC_URI="
-	amd64? ( https://update.code.visualstudio.com/${PV}/linux-x64/stable -> ${P}-amd64.tar.gz )
-	arm? ( https://update.code.visualstudio.com/${PV}/linux-armhf/stable -> ${P}-arm.tar.gz )
-	arm64? ( https://update.code.visualstudio.com/${PV}/linux-arm64/stable -> ${P}-arm64.tar.gz )"
-
+SRC_URI="https://update.code.visualstudio.com/${PV}/linux-x64/stable -> ${P}-amd64.tar.gz"
 RESTRICT="mirror strip bindist"
 
-LICENSE="MIT Microsoft-VSCode"
-SLOT="0"
-KEYWORDS="-* ~amd64 ~arm ~arm64"
-IUSE=""
+LICENSE=MIT
+SLOT=0
+KEYWORDS="~amd64"
 
 RDEPEND="
-	app-accessibility/at-spi2-atk
-	app-crypt/libsecret[crypt]
-	dev-libs/nss
-	media-libs/libpng:0/16
-	x11-libs/cairo
-	x11-libs/gtk+:3
-	x11-libs/libnotify
-	x11-libs/libXScrnSaver
-	x11-libs/libXtst
-	x11-libs/pango"
+	>=app-crypt/libsecret-0.18.5:0[crypt]
+	>=dev-libs/libdbusmenu-16.04.0
+	>=dev-libs/nss-3.47.1-r1:0
+	>=media-libs/alsa-lib-1.1.8:0
+	>=media-libs/libpng-1.2.46:0
+	>=net-print/cups-2.1.4:0
+	>=x11-libs/cairo-1.14.12:0
+	>=x11-libs/gtk+-2.24.31-r1:2
+	>=x11-libs/libnotify-0.7.7:0
+	>=x11-libs/libXScrnSaver-1.2.2-r1:0
+	>=x11-libs/libXtst-1.2.3:0
+"
 
-QA_PRESTRIPPED="*"
-
-QA_PREBUILT="
-	opt/${PN}/code
-	opt/${PN}/libEGL.so
-	opt/${PN}/libffmpeg.so
-	opt/${PN}/libGLESv2.so
-	opt/${PN}/libvk_swiftshader.so
-	opt/${PN}/libvulkan.so
-	opt/${PN}/swiftshader/libEGL.so
-	opt/${PN}/swiftshader/libGLESv2.so"
+QA_PRESTRIPPED="opt/${PN}/code"
+QA_PREBUILT="opt/${PN}/code"
 
 pkg_setup() {
-	if use amd64; then
-		S="${WORKDIR}/VSCode-linux-x64"
-	elif use arm; then
-		S="${WORKDIR}/VSCode-linux-armhf"
-	elif use arm64; then
-		S="${WORKDIR}/VSCode-linux-arm64"
-	else
-		die "Visual Studio Code only supports amd64, arm and arm64"
-	fi
+	use amd64 || die
+	S=${WORKDIR}/VSCode-linux-x64
 }
 
 src_install() {
-	pax-mark m code
-	insinto "/opt/${PN}"
-	doins -r *
-	fperms +x /opt/${PN}/{,bin/}code
-	fperms +x /opt/${PN}/chrome-sandbox
-	fperms -R +x /opt/${PN}/resources/app/out/vs/base/node
-	fperms +x /opt/${PN}/resources/app/node_modules.asar.unpacked/vscode-ripgrep/bin/rg
-	dosym "../../opt/${PN}/bin/code" "usr/bin/code"
-	domenu "${FILESDIR}/code.desktop"
-	domenu "${FILESDIR}/code-url-handler.desktop"
-	dodoc "resources/app/LICENSE.rtf"
-	newicon "resources/app/resources/linux/code.png" "visual-studio-code.png"
-}
-
-pkg_postinst() {
-	xdg_pkg_postinst
-	elog "You may want to install some additional utils, check in:"
-	elog "https://code.visualstudio.com/Docs/setup#_additional-tools"
+	dodir /opt
+	cp -pPR "${S}" "${D}/opt/${PN}" || die "Failed to copy files"
+	dosym "${EPREFIX}/opt/${PN}/bin/code" "/usr/bin/${EXEC_NAME}"
+	make_desktop_entry "${EXEC_NAME}" "Visual Studio Code" "${PN}" "Development;IDE"
+	newicon "${S}/resources/app/resources/linux/code.png" "${PN}.png"
 }
