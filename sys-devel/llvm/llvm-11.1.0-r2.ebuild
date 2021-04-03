@@ -28,7 +28,7 @@ LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
 SLOT="$(ver_cut 1)"
 KEYWORDS="amd64 arm ~arm64 ~ppc64 ~riscv x86 ~amd64-linux ~ppc-macos ~x64-macos"
 IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
-	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
+	kernel_Darwin +polly ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
 RESTRICT="!test? ( test )"
 
@@ -373,10 +373,6 @@ multilib_src_configure() {
 
 		# disable OCaml bindings (now in dev-ml/llvm-ocaml)
 		-DOCAMLFIND=NO
-
-		# Polly build
-		-DLLVM_ENABLE_PROJECTS="polly"
-		-DLLVM_TOOL_POLLY_BUILD=ON
 	)
 
 	if is_libcxx_linked; then
@@ -396,6 +392,13 @@ multilib_src_configure() {
 			-DGO_EXECUTABLE=GO_EXECUTABLE-NOTFOUND
 		)
 #	fi
+
+	use polly && mycmakeargs+=(
+		# Polly build
+		-DLLVM_ENABLE_PROJECTS="polly"
+		-DLLVM_TOOL_POLLY_BUILD=ON
+		-DLLVM_POLLY_LINK_INTO_TOOLS=OFF # Not static link
+	)
 
 	use test && mycmakeargs+=(
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
