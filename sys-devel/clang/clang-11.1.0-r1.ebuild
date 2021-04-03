@@ -59,7 +59,7 @@ PDEPEND="
 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
 	default-lld? ( sys-devel/lld )"
 
-LLVM_COMPONENTS=( clang clang-tools-extra )
+LLVM_COMPONENTS=( clang clang-tools-extra polly )
 LLVM_MANPAGES=pregenerated
 LLVM_TEST_COMPONENTS=(
 	llvm/lib/Testing/Support
