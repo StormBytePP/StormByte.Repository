@@ -138,10 +138,6 @@ check_distribution_components() {
 						use doc || continue
 						;;
 
-					# polly
-					Polly)
-						continue
-						;;
 				esac
 
 				all_targets+=( "${l}" )
@@ -320,6 +316,10 @@ get_distribution_components() {
 
 		use gold && out+=(
 			LLVMgold
+		)
+
+		use polly && out+=(
+			Polly
 		)
 	fi
 
