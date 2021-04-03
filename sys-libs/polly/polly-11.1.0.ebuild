@@ -18,7 +18,10 @@ KEYWORDS="~x86 ~amd64"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
-RDEPEND="~sys-devel/llvm-${PV}"
+RDEPEND="
+	~sys-devel/llvm-${PV}
+	dev-libs/isl
+"
 DEPEND="${RDEPEND}"
 BDEPEND="test? ( $(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]") )"
 
@@ -35,6 +38,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_INCLUDE_TESTS=$(usex test)
+		-DPOLLY_BUNDLED_ISL=OFF
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_BUILD_TESTS=ON
