@@ -65,7 +65,7 @@ RDEPEND="${RDEPEND}
 PDEPEND="sys-devel/llvm-common
 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
 
-LLVM_COMPONENTS=( llvm )
+LLVM_COMPONENTS=( llvm polly )
 LLVM_MANPAGES=pregenerated
 llvm.org_set_globals
 
@@ -136,6 +136,11 @@ check_distribution_components() {
 					# used only w/ USE=doc
 					docs-llvm-html)
 						use doc || continue
+						;;
+
+					# polly
+					Polly)
+						continue
 						;;
 				esac
 
@@ -369,6 +374,8 @@ multilib_src_configure() {
 		# disable OCaml bindings (now in dev-ml/llvm-ocaml)
 		-DOCAMLFIND=NO
 
+		# Polly build
+		-DLLVM_ENABLE_PROJECTS="polly"
 		-DLLVM_TOOL_POLLY_BUILD=ON
 	)
 
