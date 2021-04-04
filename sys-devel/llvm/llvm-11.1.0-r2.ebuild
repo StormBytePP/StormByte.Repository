@@ -43,8 +43,7 @@ RDEPEND="
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
 	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )"
 DEPEND="${RDEPEND}
-	gold? ( sys-libs/binutils-libs )
-	polly? ( sys-libs/polly )"
+	gold? ( sys-libs/binutils-libs )"
 BDEPEND="
 	dev-lang/perl
 	>=dev-util/cmake-3.16
