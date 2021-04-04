@@ -27,8 +27,8 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
 SLOT="$(ver_cut 1)"
 KEYWORDS="amd64 arm ~arm64 ~ppc64 ~riscv x86 ~amd64-linux ~ppc-macos ~x64-macos"
-IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
-	kernel_Darwin +polly ${ALL_LLVM_TARGETS[*]}"
+IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3 +polly
+	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
 RESTRICT="!test? ( test )"
 
@@ -41,7 +41,8 @@ RDEPEND="
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
 	xar? ( app-arch/xar )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
-	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )"
+	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )
+	polly? ( sys-libs/polly )"
 DEPEND="${RDEPEND}
 	gold? ( sys-libs/binutils-libs )"
 BDEPEND="
@@ -65,7 +66,7 @@ RDEPEND="${RDEPEND}
 PDEPEND="sys-devel/llvm-common
 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
 
-LLVM_COMPONENTS=( llvm polly )
+LLVM_COMPONENTS=( llvm )
 LLVM_MANPAGES=pregenerated
 llvm.org_set_globals
 
@@ -137,7 +138,6 @@ check_distribution_components() {
 					docs-llvm-html)
 						use doc || continue
 						;;
-
 				esac
 
 				all_targets+=( "${l}" )
@@ -389,13 +389,6 @@ multilib_src_configure() {
 		)
 #	fi
 
-	use polly && mycmakeargs+=(
-		# Polly build
-		-DLLVM_ENABLE_PROJECTS="polly"
-		-DLLVM_TOOL_POLLY_BUILD=ON
-		-DLLVM_POLLY_LINK_INTO_TOOLS=ON # Statically link Polly
-	)
-
 	use test && mycmakeargs+=(
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
 	)
@@ -449,6 +442,10 @@ multilib_src_configure() {
 
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
+
+	# Link with polly if enabled
+	use polly && local -x LDFLAGS="${LDFLAGS} -lPolly -lPollyISL -lPollyPPCG"
+
 	cmake_src_configure
 
 	multilib_is_native_abi && check_distribution_components

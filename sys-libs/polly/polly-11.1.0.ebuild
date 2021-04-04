@@ -39,10 +39,9 @@ pkg_setup() {
 src_configure() {
 	local mycmakeargs=(
 		-DLLVM_LINK_LLVM_DYLIB=ON
-		-DLLVM_POLLY_LINK_INTO_TOOLS=ON
-		-DLLVM_INCLUDE_TESTS=$(usex test)
+		-DLLVM_POLLY_LINK_INTO_TOOLS=OFF
+		-DLLVM_TOOL_POLLY_BUILD=ON
 		-DCMAKE_PREFIX_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
 	)
 	use test && mycmakeargs+=(
