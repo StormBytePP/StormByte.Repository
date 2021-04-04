@@ -138,6 +138,11 @@ check_distribution_components() {
 						use doc || continue
 						;;
 
+					# Polly is built as static
+					Polly)
+						continue
+						;;
+
 				esac
 
 				all_targets+=( "${l}" )
@@ -397,7 +402,7 @@ multilib_src_configure() {
 		# Polly build
 		-DLLVM_ENABLE_PROJECTS="polly"
 		-DLLVM_TOOL_POLLY_BUILD=ON
-		-DLLVM_POLLY_LINK_INTO_TOOLS=OFF # Not static link
+		-DLLVM_POLLY_LINK_INTO_TOOLS=ON # Statically link Polly
 	)
 
 	use test && mycmakeargs+=(
