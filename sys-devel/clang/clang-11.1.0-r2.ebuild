@@ -30,9 +30,10 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,${MULTILIB_USEDEP}]
+	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,polly=,${MULTILIB_USEDEP}]
 	static-analyzer? ( dev-lang/perl:* )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
+	polly? ( sys-libs/polly )
 	${PYTHON_DEPS}"
 for x in "${ALL_LLVM_TARGETS[@]}"; do
 	RDEPEND+="
@@ -59,7 +60,7 @@ PDEPEND="
 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
 	default-lld? ( sys-devel/lld )"
 
-LLVM_COMPONENTS=( clang clang-tools-extra polly )
+LLVM_COMPONENTS=( clang clang-tools-extra )
 LLVM_MANPAGES=pregenerated
 LLVM_TEST_COMPONENTS=(
 	llvm/lib/Testing/Support
@@ -325,6 +326,10 @@ multilib_src_configure() {
 
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
+
+	# Link with polly if enabled
+	use polly && local -x LDFLAGS="${LDFLAGS} -lPolly -lPollyISL -lPollyPPCG"
+
 	cmake_src_configure
 
 	multilib_is_native_abi && check_distribution_components
