@@ -23,17 +23,16 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)/$(ver_cut 1-2)"
 KEYWORDS="amd64 arm ~arm64 ~ppc64 ~riscv x86 ~amd64-linux ~x64-macos"
-IUSE="debug default-compiler-rt default-libcxx default-lld
-	doc +static-analyzer test xml +polly kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+IUSE="debug default-compiler-rt default-libcxx default-lld +lto
+	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,polly=,${MULTILIB_USEDEP}]
+	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,${MULTILIB_USEDEP}]
 	static-analyzer? ( dev-lang/perl:* )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
-	polly? ( sys-libs/polly )
 	${PYTHON_DEPS}"
 for x in "${ALL_LLVM_TARGETS[@]}"; do
 	RDEPEND+="
@@ -327,8 +326,10 @@ multilib_src_configure() {
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
-	# Link with polly if enabled
-	use polly && local -x LDFLAGS="${LDFLAGS} -lPolly -lPollyISL -lPollyPPCG"
+	# Enable lto?
+	use lto && mycmakeargs+=(
+		-DLLVM_ENABLE_LTO=Thin
+	)
 
 	cmake_src_configure
 
