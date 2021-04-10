@@ -23,7 +23,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)/$(ver_cut 1-2)"
 KEYWORDS="amd64 arm ~arm64 ~ppc64 ~riscv x86 ~amd64-linux ~x64-macos"
-IUSE="debug default-compiler-rt default-libcxx default-lld +lto
+IUSE="debug default-compiler-rt default-libcxx default-lld +lto +polly
 	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
@@ -33,6 +33,7 @@ RDEPEND="
 	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,${MULTILIB_USEDEP}]
 	static-analyzer? ( dev-lang/perl:* )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
+	polly? ( ~sys-libs/polly-${PV}:${SLOT%/*} )
 	${PYTHON_DEPS}"
 for x in "${ALL_LLVM_TARGETS[@]}"; do
 	RDEPEND+="
