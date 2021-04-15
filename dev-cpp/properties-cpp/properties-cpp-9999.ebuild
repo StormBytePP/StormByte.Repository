@@ -29,7 +29,7 @@ DEPEND="
 
 src_prepare() {
 	# Provided FindGtest tries (and fails) to build its own version of gtest rather than actually search for it on the system
-	cp "${FILESDIR}"/FindGtest.cmake cmake/FindGtest.cmake || die
+	# cp "${FILESDIR}"/FindGtest.cmake cmake/FindGtest.cmake || die
 	cmake_src_prepare
 }
 
