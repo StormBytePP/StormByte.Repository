@@ -36,6 +36,8 @@ src_prepare() {
 src_configure() {
 	local mycmakeargs=(
 		-DPROPERTIES_CPP_ENABLE_DOC_GENERATION=$(usex doc)
+		-DGTEST_INSTALL_DIR="/usr/include"
+		-DGMOCK_INSTALL_DIR="/usr/include"
 	)
 	cmake_src_configure
 }
