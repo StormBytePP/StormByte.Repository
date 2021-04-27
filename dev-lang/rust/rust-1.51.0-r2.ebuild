@@ -55,7 +55,7 @@ LLVM_DEPEND="
 	)
 	wasm? ( sys-devel/lld )
 "
-LLVM_MAX_SLOT=11
+LLVM_MAX_SLOT=12
 
 # to bootstrap we need at least exactly previous version, or same.
 # most of the time previous versions fail to bootstrap with newer
