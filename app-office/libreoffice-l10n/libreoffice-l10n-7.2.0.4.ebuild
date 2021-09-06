@@ -15,7 +15,6 @@ HOMEPAGE="https://www.libreoffice.org"
 BASE_SRC_URI_TESTING="https://download.documentfoundation.org/${PN/-l10n/}/testing/${BASE_PV}/rpm"
 BASE_SRC_URI_STABLE="https://download.documentfoundation.org/${PN/-l10n/}/stable/${BASE_PV}/rpm"
 
-
 LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
