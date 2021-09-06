@@ -383,6 +383,9 @@ src_prepare() {
 			-e ":Keywords: s:pdf;::" \
 			sysui/desktop/menus/draw.desktop || die
 	fi
+
+	cd "${WORKDIR}"
+	epatch "${FILESDIR}/skia-freetype-fix.patch"
 }
 
 src_configure() {
