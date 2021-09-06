@@ -386,6 +386,7 @@ src_prepare() {
 
 	cd "${WORKDIR}"
 	epatch "${FILESDIR}/skia-freetype-fix.patch"
+	einfo "Applied skia patch for building with >freetype-2.11"
 }
 
 src_configure() {
