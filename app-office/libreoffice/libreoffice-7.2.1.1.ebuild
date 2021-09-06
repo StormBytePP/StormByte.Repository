@@ -348,6 +348,11 @@ src_unpack() {
 src_prepare() {
 	default
 
+	local old_dir=`pwd`
+	cd "${WORKDIR}"
+	eapply "${FILESDIR}/skia-freetype-fix.patch"
+	cd "${old_dir}"
+
 	# sandbox violations on many systems, we don't need it. Bug #646406
 	sed -i \
 		-e "/KF5_CONFIG/s/kf5-config/no/" \
@@ -383,10 +388,6 @@ src_prepare() {
 			-e ":Keywords: s:pdf;::" \
 			sysui/desktop/menus/draw.desktop || die
 	fi
-
-	cd "${WORKDIR}"
-	epatch "${FILESDIR}/skia-freetype-fix.patch"
-	einfo "Applied skia patch for building with >freetype-2.11"
 }
 
 src_configure() {
