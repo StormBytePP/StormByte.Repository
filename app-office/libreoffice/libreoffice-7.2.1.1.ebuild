@@ -348,11 +348,6 @@ src_unpack() {
 src_prepare() {
 	default
 
-	local old_dir=`pwd`
-	cd "${WORKDIR}"
-	eapply "${FILESDIR}/skia-freetype-fix.patch"
-	cd "${old_dir}"
-
 	# sandbox violations on many systems, we don't need it. Bug #646406
 	sed -i \
 		-e "/KF5_CONFIG/s/kf5-config/no/" \
