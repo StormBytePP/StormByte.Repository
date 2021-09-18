@@ -82,7 +82,7 @@ RDEPEND="${COMMON_DEPEND}
 		>=dev-python/flask-wtf-0.14.3[${PYTHON_USEDEP}]
 		=dev-python/gssapi-1.6*[${PYTHON_USEDEP}]
 		>=dev-python/httpagentparser-1.9.1[${PYTHON_USEDEP}]
-		<=dev-python/itsdangerous-1.1.1[${PYTHON_USEDEP}]
+		dev-python/itsdangerous[${PYTHON_USEDEP}]
 		>=dev-python/ldap3-2.5.1[${PYTHON_USEDEP}]
 		>=dev-python/passlib-1.7.2[${PYTHON_USEDEP}]
 		>=dev-python/psutil-5.7.0[${PYTHON_USEDEP}]
