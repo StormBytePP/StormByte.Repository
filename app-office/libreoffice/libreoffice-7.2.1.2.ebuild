@@ -81,7 +81,7 @@ unset ADDONS_SRC
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
 IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan lto
+googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -133,7 +133,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	app-text/mythes
 	>=dev-cpp/clucene-2.3.3.4-r2
 	dev-db/unixODBC
-	>=games-engines/box2d-2.4.1:0
 	dev-lang/perl
 	>=dev-libs/boost-1.72.0:=[nls]
 	dev-libs/expat
@@ -149,7 +148,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	dev-libs/nss
 	>=dev-libs/redland-1.0.16
 	>=dev-libs/xmlsec-1.2.28[nss]
-	media-libs/zxing-cpp
+	>=games-engines/box2d-2.4.1:0
 	media-gfx/fontforge
 	media-gfx/graphite2
 	media-libs/fontconfig
@@ -163,6 +162,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=media-libs/libpng-1.4:0=
 	>=media-libs/libvisio-0.1.0
 	media-libs/libzmf
+	media-libs/zxing-cpp
 	>=net-libs/neon-0.31.1:=
 	net-misc/curl
 	sci-mathematics/lpsolve
@@ -289,6 +289,8 @@ PATCHES=(
 	# not upstreamable stuff
 	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
+	"${FILESDIR}/pld-skia-patches.patch"
+	"${FILESDIR}/libreoffice-7.1.5.2-bison-3.8.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -345,6 +347,7 @@ src_unpack() {
 }
 
 src_prepare() {
+	cp "${FILESDIR}/skia-freetype2.11.patch" external/skia
 	default
 
 	# sandbox violations on many systems, we don't need it. Bug #646406
@@ -424,9 +427,6 @@ src_configure() {
 	export LO_CLANG_CC=${CC}
 	export LO_CLANG_CXX=${CXX}
 
-	use lto && append-flags -flto=thin
-	use lto && append-ldflags -flto=thin
-
 	# Show flags set at the end
 	einfo "  Used CFLAGS:    ${CFLAGS}"
 	einfo "  Used LDFLAGS:   ${LDFLAGS}"
@@ -463,7 +463,6 @@ src_configure() {
 	# --without-system-sane: just sane.h header that is used for scan in writer,
 	#   not linked or anything else, worthless to depend on
 	# --disable-pdfium: not yet packaged
-	# --without-system-qrcodegen: has no real build system and LO is the only user
 	local myeconfargs=(
 		--with-system-dicts
 		--with-system-epoxy
@@ -522,7 +521,6 @@ src_configure() {
 		$(use_enable pdfimport)
 		$(use_enable postgres postgresql-sdbc)
 		$(use_enable vulkan skia)
-		$(use_enable lto)
 		$(use_with accessibility lxml)
 		$(use_with coinmp system-coinmp)
 		$(use_with googledrive gdrive-client-id ${google_default_client_id})
