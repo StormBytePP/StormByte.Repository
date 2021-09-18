@@ -427,6 +427,11 @@ src_configure() {
 	export LO_CLANG_CC=${CC}
 	export LO_CLANG_CXX=${CXX}
 
+	if use lto; then
+		append-cxxflags -flto=thin
+		append-ldflags -flto=thin
+	fi
+
 	# Show flags set at the end
 	einfo "  Used CFLAGS:    ${CFLAGS}"
 	einfo "  Used LDFLAGS:   ${LDFLAGS}"
@@ -566,11 +571,7 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 js.jar) )
 	fi
 
-	if use lto; then
-		myeconfargs+=( --enable-lto )
-		append-cxxflags -flto=thin
-		append-ldflags -flto=thin
-	fi
+	use lto && myeconfargs+=( --enable-lto )
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
