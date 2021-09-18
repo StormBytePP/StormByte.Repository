@@ -428,6 +428,7 @@ src_configure() {
 	export LO_CLANG_CXX=${CXX}
 
 	if use lto; then
+		append-cflags -flto=thin
 		append-cxxflags -flto=thin
 		append-ldflags -flto=thin
 	fi
