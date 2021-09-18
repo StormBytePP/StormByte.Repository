@@ -81,7 +81,7 @@ unset ADDONS_SRC
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
 IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan
+googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan lto
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -566,7 +566,11 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 js.jar) )
 	fi
 
-	is-flagq "-flto*" && myeconfargs+=( --enable-lto )
+	if use lto; then
+		myeconfargs+=( --enable-lto )
+		append-cxxflags -flto=thin
+		append-ldflags -flto=thin
+	fi
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
