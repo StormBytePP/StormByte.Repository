@@ -67,7 +67,7 @@ RDEPEND="${COMMON_DEPEND}
 		>=dev-python/blinker-1.4[${PYTHON_USEDEP}]
 		=dev-python/cryptography-3*[${PYTHON_USEDEP}]
 		>=dev-python/eventlet-0.31.0[${PYTHON_USEDEP}]
-		<dev-python/flask-2.0.0[${PYTHON_USEDEP}]
+		dev-python/flask[${PYTHON_USEDEP}]
 		>=dev-python/flask-babelex-0.9.4[${PYTHON_USEDEP}]
 		>=dev-python/flask-compress-1.4.0[${PYTHON_USEDEP}]
 		>=dev-python/flask-gravatar-0.5.0[${PYTHON_USEDEP}]
