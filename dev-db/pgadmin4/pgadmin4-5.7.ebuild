@@ -61,7 +61,7 @@ BDEPEND="sys-apps/yarn"
 
 RDEPEND="${COMMON_DEPEND}
 	$(python_gen_cond_dep '
-		>=dev-python/authlib-0.15.4[${PYTHON_USEDEP}]
+		>=dev-python/Authlib-0.15.4[${PYTHON_USEDEP}]
 		=dev-python/bcrypt-3*[${PYTHON_USEDEP}]
 		>=dev-python/bidict-0.21.2[${PYTHON_USEDEP}]
 		>=dev-python/blinker-1.4[${PYTHON_USEDEP}]
