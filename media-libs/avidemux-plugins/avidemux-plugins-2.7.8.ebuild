@@ -1,12 +1,12 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 CMAKE_MAKEFILE_GENERATOR="emake"
-PYTHON_COMPAT=( python3_{6,7,8} )
+PYTHON_COMPAT=( python3_{7,8,9,10} )
 
-inherit cmake python-single-r1
+inherit cmake flag-o-matic python-single-r1
 
 DESCRIPTION="Plugins for the video editor media-video/avidemux"
 HOMEPAGE="http://fixounet.free.fr/avidemux"
@@ -44,7 +44,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	fontconfig? ( media-libs/fontconfig:1.0 )
 	fribidi? ( dev-libs/fribidi )
 	jack? (
-		media-sound/jack-audio-connection-kit
+		virtual/jack
 		libsamplerate? ( media-libs/libsamplerate )
 	)
 	lame? ( media-sound/lame )
