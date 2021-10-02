@@ -364,7 +364,7 @@ src_configure() {
 		deny-warnings = $(usex wasm $(usex doc false true) true)
 		backtrace-on-ice = true
 		jemalloc = false
-		llvm-libunwind = $(usex llvm-libunwind "in-tree" "no")
+		llvm-libunwind = "$(usex llvm-libunwind in-tree no)"
 		[dist]
 		src-tarball = false
 		compression-formats = ["gz"]
