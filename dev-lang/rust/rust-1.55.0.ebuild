@@ -41,7 +41,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/(-)?}
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="clippy cpu_flags_x86_sse2 debug doc miri nightly parallel-compiler rls rustfmt system-bootstrap system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
+IUSE="clippy cpu_flags_x86_sse2 debug doc miri nightly parallel-compiler rls rustfmt system-bootstrap system-llvm test wasm llvm-libunwind ${ALL_LLVM_TARGETS[*]}"
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're not pulling more than one slot
@@ -107,6 +107,7 @@ DEPEND="
 	dev-libs/openssl:0=
 	elibc_musl? ( sys-libs/libunwind:= )
 	system-llvm? ( ${LLVM_DEPEND} )
+	llvm-libunwind? ( sys-libs/llvm-libunwind )
 "
 
 # we need to block older versions due to layout changes.
@@ -292,20 +293,6 @@ src_configure() {
 
 	rust_target="$(rust_abi)"
 
-	local llvm_libunwind="no" # Formerly false, see https://github.com/rust-lang/rust/blob/master/config.toml.example
-	if tc-is-clang; then
-		local compiler_rt=$($(tc-getCC) ${CPPFLAGS} ${CFLAGS} ${LDFLAGS} -print-libgcc-file-name)
-		if [[ ${compiler_rt} == *libclang_rt* ]]; then
-			if has_version sys-libs/llvm-libunwind; then
-				einfo "Linking with llvm-libunwind"
-				llvm_libunwind="in-tree" # Formerly true
-			else
-				einfo "Linking with gcc_s unwinder"
-				llvm_libunwind="no"
-			fi
-		fi
-	fi
-
 	cat <<- _EOF_ > "${S}"/config.toml
 		changelog-seen = 2
 		[llvm]
@@ -377,7 +364,7 @@ src_configure() {
 		deny-warnings = $(usex wasm $(usex doc false true) true)
 		backtrace-on-ice = true
 		jemalloc = false
-		llvm-libunwind = "${llvm_libunwind}"
+		llvm-libunwind = $(usex debug in-tree no)
 		[dist]
 		src-tarball = false
 		compression-formats = ["gz"]
