@@ -5,7 +5,7 @@ EAPI="7"
 
 FIREFOX_PATCHSET="firefox-78esr-patches-16.tar.xz"
 
-LLVM_MAX_SLOT=12
+LLVM_MAX_SLOT=13
 MOZCONFIG_OPTIONAL_JIT=1
 
 PYTHON_COMPAT=( python3_{9,10} )
@@ -78,6 +78,14 @@ BDEPEND="${PYTHON_DEPS}
 	virtual/pkgconfig
 	>=virtual/rust-1.43.0
 	|| (
+		(
+                        sys-devel/clang:13
+                        sys-devel/llvm:13
+                        clang? (
+                                =sys-devel/lld-13*
+                                pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
+                        )
+                )
 		(
 			sys-devel/clang:12
 			sys-devel/llvm:12
