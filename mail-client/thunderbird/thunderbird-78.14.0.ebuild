@@ -66,7 +66,7 @@ IUSE="+clang cpu_flags_arm_neon dbus debug eme-free
 	hardened hwaccel jack lto +openh264 pgo pulseaudio selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi
-	+jit +kde"
+	+jit kde"
 
 REQUIRED_USE="wifi? ( dbus )"
 
