@@ -81,7 +81,7 @@ unset ADDONS_SRC
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
 IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan lto
+googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -183,10 +183,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	)
 	clang? (
 		|| (
-			(	sys-devel/clang:13
-				sys-devel/llvm:13
-				=sys-devel/lld-13*
-			)
 			(	sys-devel/clang:12
 				sys-devel/llvm:12
 				=sys-devel/lld-12*	)
@@ -293,8 +289,6 @@ PATCHES=(
 	# not upstreamable stuff
 	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
-	"${FILESDIR}/pld-skia-patches.patch"
-	"${FILESDIR}/libreoffice-7.1.5.2-bison-3.8.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -430,12 +424,6 @@ src_configure() {
 
 	export LO_CLANG_CC=${CC}
 	export LO_CLANG_CXX=${CXX}
-
-	if use lto; then
-		append-cflags -flto=thin
-		append-cxxflags -flto=thin
-		append-ldflags -flto=thin
-	fi
 
 	# Show flags set at the end
 	einfo "  Used CFLAGS:    ${CFLAGS}"
@@ -576,7 +564,7 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 js.jar) )
 	fi
 
-	use lto && myeconfargs+=( --enable-lto )
+	is-flagq "-flto*" && myeconfargs+=( --enable-lto )
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
