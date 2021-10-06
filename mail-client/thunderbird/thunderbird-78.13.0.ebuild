@@ -5,9 +5,10 @@ EAPI="7"
 
 FIREFOX_PATCHSET="firefox-78esr-patches-16.tar.xz"
 
-LLVM_MAX_SLOT=13
+LLVM_MAX_SLOT=12
+MOZCONFIG_OPTIONAL_JIT=1
 
-PYTHON_COMPAT=( python3_{7..9} )
+PYTHON_COMPAT=( python3_{9,10} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -57,14 +58,15 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 DESCRIPTION="Thunderbird Mail Client"
 HOMEPAGE="https://www.mozilla.org/thunderbird"
 
-KEYWORDS="amd64 ~arm64 ~ppc64 x86"
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0/$(ver_cut 1)"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free
 	hardened hwaccel jack lto +openh264 pgo pulseaudio selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
-	+system-libvpx +system-webp wayland wifi"
+	+system-libvpx +system-webp wayland wifi
+	+jit +kde"
 
 REQUIRED_USE="wifi? ( dbus )"
 
@@ -74,16 +76,8 @@ BDEPEND="${PYTHON_DEPS}
 	>=dev-util/cbindgen-0.14.3
 	>=net-libs/nodejs-10.21.0
 	virtual/pkgconfig
-	>=virtual/rust-1.41.0
+	>=virtual/rust-1.43.0
 	|| (
-		(
-			sys-devel/clang:13
-			sys-devel/llvm:13
-			clang? (
-				=sys-devel/lld-13*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
-			)
-		)
 		(
 			sys-devel/clang:12
 			sys-devel/llvm:12
@@ -98,14 +92,6 @@ BDEPEND="${PYTHON_DEPS}
 			clang? (
 				=sys-devel/lld-11*
 				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
-			)
-		)
-		(
-			sys-devel/clang:10
-			sys-devel/llvm:10
-			clang? (
-				=sys-devel/lld-10*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
 			)
 		)
 	)
@@ -125,7 +111,6 @@ CDEPEND="
 	dev-libs/atk
 	dev-libs/expat
 	>=x11-libs/cairo-1.10[X]
-	>=x11-libs/gtk+-2.18:2
 	>=x11-libs/gtk+-3.4.0:3[X]
 	x11-libs/gdk-pixbuf
 	>=x11-libs/pango-1.22.0
@@ -172,7 +157,9 @@ CDEPEND="
 		)
 	)
 	jack? ( virtual/jack )
-	selinux? ( sec-policy/selinux-mozilla )"
+	selinux? ( sec-policy/selinux-mozilla )
+	kde? ( kde-apps/kdialog
+		kde-misc/kmozillahelper )"
 
 RDEPEND="${CDEPEND}
 	jack? ( virtual/jack )
@@ -223,10 +210,7 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	af ar ast be bg br ca cak cs cy	da de dsb el en-CA en-GB en-US
-	es-AR es-ES et eu fa fi fr fy-NL ga-IE gd gl he hr hsb hu hy-AM
-	id is it ja ka kab kk ko lt ms nb-NO nl nn-NO pa-IN pl pt-BR
-	pt-PT rm ro ru si sk sl sq sr sv-SE th tr uz vi zh-CN zh-TW
+	de en-CA en-GB en-US ru
 )
 
 mozilla_set_globals() {
@@ -412,7 +396,7 @@ pkg_setup() {
 			[[ -z ${version_rust} ]] && die "Failed to read version from rustc!"
 
 			if ver_test "${version_rust}" -ge "1.49" && ver_test "${version_rust}" -le "1.50" ; then
-				local version_llvm_rust="11"
+				local version_llvm_rust="12"
 			else
 				local version_llvm_rust=$(rustc -Vv 2>/dev/null | grep -F -- 'LLVM version:' | awk '{ print $3 }')
 				[[ -n ${version_llvm_rust} ]] && version_llvm_rust=$(ver_cut 1 "${version_llvm_rust}")
@@ -455,18 +439,18 @@ pkg_setup() {
 		# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
 		# get your own set of keys.
 		if [[ -z "${MOZ_API_KEY_GOOGLE+set}" ]] ; then
-			MOZ_API_KEY_GOOGLE="AIzaSyDEAOvatFogGaPi0eTgsV_ZlEzx0ObmepsMzfAc"
+			MOZ_API_KEY_GOOGLE=""
 		fi
 
 		if [[ -z "${MOZ_API_KEY_LOCATION+set}" ]] ; then
-			MOZ_API_KEY_LOCATION="AIzaSyB2h2OuRgGaPicUgy5N-5hsZqiPW6sH3n_rptiQ"
+			MOZ_API_KEY_LOCATION=""
 		fi
 
 		# Mozilla API keys (see https://location.services.mozilla.com/api)
 		# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
 		# get your own set of keys.
 		if [[ -z "${MOZ_API_KEY_MOZILLA+set}" ]] ; then
-			MOZ_API_KEY_MOZILLA="edb3d487-3a84-46m0ap1e3-9dfd-92b5efaaa005"
+			MOZ_API_KEY_MOZILLA=""
 		fi
 
 		# Ensure we use C locale when building, bug #746215
@@ -522,7 +506,7 @@ src_prepare() {
 		|| die "sed failed to disable ccache stats call"
 
 	einfo "Removing pre-built binaries ..."
-	find "${S}"/third_party -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
+	find "${S}"/third_party -type f \( -name '*.so' -o -name '*.o' -o -name '*.la' -o -name '*.a' \) -print -delete || die
 
 	# Clearing checksums where we have applied patches
 	moz_clear_vendor_checksums target-lexicon-0.9.0
@@ -535,6 +519,61 @@ src_prepare() {
 	echo -n "${MOZ_API_KEY_GOOGLE//gGaPi/}" > "${S}"/api-google.key || die
 	echo -n "${MOZ_API_KEY_LOCATION//gGaPi/}" > "${S}"/api-location.key || die
 	echo -n "${MOZ_API_KEY_MOZILLA//m0ap1/}" > "${S}"/api-mozilla.key || die
+
+	#######
+	### OpenSUSE-KDE patchset
+	einfo Applying OpenSUSE-KDE patches
+	use kde && for p in $(cat "${FILESDIR}/opensuse-kde-$(ver_cut 1)"/series);do
+		patch --dry-run --silent -p1 -i "${FILESDIR}/opensuse-kde-$(ver_cut 1)"/$p 2>/dev/null
+		if [ $? -eq 0 ]; then
+			eapply "${FILESDIR}/opensuse-kde-$(ver_cut 1)"/$p;
+			einfo +++++++++++++++++++++++++;
+			einfo Patch $p is APPLIED;
+			einfo +++++++++++++++++++++++++
+		else
+			einfo -------------------------;
+			einfo Patch $p is NOT applied and IGNORED;
+			einfo -------------------------
+		fi
+	done
+	### Privacy-esr patches
+	einfo Applying privacy patches
+	for i in $(cat "${FILESDIR}/privacy-patchset-$(ver_cut 1)/series"); do eapply "${FILESDIR}/privacy-patchset-$(ver_cut 1)/$i"; done
+	### Debian patches
+	einfo "Applying Debian's patches"
+	for p in $(cat "${FILESDIR}/debian-patchset-$(ver_cut 1)"/series);do
+		patch --dry-run --silent -p1 -i "${FILESDIR}/debian-patchset-$(ver_cut 1)"/$p 2>/dev/null
+		if [ $? -eq 0 ]; then
+			eapply "${FILESDIR}/debian-patchset-$(ver_cut 1)"/$p;
+			einfo +++++++++++++++++++++++++;
+			einfo Patch $p is APPLIED;
+			einfo +++++++++++++++++++++++++
+		else
+			einfo -------------------------;
+			einfo Patch $p is NOT applied and IGNORED;
+			einfo -------------------------
+		fi
+	done
+	### FreeBSD patches
+	einfo "Applying FreeBSD's patches"
+	for i in $(cat "${FILESDIR}/freebsd-patchset-$(ver_cut 1)/series"); do eapply "${FILESDIR}/freebsd-patchset-$(ver_cut 1)/$i"; done
+	### Fedora patches
+	einfo "Applying Fedora's patches"
+	for p in $(cat "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/series);do
+		patch --dry-run --silent -p1 -i "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/$p 2>/dev/null
+		if [ $? -eq 0 ]; then
+			eapply "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/$p;
+			einfo +++++++++++++++++++++++++;
+			einfo Patch $p is APPLIED;
+			einfo +++++++++++++++++++++++++
+		else
+			einfo -------------------------;
+			einfo Patch $p is NOT applied and IGNORED;
+			einfo -------------------------
+		fi
+	done
+	use pgo && eapply "${FILESDIR}/thunderbird-pgo_freeze_fix.patch"
+	#######
 
 	xdg_src_prepare
 }
@@ -712,6 +751,8 @@ src_configure() {
 			mozconfig_add_options_ac "forcing ld=lld due to USE=clang and USE=lto" --enable-linker=lld
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
+			mozconfig_add_options_ac '+lto-cross' MOZ_LTO=cross
+			mozconfig_add_options_ac '+lto-cross' MOZ_LTO_RUST=1
 		else
 			# Linking only works when using ld.gold when LTO is enabled
 			mozconfig_add_options_ac "forcing ld=gold due to USE=lto" --enable-linker=gold
@@ -726,6 +767,7 @@ src_configure() {
 			if use clang ; then
 				# Used in build/pgo/profileserver.py
 				export LLVM_PROFDATA="llvm-profdata"
+				mozconfig_add_options_ac '+pgo-rust' MOZ_PGO_RUST=1
 			fi
 		fi
 	else
@@ -883,6 +925,90 @@ src_configure() {
 		done
 	fi
 
+	#######
+	### Disable features
+	mozconfig_add_options_ac '' --disable-accessibility
+	mozconfig_add_options_ac '' --disable-address-sanitizer
+	mozconfig_add_options_ac '' --disable-address-sanitizer-reporter
+
+	mozconfig_add_options_ac '' --disable-callgrind
+	mozconfig_add_options_ac '' --disable-crashreporter
+	mozconfig_add_options_ac '' --disable-cdp
+
+	mozconfig_add_options_ac '' --disable-debug
+	mozconfig_add_options_ac '' --disable-debug-js-modules
+	mozconfig_add_options_ac '' --disable-debug-symbols
+	mozconfig_add_options_ac '' --disable-dmd
+	mozconfig_add_options_ac '' --disable-dtrace
+	mozconfig_add_options_ac '' --disable-dump-painting
+
+	mozconfig_add_options_ac '' --disable-gold
+	mozconfig_add_options_ac '' --disable-gpsd
+	mozconfig_add_options_ac '' --disable-gtest-in-build
+
+	mozconfig_add_options_ac '' --disable-instruments
+	mozconfig_add_options_ac '' --disable-ipdl-tests
+
+	mozconfig_add_options_ac '' --disable-jprof
+
+	mozconfig_add_options_ac '' --disable-libproxy
+	mozconfig_add_options_ac '' --disable-logrefcnt
+
+	mozconfig_add_options_ac '' --disable-memory-sanitizer
+	mozconfig_add_options_ac '' --disable-mobile-optimize
+	
+	mozconfig_add_options_ac '' --disable-necko-wifi
+
+	mozconfig_add_options_ac '' --disable-parental-controls
+	mozconfig_add_options_ac '' --disable-perf
+	mozconfig_add_options_ac '' --disable-profiling
+
+	mozconfig_add_options_ac '' --disable-reflow-perf
+	mozconfig_add_options_ac '' --disable-rust-debug
+	mozconfig_add_options_ac '' --disable-rust-tests
+	mozconfig_add_options_ac '' --disable-system-extension-dirs
+
+	mozconfig_add_options_ac '' --disable-trace-logging
+
+	mozconfig_add_options_ac '' --disable-updater
+
+	mozconfig_add_options_ac '' --disable-valgrind
+	mozconfig_add_options_ac '' --disable-verify-mar
+	mozconfig_add_options_ac '' --disable-vtune
+
+	mozconfig_add_options_ac '' --disable-warnings-as-errors
+	mozconfig_add_options_ac '' --disable-webrender-debugger
+	mozconfig_add_options_ac '' --disable-webrtc
+	mozconfig_add_options_ac '' --disable-webspeech
+
+	mozconfig_add_options_ac '' --without-debug-label
+	mozconfig_add_options_ac '' --without-google-location-service-api-keyfile
+	mozconfig_add_options_ac '' --without-google-safebrowsing-api-keyfile
+	mozconfig_add_options_ac '' --without-mozilla-api-keyfile
+	mozconfig_add_options_ac '' --without-pocket-api-keyfile
+
+	mozconfig_add_options_ac '' MOZ_DATA_REPORTING=
+	mozconfig_add_options_ac '' MOZ_LOGGING=
+	mozconfig_add_options_ac '' MOZ_PAY=
+	mozconfig_add_options_ac '' MOZ_SERVICES_HEALTHREPORTER=
+	mozconfig_add_options_ac '' MOZ_SERVICES_METRICS=
+	mozconfig_add_options_ac '' MOZ_TELEMETRY_REPORTING=
+
+	### Enable good features
+	mozconfig_add_options_ac '' --enable-icf
+	mozconfig_add_options_ac '' --enable-install-strip
+	mozconfig_add_options_ac '' --enable-rust-simd
+	mozconfig_add_options_ac '' --enable-strip
+
+	echo "export MOZ_DATA_REPORTING=" >> "${S}"/.mozconfig
+	echo "export MOZ_DEVICES=" >> "${S}"/.mozconfig
+	echo "export MOZ_LOGGING=" >> "${S}"/.mozconfig
+	echo "export MOZ_PAY=" >> "${S}"/.mozconfig
+	echo "export MOZ_SERVICES_HEALTHREPORTER=" >> "${S}"/.mozconfig
+	echo "export MOZ_SERVICES_METRICS=" >> "${S}"/.mozconfig
+	echo "export MOZ_TELEMETRY_REPORTING=" >> "${S}"/.mozconfig
+	#######
+
 	echo
 	echo "=========================================================="
 	echo "Building ${PF} with the following configuration"
@@ -963,6 +1089,21 @@ src_install() {
 		sticky_pref("gfx.font_rendering.graphite.enabled", true);
 		EOF
 	fi
+
+	#######
+	if use kde ; then
+		cat "${FILESDIR}"/opensuse-kde-$(ver_cut 1)/kde.js >> \
+		"${GENTOO_PREFS}" \
+		|| die
+	fi
+	cat "${FILESDIR}"/privacy-patchset-$(ver_cut 1)/privacy.js >> \
+	"${GENTOO_PREFS}" \
+	|| die
+	rm -rv "${BUILD_DIR}"/comm/mail/components/cloudfile/wetransfer/* || die
+	rm -rv "${BUILD_DIR}"/comm/mail/extensions/ || die
+	rm -rv "${BUILD_DIR}"/dist/bin/features/ || die
+	rm -rv "${BUILD_DIR}"/dist/thunderbird/features/ || die
+	#######
 
 	# Install language packs
 	local langpacks=( $(find "${WORKDIR}/language_packs" -type f -name '*.xpi') )
