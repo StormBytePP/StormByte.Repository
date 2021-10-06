@@ -3,9 +3,9 @@
 
 EAPI="7"
 
-FIREFOX_PATCHSET="firefox-78esr-patches-16.tar.xz"
+FIREFOX_PATCHSET="firefox-78esr-patches-17.tar.xz"
 
-LLVM_MAX_SLOT=12
+LLVM_MAX_SLOT=13
 MOZCONFIG_OPTIONAL_JIT=1
 
 PYTHON_COMPAT=( python3_{9,10} )
@@ -66,7 +66,7 @@ IUSE="+clang cpu_flags_arm_neon dbus debug eme-free
 	hardened hwaccel jack lto +openh264 pgo pulseaudio selinux
 	+system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent
 	+system-libvpx +system-webp wayland wifi
-	+jit kde"
+	+jit +kde"
 
 REQUIRED_USE="wifi? ( dbus )"
 
@@ -79,19 +79,19 @@ BDEPEND="${PYTHON_DEPS}
 	>=virtual/rust-1.43.0
 	|| (
 		(
+			sys-devel/clang:13
+			sys-devel/llvm:13
+			clang? (
+				=sys-devel/lld-13*
+				pgo? ( =sys-libs/compiler-rt-sanitizers-13*[profile] )
+			)
+		)
+		(
 			sys-devel/clang:12
 			sys-devel/llvm:12
 			clang? (
 				=sys-devel/lld-12*
 				pgo? ( =sys-libs/compiler-rt-sanitizers-12*[profile] )
-			)
-		)
-		(
-			sys-devel/clang:11
-			sys-devel/llvm:11
-			clang? (
-				=sys-devel/lld-11*
-				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
 			)
 		)
 	)
@@ -396,7 +396,7 @@ pkg_setup() {
 			[[ -z ${version_rust} ]] && die "Failed to read version from rustc!"
 
 			if ver_test "${version_rust}" -ge "1.49" && ver_test "${version_rust}" -le "1.50" ; then
-				local version_llvm_rust="12"
+				local version_llvm_rust="13"
 			else
 				local version_llvm_rust=$(rustc -Vv 2>/dev/null | grep -F -- 'LLVM version:' | awk '{ print $3 }')
 				[[ -n ${version_llvm_rust} ]] && version_llvm_rust=$(ver_cut 1 "${version_llvm_rust}")
@@ -1099,10 +1099,10 @@ src_install() {
 	cat "${FILESDIR}"/privacy-patchset-$(ver_cut 1)/privacy.js >> \
 	"${GENTOO_PREFS}" \
 	|| die
-	rm -rv "${BUILD_DIR}"/comm/mail/components/cloudfile/wetransfer/* || die
-	rm -rv "${BUILD_DIR}"/comm/mail/extensions/ || die
-	rm -rv "${BUILD_DIR}"/dist/bin/features/ || die
-	rm -rv "${BUILD_DIR}"/dist/thunderbird/features/ || die
+	rm -rv "${BUILD_DIR}"/comm/mail/components/cloudfile/wetransfer/* #|| die
+	rm -rv "${BUILD_DIR}"/comm/mail/extensions/ #|| die
+	rm -rv "${BUILD_DIR}"/dist/bin/features/ #|| die
+	rm -rv "${BUILD_DIR}"/dist/thunderbird/features/ #|| die
 	#######
 
 	# Install language packs
