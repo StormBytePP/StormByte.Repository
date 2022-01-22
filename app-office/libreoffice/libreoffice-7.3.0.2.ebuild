@@ -509,6 +509,7 @@ src_configure() {
 		--with-system-gpgmepp
 		--without-system-jfreereport
 		--without-system-sane
+		--without-system-cuckoo
 		$(use_enable base report-builder)
 		$(use_enable bluetooth sdremote-bluetooth)
 		$(use_enable coinmp)
