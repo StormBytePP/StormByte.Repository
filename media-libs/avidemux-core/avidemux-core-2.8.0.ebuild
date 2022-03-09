@@ -18,7 +18,8 @@ KEYWORDS="~amd64 ~x86"
 IUSE="debug nls nvenc sdl system-ffmpeg vaapi vdpau xv"
 
 # Trying to use virtual; ffmpeg misses aac,cpudetection USE flags now though, are they needed?
-DEPEND="dev-db/sqlite:3
+DEPEND="
+	dev-db/sqlite:3
 	nvenc? ( media-video/nvidia_video_sdk )
 	sdl? ( media-libs/libsdl:0 )
 	system-ffmpeg? ( >=media-video/ffmpeg-9:0[mp3,theora] )
@@ -26,15 +27,19 @@ DEPEND="dev-db/sqlite:3
 	vdpau? ( x11-libs/libvdpau:0 )
 	xv? ( x11-libs/libXv:0 )
 "
-RDEPEND="${DEPEND}
+RDEPEND="
+	${DEPEND}
 	!<media-libs/avidemux-core-${PV}
 	!<media-video/avidemux-${PV}
 	nls? ( virtual/libintl:0 )
 "
-BDEPEND="virtual/pkgconfig
+BDEPEND="
+	virtual/pkgconfig
 	nls? ( sys-devel/gettext )
 	!system-ffmpeg? ( dev-lang/yasm[nls=] )
 "
+
+PATCHES=( "${FILESDIR}"/avidemux-core-2.7.6-ffmpeg-flags.patch )
 
 S="${WORKDIR}/avidemux2-${PV}"
 CMAKE_USE_DIR="${S}/${PN/-/_}"
@@ -47,12 +52,9 @@ src_prepare() {
 		# it depends on files the system ffmpeg doesn't install.
 		local error="Failed to remove bundled ffmpeg."
 
-		rm -r cmake/admFFmpeg* cmake/ffmpeg* avidemux_core/ffmpeg_package \
-			buildCore/ffmpeg || die "${error}"
-		sed -e 's/include(admFFmpegUtil)//g' -e '/registerFFmpeg/d' \
-			-i avidemux/commonCmakeApplication.cmake || die "${error}"
-		sed -e 's/include(admFFmpegBuild)//g' \
-			-i avidemux_core/CMakeLists.txt || die "${error}"
+		rm -r cmake/admFFmpeg* cmake/ffmpeg* avidemux_core/ffmpeg_package buildCore/ffmpeg || die "${error}"
+		sed -e 's/include(admFFmpegUtil)//g' -e '/registerFFmpeg/d' -i avidemux/commonCmakeApplication.cmake || die "${error}"
+		sed -e 's/include(admFFmpegBuild)//g' -i avidemux_core/CMakeLists.txt || die "${error}"
 	else
 		local ffmpeg_args=(
 			--cc=$(tc-getCC)
@@ -63,16 +65,15 @@ src_prepare() {
 			"--optflags='${CFLAGS}'"
 		)
 
-		sed -i \
-			-e "s/@@GENTOO_FFMPEG_FLAGS@@/${ffmpeg_args[*]}/" \
-			cmake/ffmpeg_configure.sh.cmake \
-			|| die
+		sed -i -e "s/@@GENTOO_FFMPEG_FLAGS@@/${ffmpeg_args[*]}/" cmake/ffmpeg_configure.sh.cmake || die
 	fi
 }
 
 src_configure() {
 	# See bug 432322.
 	use x86 && replace-flags -O0 -O1
+	# Bug 768210
+	append-cxxflags -std=gnu++14
 
 	local mycmakeargs=(
 		-DAVIDEMUX_SOURCE_DIR='${S}'

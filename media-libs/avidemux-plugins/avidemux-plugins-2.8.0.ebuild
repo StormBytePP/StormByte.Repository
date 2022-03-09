@@ -1,10 +1,10 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
 CMAKE_MAKEFILE_GENERATOR="emake"
-PYTHON_COMPAT=( python3_{7,8,9,10} )
+PYTHON_COMPAT=( python3_{8..10} )
 
 inherit cmake flag-o-matic python-single-r1
 
@@ -20,10 +20,12 @@ KEYWORDS="~amd64 ~x86"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
-COMMON_DEPEND="${PYTHON_DEPS}
+# dev-lang/spidermonkey is not required anymore
+# see https://github.com/mean00/avidemux2/blob/master/avidemux_plugins/ADM_scriptEngines/CMakeLists.txt
+COMMON_DEPEND="
+	${PYTHON_DEPS}
 	~media-libs/avidemux-core-${PV}:${SLOT}[vdpau?]
 	~media-video/avidemux-${PV}:${SLOT}[opengl?,qt5?]
-	dev-lang/spidermonkey:0=
 	dev-libs/libxml2:2
 	media-libs/a52dec
 	media-libs/libass:0=
@@ -69,16 +71,18 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	)
 	xvid? ( media-libs/xvid )
 "
-DEPEND="${COMMON_DEPEND}
+DEPEND="
+	${COMMON_DEPEND}
 	oss? ( virtual/os-headers )
 "
-RDEPEND="${COMMON_DEPEND}
+RDEPEND="
+	${COMMON_DEPEND}
 	!<media-libs/avidemux-plugins-${PV}
 "
 
 S="${WORKDIR}/avidemux2-${PV}"
 
-PATCHES=( "${FILESDIR}"/${PN}-2.6.20-optional-pulse.patch )
+PATCHES=( "${FILESDIR}/${PN}-2.8.0-optional-pulse.patch" )
 
 src_prepare() {
 	default
@@ -121,8 +125,9 @@ src_configure() {
 			-DOPENGL="$(usex opengl)"
 			-DOPUS="$(usex opus)"
 			-DOSS="$(usex oss)"
-			-DPULSEAUDIOSIMPLE="$(usex pulseaudio)"
-			-DQT4=OFF
+			-DPULSEAUDIO="$(usex pulseaudio)"
+			-DENABLE_QT4=OFF
+			-DENABLE_QT6=OFF
 			-DFREETYPE2="$(usex truetype)"
 			-DTWOLAME="$(usex twolame)"
 			-DX264="$(usex x264)"
