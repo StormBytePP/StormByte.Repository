@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -16,8 +16,8 @@ HOMEPAGE="https://llvm.org/"
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x64-macos"
-IUSE="debug default-compiler-rt default-libcxx default-lld lto
-	doc llvm-libunwind +static-analyzer test xml kernel_FreeBSD"
+IUSE="debug default-compiler-rt default-libcxx default-lld
+	doc llvm-libunwind +pie +static-analyzer test xml lto"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RESTRICT="!test? ( test )"
 
@@ -44,7 +44,10 @@ PDEPEND="
 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
 	default-lld? ( sys-devel/lld )"
 
-LLVM_COMPONENTS=( clang clang-tools-extra )
+LLVM_COMPONENTS=(
+	clang clang-tools-extra cmake
+	llvm/lib/Transforms/Hello
+)
 LLVM_MANPAGES=pregenerated
 LLVM_TEST_COMPONENTS=(
 	llvm/lib/Testing/Support
@@ -80,7 +83,7 @@ src_prepare() {
 
 	# add Gentoo Portage Prefix for Darwin (see prefix-dirs.patch)
 	eprefixify \
-		lib/Frontend/InitHeaderSearch.cpp \
+		lib/Lex/InitHeaderSearch.cpp \
 		lib/Driver/ToolChains/Darwin.cpp || die
 }
 
@@ -173,6 +176,7 @@ get_distribution_components() {
 			clang-offload-bundler
 			clang-offload-wrapper
 			clang-refactor
+			clang-repl
 			clang-rename
 			clang-scan-deps
 			diagtool
@@ -252,6 +256,7 @@ multilib_src_configure() {
 		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
 		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
 		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
+		-DCLANG_DEFAULT_PIE_ON_LINUX=$(usex pie)
 		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-compiler-rt libunwind "")
 
 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
@@ -261,6 +266,7 @@ multilib_src_configure() {
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
+		-DLLVM_EXTERNAL_LIT="${BUILD_DIR}/bin/llvm-lit"
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
 	)
 
@@ -310,9 +316,7 @@ multilib_src_configure() {
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
 	# Enable lto?
-	use lto && mycmakeargs+=(
-		-DLLVM_ENABLE_LTO=Thin
-	)
+	use lto && mycmakeargs+=(-DLLVM_ENABLE_LTO=Thin)
 
 	cmake_src_configure
 
@@ -382,11 +386,6 @@ src_install() {
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
 	done
-
-	# Remove unnecessary headers on FreeBSD, bug #417171
-	if use kernel_FreeBSD; then
-		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
-	fi
 }
 
 multilib_src_install() {
