@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{9,10} )
+PYTHON_COMPAT=( python3_{8..10} )
 PYTHON_REQ_USE="threads(+),xml"
 
 MY_PV="${PV/_alpha/.alpha}"
@@ -44,11 +44,15 @@ unset DEV_URI
 # These are bundles that can't be removed for now due to huge patchsets.
 # If you want them gone, patches are welcome.
 ADDONS_SRC=(
+	# not packaged in Gentoo, https://github.com/efficient/libcuckoo/
+	"${ADDONS_URI}/libcuckoo-93217f8d391718380c508a722ab9acd5e9081233.tar.gz"
+	# broken against latest upstream release, too many patches on top:
+	# https://github.com/tdf/libcmis/pull/43
+	"${ADDONS_URI}/libcmis-0.5.2.tar.xz"
 	# not packaged in Gentoo, https://www.netlib.org/fp/dtoa.c
 	"${ADDONS_URI}/dtoa-20180411.tgz"
 	# not packaged in Gentoo, https://skia.org/
 	"${ADDONS_URI}/skia-m97-a7230803d64ae9d44f4e1282444801119a3ae967.tar.xz"
-	"${ADDONS_URI}/libcuckoo-93217f8d391718380c508a722ab9acd5e9081233.tar.gz"
 	"base? (
 		${ADDONS_URI}/commons-logging-1.2-src.tar.gz
 		${ADDONS_URI}/ba2930200c9f019c2d93a8c88c651a0f-flow-engine-0.9.4.zip
@@ -101,12 +105,12 @@ LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 
 [[ ${MY_PV} == *9999* ]] || \
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86 ~amd64-linux"
 
 COMMON_DEPEND="${PYTHON_DEPS}
 	app-arch/unzip
 	app-arch/zip
-	app-crypt/gpgme[cxx]
+	app-crypt/gpgme:=[cxx]
 	app-text/hunspell:=
 	>=app-text/libabw-0.1.0
 	>=app-text/libebook-0.1
@@ -126,6 +130,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	app-text/mythes
 	dev-cpp/abseil-cpp:=
 	>=dev-cpp/clucene-2.3.3.4-r2
+	>=dev-cpp/libcmis-0.5.2
 	dev-db/unixODBC
 	dev-lang/perl
 	>=dev-libs/boost-1.72.0:=[nls]
@@ -150,7 +155,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=media-libs/harfbuzz-0.9.42:=[graphite,icu]
 	media-libs/lcms:2
 	>=media-libs/libcdr-0.1.0
-	>=media-libs/libepoxy-1.3.1
+	>=media-libs/libepoxy-1.3.1[X]
 	>=media-libs/libfreehand-0.1.0
 	media-libs/libpagemaker
 	>=media-libs/libpng-1.4:0=
@@ -164,7 +169,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	sys-libs/zlib
 	virtual/jpeg:0
 	virtual/opengl
-	x11-libs/cairo
+	x11-libs/cairo[X]
 	x11-libs/libXinerama
 	x11-libs/libXrandr
 	x11-libs/libXrender
@@ -177,7 +182,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	)
 	coinmp? ( sci-libs/coinor-mp )
 	cups? ( net-print/cups )
-	dbus? ( sys-apps/dbus )
+	dbus? ( sys-apps/dbus[X] )
 	eds? (
 		dev-libs/glib:2
 		gnome-base/dconf
@@ -193,7 +198,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		dev-libs/gobject-introspection
 		gnome-base/dconf
 		media-libs/mesa
-		x11-libs/gtk+:3
+		x11-libs/gtk+:3[X]
 		x11-libs/pango
 	)
 	kde? (
@@ -233,8 +238,8 @@ DEPEND="${COMMON_DEPEND}
 	java? (
 		dev-java/ant-core
 		|| (
-			dev-java/openjdk:15
-			dev-java/openjdk-bin:15
+			dev-java/openjdk:11
+			dev-java/openjdk-bin:11
 		)
 	)
 	test? (
@@ -250,8 +255,8 @@ RDEPEND="${COMMON_DEPEND}
 	media-fonts/liberation-fonts
 	|| ( x11-misc/xdg-utils kde-plasma/kde-cli-tools )
 	java? ( || (
-		dev-java/openjdk:15
-		dev-java/openjdk-jre-bin:15
+		dev-java/openjdk:11
+		dev-java/openjdk-jre-bin:11
 		>=virtual/jre-1.8
 	) )
 	kde? ( kde-frameworks/breeze-icons:* )
@@ -264,7 +269,8 @@ BDEPEND="
 	virtual/pkgconfig
 	clang? (
 		|| (
-			(	sys-devel/clang:14
+			(
+				sys-devel/clang:14
 				sys-devel/llvm:14
 				=sys-devel/lld-14*	)
 			(	sys-devel/clang:13
@@ -295,6 +301,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
 	"${FILESDIR}/${PN}-7.2.0.4-qt5detect.patch"
+
+	# TODO upstream
+	"${FILESDIR}/${PN}-7.2.6.2-poppler-22.03.0.patch" # by Archlinux
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -388,7 +397,6 @@ src_prepare() {
 			-e ":Keywords: s:pdf;::" \
 			sysui/desktop/menus/draw.desktop || die
 	fi
-	sed -i 's/=thin//g' solenv/gbuild/platform/com_GCC_defs.mk
 }
 
 src_configure() {
@@ -475,7 +483,6 @@ src_configure() {
 		--with-system-libs
 		--enable-build-opensymbol
 		--enable-cairo-canvas
-		--enable-gui
 		--enable-largefile
 		--enable-mergelibs
 		--enable-python=system
@@ -483,7 +490,7 @@ src_configure() {
 		--enable-release-build
 		--disable-breakpad
 		--disable-bundle-mariadb
-		--disable-cmis
+		--disable-ccache
 		--disable-epm
 		--disable-fetch-external
 		--disable-gtk3-kde5
@@ -504,6 +511,8 @@ src_configure() {
 		--with-system-ucpp
 		--with-tls=nss
 		--with-vendor="Gentoo Foundation"
+		--with-webdav="neon"
+		--with-x
 		--without-fonts
 		--without-myspell-dicts
 		--with-help="html"
@@ -559,13 +568,11 @@ src_configure() {
 			--without-junit
 			--without-system-hsqldb
 			--with-ant-home="${ANT_HOME}"
-			#--with-jdk-home=$(java-config --jdk-home 2>/dev/null)
-			--with-jvm-path="${EPREFIX}/usr/lib/"
 		)
-		if has_version "dev-java/openjdk:15"; then
-			myeconfargs+=( -with-jdk-home="${EPREFIX}/usr/$(get_libdir)/openjdk-15" )
-		elif has_version "dev-java/openjdk-bin:15"; then
-			myeconfargs+=( --with-jdk-home="/opt/openjdk-bin-15" )
+		if has_version "dev-java/openjdk:11"; then
+			myeconfargs+=( --with-jdk-home="${EPREFIX}/usr/$(get_libdir)/openjdk-11" )
+		elif has_version "dev-java/openjdk-bin:11"; then
+			myeconfargs+=( --with-jdk-home="${EPREFIX}/opt/openjdk-bin-11" )
 		fi
 
 		use libreoffice_extensions_scripting-beanshell && \
