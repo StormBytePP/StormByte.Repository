@@ -1,9 +1,9 @@
 # Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=8
 
-PYTHON_COMPAT=( python3_{7..10} )
+PYTHON_COMPAT=( python3_{8..10} )
 
 inherit bash-completion-r1 check-reqs estack flag-o-matic llvm multiprocessing \
 	multilib multilib-build python-any-r1 rust-toolchain toolchain-funcs verify-sig
@@ -22,7 +22,7 @@ else
 	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
 fi
 
-RUST_STAGE0_VERSION="1.$(($(ver_cut 2) - 1)).1"
+RUST_STAGE0_VERSION="1.$(($(ver_cut 2) - 1)).0"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="https://www.rust-lang.org/"
@@ -107,14 +107,11 @@ DEPEND="
 	dev-libs/openssl:0=
 	elibc_musl? ( sys-libs/libunwind:= )
 	system-llvm? ( ${LLVM_DEPEND} )
-	llvm-libunwind? ( sys-libs/llvm-libunwind )
 "
 
-# we need to block older versions due to layout changes.
 RDEPEND="${DEPEND}
 	app-eselect/eselect-rust
-	!<dev-lang/rust-1.47.0-r1
-	!<dev-lang/rust-bin-1.47.0-r1
+	sys-apps/lsb-release
 "
 
 REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )
