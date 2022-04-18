@@ -20,6 +20,7 @@ HOMEPAGE="XXXXX"
 LICENSE="LGPL-2.1"
 SLOT="${PV}"
 IUSE=""
+KEYWORDS="~amd64"
 
 
 DEPEND="
@@ -27,16 +28,6 @@ DEPEND="
 	sys-devel/clang
 "
 RDEPEND=""
-
-src_unpack() {
-	git-r3_src_unpack
-	cd "${S}"
-	epatch "${FILESDIR}/respect-system-cxxflags.patch"
-}
-
-src_compile() {
-	emake
-}
 
 src_install() {
 	dobin ps3netsrv++
