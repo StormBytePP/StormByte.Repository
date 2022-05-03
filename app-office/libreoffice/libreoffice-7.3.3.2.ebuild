@@ -233,8 +233,8 @@ DEPEND="${COMMON_DEPEND}
 	java? (
 		dev-java/ant-core
 		|| (
-			dev-java/openjdk:15
-			dev-java/openjdk-bin:15
+			dev-java/openjdk:11
+			dev-java/openjdk-bin:11
 		)
 	)
 	test? (
@@ -250,8 +250,8 @@ RDEPEND="${COMMON_DEPEND}
 	media-fonts/liberation-fonts
 	|| ( x11-misc/xdg-utils kde-plasma/kde-cli-tools )
 	java? ( || (
-		dev-java/openjdk:15
-		dev-java/openjdk-jre-bin:15
+		dev-java/openjdk:11
+		dev-java/openjdk-jre-bin:11
 		>=virtual/jre-1.8
 	) )
 	kde? ( kde-frameworks/breeze-icons:* )
@@ -566,10 +566,10 @@ src_configure() {
 			#--with-jdk-home=$(java-config --jdk-home 2>/dev/null)
 			--with-jvm-path="${EPREFIX}/usr/lib/"
 		)
-		if has_version "dev-java/openjdk:15"; then
-			myeconfargs+=( -with-jdk-home="${EPREFIX}/usr/$(get_libdir)/openjdk-15" )
-		elif has_version "dev-java/openjdk-bin:15"; then
-			myeconfargs+=( --with-jdk-home="/opt/openjdk-bin-15" )
+		if has_version "dev-java/openjdk:11"; then
+			myeconfargs+=( -with-jdk-home="${EPREFIX}/usr/$(get_libdir)/openjdk-11" )
+		elif has_version "dev-java/openjdk-bin:11"; then
+			myeconfargs+=( --with-jdk-home="/opt/openjdk-bin-11" )
 		fi
 
 		use libreoffice_extensions_scripting-beanshell && \
