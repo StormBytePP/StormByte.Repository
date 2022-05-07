@@ -15,6 +15,7 @@ RDEPEND="
 	sys-apps/findutils
 	sys-process/parallel
 	media-video/ffmpeg
+	media-video/hdr10plus_tool
 "
 DEPEND="${RDEPEND}
 "
