@@ -37,7 +37,7 @@ folder_count=`find . -type d | wc -l`
 find . -type d | parallel --bar "mkdir -p \"$destination_folder\"/{}"
 echo -e "\033[2A \033[2K\rCreating folders... OK"
 echo -e "\033[2K\rReencoding..."
-find . -type f -regextype posix-extended -regex '.*\.(avi|mkv|mp4|mpg)$' | parallel --bar --jobs 1 "ffmpeg -hwaccel qsv -i {} -y -map 0 -map_metadata 0 -map_chapters 0 -c:v libx265 -profile:v main10 -level:v 5.1 -x265-params \"level=5.1:aq-mode=3\" -pix_fmt yuv420p10le -maxrate:v 5M -bufsize:v 200M $animation_code -c:a $audio_mode -c:s copy \"$destination_folder\"/{.}.mkv &> /dev/null"
+find . -type f -regextype posix-extended -regex '.*\.(avi|mkv|mp4|mpg)$' | parallel --bar --jobs 1 "ffmpeg -y -i {} -y -map 0 -map_metadata 0 -map_chapters 0 -c:v libx265 -profile:v main10 -level:v 5.1 -x265-params \"level=5.1:aq-mode=3\" -pix_fmt yuv420p10le -maxrate:v 5M -bufsize:v 200M $animation_code -c:a $audio_mode -c:s copy \"$destination_folder\"/{.}.mkv &> /dev/null"
 echo -e "\033[2A \033[2K\rReencoding... OK"
 
 cd "$current_folder"
