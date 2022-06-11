@@ -51,6 +51,9 @@ BDEPEND="
 		dev-python/sphinx[${PYTHON_USEDEP}]
 	') )
 	libffi? ( virtual/pkgconfig )
+	test? (
+		sys-apps/which
+	)
 "
 # There are no file collisions between these versions but having :0
 # installed means llvm-config there will take precedence.
@@ -64,7 +67,7 @@ PDEPEND="
 "
 
 LLVM_COMPONENTS=( llvm cmake third-party )
-LLVM_MANPAGES=pregenerated
+LLVM_MANPAGES=build
 LLVM_PATCHSET=${PV}
 LLVM_USE_TARGETS=provide
 llvm.org_set_globals
@@ -177,6 +180,10 @@ src_prepare() {
 	check_live_ebuild
 
 	llvm.org_src_prepare
+
+	# remove regressing test
+	# https://github.com/llvm/llvm-project/issues/55761
+	rm test/Other/ChangePrinters/DotCfg/print-changed-dot-cfg.ll || die
 }
 
 # Is LLVM being linked against libc++?
