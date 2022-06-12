@@ -319,6 +319,7 @@ src_configure() {
 	cat <<- _EOF_ > "${S}"/config.toml
 		changelog-seen = 2
 		[llvm]
+		static-libstdcpp = false
 		download-ci-llvm = false
 		optimize = $(toml_usex !debug)
 		release-debuginfo = $(toml_usex debug)
