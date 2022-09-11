@@ -35,3 +35,9 @@ src_configure() {
 	)
 	cmake_src_configure
 }
+
+pkg_preinst() {
+	chmod +x "${D}/etc/init.d/StormByte-videoconvert"
+	cmake_pkg_preinst
+}
+
