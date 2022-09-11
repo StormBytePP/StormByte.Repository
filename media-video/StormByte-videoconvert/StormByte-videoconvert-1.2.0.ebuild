@@ -12,6 +12,7 @@ KEYWORDS="~amd64"
 IUSE="+x265 +fdk +opus"
 
 DEPEND="
+	dev-libs/boost
 	dev-db/sqlite:3
 	dev-libs/libconfig[cxx]
 	x265? ( media-video/ffmpeg[x265] )
@@ -22,14 +23,15 @@ RDEPEND="${DEPEND}"
 BDEPEND="media-video/ffmpeg[encode]"
 
 src_configure() {
-    local mycmakeargs=(
-        -DCMAKE_BUILD_TYPE=Release
-	-DENABLE_HEVC=$(usex x265)
-	-DENABLE_FDKAAC=$(usex fdk)
-	-DENABLE_OPUS=$(usex opus)
-	-DENABLE_AAC=ON
-	-DENABLE_AC3=ON
-	-DENABLE_EAC3=ON
-    )
-    cmake_src_configure
+	ls "${S}"
+	local mycmakeargs=(
+		-DCMAKE_BUILD_TYPE=Release
+		-DENABLE_HEVC=$(usex x265)
+		-DENABLE_FDKAAC=$(usex fdk)
+		-DENABLE_OPUS=$(usex opus)
+		-DENABLE_AAC=ON
+		-DENABLE_AC3=ON
+		-DENABLE_EAC3=ON
+	)
+	cmake_src_configure
 }
