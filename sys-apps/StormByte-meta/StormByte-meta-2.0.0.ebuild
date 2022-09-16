@@ -9,12 +9,11 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="utils stagemanager portageconfig makekernel"
+IUSE="utils stagemanager portageconfig"
 
 RDEPEND="
 	utils? ( sys-apps/StormByte-utils )
 	stagemanager? ( sys-apps/StormByte-stagemanager )
-	makekernel? ( sys-kernel/StormByte-makekernel )
 	portageconfig? ( app-portage/StormByte-portageconfig )
 "
 DEPEND="${RDEPEND}

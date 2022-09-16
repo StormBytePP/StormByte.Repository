@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+        <maintainer type="person">
+                <email>stormbyte@gmail.com</email>
+                <name>David C. Manuelda</name>
+        </maintainer>
+        <use>
+                <flag name="videoconvert">Install StormByte's Video Convert</flag>
+        </use>
+</pkgmetadata>
