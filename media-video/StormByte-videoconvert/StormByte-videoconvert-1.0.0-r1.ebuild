@@ -9,12 +9,12 @@ SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.g
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="+x265 +fdk +opus"
+IUSE="+x265 +fdk +opus -static-libs"
 
 DEPEND="
 	dev-libs/boost
-	dev-db/sqlite:3
-	dev-libs/libconfig[cxx]
+	dev-db/sqlite:3[static-libs?]
+	dev-libs/libconfig[cxx,static-libs?]
 	x265? ( media-video/ffmpeg[x265] )
 	fdk? ( media-video/ffmpeg[fdk] )
 	opus? ( media-video/ffmpeg[opus] )
@@ -32,6 +32,7 @@ src_configure() {
 		-DENABLE_AAC=ON
 		-DENABLE_AC3=ON
 		-DENABLE_EAC3=ON
+		-DENABLE_STATIC=$(usex static-libs)
 	)
 	cmake_src_configure
 }
