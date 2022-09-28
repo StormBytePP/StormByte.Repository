@@ -1,7 +1,7 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2021 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=8
+EAPI=7
 
 CMAKE_MAKEFILE_GENERATOR="emake"
 I18N_PV=2.7.8
@@ -16,7 +16,7 @@ SRC_URI="
 "
 
 # Multiple licenses because of all the bundled stuff.
-LICENSE="GPL-1 GPL-2 LGPL-2.1 MIT OFL-1.1 PSF-2 public-domain"
+LICENSE="GPL-1 GPL-2 MIT PSF-2 public-domain"
 SLOT="2.7"
 KEYWORDS="~amd64 ~x86"
 IUSE="debug nls nvenc opengl qt5 sdl vaapi vdpau xv"
@@ -27,7 +27,7 @@ BDEPEND="
 "
 DEPEND="
 	~media-libs/avidemux-core-${PV}:${SLOT}[nls?,sdl?,vaapi?,vdpau?,xv?,nvenc?]
-	nvenc? ( amd64? ( media-video/nvidia-video-codec:0 ) )
+	nvenc? ( amd64? ( media-video/nvidia_video_sdk:0 ) )
 	opengl? ( virtual/opengl:0 )
 	qt5? (
 		dev-qt/qtcore:5
@@ -103,7 +103,6 @@ src_configure() {
 
 	use qt5 && mycmakeargs+=(
 			-DENABLE_QT5="$(usex qt5)"
-			-DLRELEASE_EXECUTABLE="$(qt5_get_bindir)/lrelease"
 	)
 
 	use debug && mycmakeargs+=( -DVERBOSE=1 -DADM_DEBUG=1 )
