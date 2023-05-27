@@ -16,7 +16,7 @@ RDEPEND="
 	sys-process/parallel
 	media-video/ffmpeg
 	media-video/hdr10plus_tool
-	videoconvert? ( media-video/StormByte-videoconvert )
+	videoconvert? ( media-video/StormByte-VideoConvert )
 "
 DEPEND="${RDEPEND}
 "
