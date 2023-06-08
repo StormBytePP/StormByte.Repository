@@ -1,0 +1,3 @@
+# Set Intel CET C/CXXFLAGS
+CFLAGS="${CFLAGS} -fcf-protection -mshstk"
+CXXFLAGS="${CXXFLAFS} -fcf-protection -mshstk"

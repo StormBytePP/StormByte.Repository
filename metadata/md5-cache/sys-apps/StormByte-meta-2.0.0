@@ -1,0 +1,10 @@
+DEFINED_PHASES=-
+DEPEND=utils? ( sys-apps/StormByte-utils ) stagemanager? ( sys-apps/StormByte-stagemanager ) portageconfig? ( app-portage/StormByte-portageconfig )
+DESCRIPTION=StormByte's utils
+EAPI=7
+HOMEPAGE=https://blog.stormbyte.org
+IUSE=utils stagemanager portageconfig
+KEYWORDS=amd64 x86
+RDEPEND=utils? ( sys-apps/StormByte-utils ) stagemanager? ( sys-apps/StormByte-stagemanager ) portageconfig? ( app-portage/StormByte-portageconfig )
+SLOT=0
+_md5_=b30be3e2558ae7ca14a93f5ee8b01832

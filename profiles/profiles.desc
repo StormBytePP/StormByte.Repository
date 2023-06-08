@@ -1,0 +1,8 @@
+amd64 17.1/intel-cet stable
+amd64 17.1/intel-cet/clang stable
+amd64 17.1/desktop/intel-cet stable
+amd64 17.1/desktop/intel-cet/clang stable
+amd64 17.1/no-multilib/intel-cet stable
+amd64 17.1/no-multilib/intel-cet/clang stable
+amd64 17.1/no-multilib/desktop/intel-cet stable
+amd64 17.1/no-multilib/desktop/intel-cet/clang stable

@@ -1,0 +1,10 @@
+DEFINED_PHASES=install unpack
+DEPEND=sys-apps/findutils sys-process/parallel media-video/ffmpeg media-video/hdr10plus_tool videoconvert? ( media-video/StormByte-VideoConvert )
+DESCRIPTION=StormByte's utils
+EAPI=7
+HOMEPAGE=https://blog.stormbyte.org
+IUSE=+videoconvert
+KEYWORDS=amd64 x86
+RDEPEND=sys-apps/findutils sys-process/parallel media-video/ffmpeg media-video/hdr10plus_tool videoconvert? ( media-video/StormByte-VideoConvert )
+SLOT=0
+_md5_=46cde391f9520f667b6ab1b06c549771
