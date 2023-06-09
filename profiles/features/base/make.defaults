@@ -1,0 +1,27 @@
+# Compiler custom optimizations
+COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
+COMPILER_OPTIMIZATION_CPU="-march=native"
+COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
+COMPILER_OPTIMIZATION_DEBUG="-g -ggdb"
+COMPILER_OPTIMIZATION_LTO="-flto=thin"
+
+# Linker cutom optimizations
+LINKER_OPTIMIZATION_BASE="-Wl,--sort-common -Wl,-O2"
+
+## Portage folders
+BASEDIR="/var/db/repos"
+PORTDIR="${BASEDIR}/portage"
+PKGDIR="${BASEDIR}/packages"
+DISTDIR="/distfiles"
+PORTAGE_TMPDIR="/tmp"
+
+## Compiler definitions
+LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
+LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
+LINKER_OPTIMIZATION_LLD="-fuse-ld=lld"
+
+## Licenses
+ACCEPT_LICENSE="*"
+
+## Environment
+LC_MESSAGES=C
