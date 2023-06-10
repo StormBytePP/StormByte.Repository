@@ -1,2 +1,3 @@
-sys-devel/gcc graphite
+sys-devel/gcc graphite custom-cflags
+sys-libs/glibc custom-cflags
 sys-devel/binutils gold

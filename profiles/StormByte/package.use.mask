@@ -1,0 +1,2 @@
+sys-devel/gcc -custom-cflags
+sys-libs/glibc -custom-cflags
