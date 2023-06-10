@@ -1,7 +1,0 @@
-DEFINED_PHASES=install unpack
-DESCRIPTION=StormByte's Portage Config Helper
-EAPI=7
-HOMEPAGE=https://blog.stormbyte.org
-KEYWORDS=amd64 x86
-SLOT=0
-_md5_=4d90af27266e7caa8180d18b47980a78
