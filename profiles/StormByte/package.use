@@ -1,1 +1,2 @@
-sys-devel/gcc vtv
+sys-devel/gcc vtv zstd
+sys-devel/binutils zstd

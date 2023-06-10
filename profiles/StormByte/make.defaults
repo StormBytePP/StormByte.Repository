@@ -1,3 +1,6 @@
+# Use defaults
+USE="branding cjk unicode pic icu -bindist verify-sig"
+
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
 COMPILER_OPTIMIZATION_CPU="-march=native"
