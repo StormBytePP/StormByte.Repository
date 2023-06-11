@@ -5,7 +5,7 @@ USE="branding cjk unicode pic icu -bindist verify-sig"
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
 COMPILER_OPTIMIZATION_CPU="-march=native"
 COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
-COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument -Wno-unknown-attributes"
+COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument -Wno-unknown-attributes -Wno-error=implicit-function-declaration"
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
 
