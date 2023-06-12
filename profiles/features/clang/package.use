@@ -1,2 +1,3 @@
 sys-devel/llvm zstd
 sys-devel/lld zstd
+sys-devel/clang-runtime sanitize
