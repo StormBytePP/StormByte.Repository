@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,7 +11,7 @@ inherit plocale wxwidgets xdg
 DESCRIPTION="GUI gettext translations editor"
 HOMEPAGE="https://poedit.net"
 SRC_URI="https://github.com/vslavik/${PN}/releases/download/v${PV}-oss/${P}.tar.gz"
-IUSE="+cld2 +crowdin"
+IUSE="+crowdin"
 
 KEYWORDS="~amd64"
 LICENSE="MIT"
@@ -25,7 +25,6 @@ RDEPEND="
 	dev-libs/boost:=[nls]
 	dev-libs/icu:=
 	>=x11-libs/wxGTK-3.0.4:${WX_GTK_VER}[X,webkit]
-	cld2? ( sci-libs/cld2 )
 	crowdin? (
 		dev-cpp/cpprest
 		app-crypt/libsecret
@@ -51,7 +50,6 @@ src_prepare() {
 
 src_configure() {
 	local myeconfargs=(
-		$(use_with cld2)
 		$(use_with crowdin cpprest)
 	)
 

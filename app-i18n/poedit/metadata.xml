@@ -16,7 +16,5 @@
 	</upstream>
 	<use>
 		<flag name="crowdin">Enable Crowdin (online translation platform) integration</flag>
-		<flag name="cld2">Better language autodetection and non-English source
-		languages via sci-libs/cld2</flag>
 	</use>
 </pkgmetadata>
