@@ -1,3 +1,6 @@
-sys-devel/llvm zstd
-sys-devel/lld zstd
+sys-devel/llvm lto polly zstd
+sys-devel/lld lto zstd
+sys-devel/clang lto
 sys-devel/clang-runtime sanitize
+sys-libs/libcxx lto
+sys-libs/libcxxabi
