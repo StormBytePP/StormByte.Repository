@@ -1,43 +1,50 @@
-# Copyright 1999-2022 Gentoo Authors
+# Copyright 1999-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{8..10} )
-inherit cmake flag-o-matic llvm llvm.org python-any-r1
+PYTHON_COMPAT=( python3_{9..11} )
+inherit cmake flag-o-matic llvm llvm.org python-any-r1 toolchain-funcs
 
 DESCRIPTION="The LLVM linker (link editor)"
 HOMEPAGE="https://llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA"
-SLOT="0"
+SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~x86"
-IUSE="debug test lto"
+IUSE="debug test zstd lto"
 RESTRICT="!test? ( test )"
 
 DEPEND="
-	~sys-devel/llvm-${PV}
+	~sys-devel/llvm-${PV}[zstd=]
+	sys-libs/zlib:=
+	zstd? ( app-arch/zstd:= )
 "
 RDEPEND="
 	${DEPEND}
+	!sys-devel/lld:0
 "
 BDEPEND="
+	sys-devel/llvm:${LLVM_MAJOR}
 	test? (
 		>=dev-util/cmake-3.16
-		$(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
+		$(python_gen_any_dep ">=dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
 	)
+"
+PDEPEND="
+	>=sys-devel/lld-toolchain-symlinks-16-r2:${LLVM_MAJOR}
 "
 
 LLVM_COMPONENTS=( lld cmake libunwind/include/mach-o )
-LLVM_TEST_COMPONENTS=( llvm/utils/{lit,unittest} )
+LLVM_TEST_COMPONENTS=( llvm/utils third-party )
 llvm.org_set_globals
 
 python_check_deps() {
-	has_version -b "dev-python/lit[${PYTHON_USEDEP}]"
+	python_has_version ">=dev-python/lit-${PV}[${PYTHON_USEDEP}]"
 }
 
 pkg_setup() {
-	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
+	LLVM_MAX_SLOT=${LLVM_MAJOR} llvm_pkg_setup
 	use test && python-any-r1_pkg_setup
 }
 
@@ -59,19 +66,22 @@ src_configure() {
 	use elibc_musl && append-ldflags -Wl,-z,stack-size=2097152
 
 	local mycmakeargs=(
+		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_INCLUDE_TESTS=$(usex test)
-		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
 	)
+
 	use test && mycmakeargs+=(
-		-DLLVM_BUILD_TESTS=ON
 		-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
 		-DPython3_EXECUTABLE="${PYTHON}"
 	)
 
-	# Enable lto?
-	use lto && mycmakeargs+=(-DLLVM_ENABLE_LTO=Thin)
+	use lto && mycmakeargs+=( -DLLVM_ENABLE_LTO="Thin" )
+
+	tc-is-cross-compiler &&	mycmakeargs+=(
+		-DLLVM_TABLEGEN_EXE="${BROOT}/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-tblgen"
+	)
 
 	cmake_src_configure
 }
