@@ -5,7 +5,7 @@ EAPI=7
 
 DESCRIPTION="StormByte's Stage Manager"
 HOMEPAGE="https://blog.stormbyte.org"
-SRC_URI="https://github.com/StormBytePP/StormByte-stagemanager/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/StormBytePP/StormByte-stagemanager/archive/${PV}.tar.gz -> StormByte-StageManager-${PV}.tar.gz"
 
 SLOT="0"
 KEYWORDS="amd64 x86"
@@ -27,6 +27,7 @@ DEPEND="${RDEPEND}
 "
 
 src_install() {
+	echo "S is: ${S}"
 	dobin "${S}/stormbyte-stagemanager"
 	doconfd "${S}/stormbyte-stagemanager.conf"
 }
