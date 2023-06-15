@@ -11,11 +11,8 @@ SLOT="0"
 KEYWORDS="amd64 x86"
 IUSE=""
 
-RDEPEND="
-	app-shells/bash
-"
-DEPEND="${RDEPEND}
-"
+RDEPEND="app-shells/bash"
+DEPEND="${RDEPEND}"
 
 src_unpack() {
 	#Since there are no downloaded files, this is dummy to prevent folder not exist error
