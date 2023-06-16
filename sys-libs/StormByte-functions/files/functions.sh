@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.2.0
+# Version 1.3.0
 
 function displayError() {
 	echo $1
@@ -84,6 +84,10 @@ function force_lto_vars() {
     CXXFLAGS="${CXXFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
     LDFLAGS="${LDFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
     RUSTFLAGS="${RUSTFLAGS} -Clinker-plugin-lto"
+}
+
+function force_ccache_disable {
+	FEATURES="-ccache"
 }
 
 # Useful variables
