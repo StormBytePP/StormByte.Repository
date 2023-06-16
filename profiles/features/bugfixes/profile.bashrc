@@ -16,4 +16,3 @@ if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
     CFLAGS="${CFLAGS} -fno-builtin-strlen"
     CXXFLAGS="${CXXFLAGS} -fno-builtin-strlen"
 fi
-
