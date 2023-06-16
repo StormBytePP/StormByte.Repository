@@ -1,7 +1,7 @@
 source /lib/StormByte/functions.sh
 
 if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
-    local GCC_FORCED_PACKAGES="sys-devel/gcc app-crypt/efitools app-cdr/cdrtools"
+    local GCC_FORCED_PACKAGES="sys-devel/gcc app-crypt/efitools"
     local CXX11_FORCED_PACKAGES="dev-util/ddd media-libs/gexiv2"
     local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
 
