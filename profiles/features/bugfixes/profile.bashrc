@@ -19,4 +19,6 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
         CFLAGS="${CFLAGS} -fno-builtin-strlen"
         CXXFLAGS="${CXXFLAGS} -fno-builtin-strlen"
     fi
+elif [[ "${EBUILD_PHASE}" == "pretend" ]] ; then
+    list_contains "${CCACHE_DISABLE_PACKAGES}" "${CATEGORY}/${PN}" && force_ccache_disable
 fi
