@@ -11,7 +11,7 @@ list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
 [ "${CATEGORY}/${PN}:${SLOT}" == "x11-libs/wxGTK:3.0-gtk3" ] && force_cxx11_vars
 
 # Glibc special options for valgrind
-if [ "${CATEGORY}/${PN}" == "sys-devel/glibc" ]; then
+if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
     force_gcc_vars
     CFLAGS="${CFLAGS} -fno-builtin-strlen"
     CXXFLAGS="${CXXFLAGS} -fno-builtin-strlen"
