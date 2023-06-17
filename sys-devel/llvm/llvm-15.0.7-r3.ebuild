@@ -127,6 +127,10 @@ check_distribution_components() {
 					# TableGen lib + deps
 					LLVMDemangle|LLVMSupport|LLVMTableGen)
 						;;
+					# Polly stuff
+					Polly|LLVMAggressiveInstCombine|LLVMAnalysis|LLVMAsmParser|LLVMAsmPrinter|LLVMBinaryFormat|LLVMBitReader|LLVMBitWriter|LLVMBitstreamReader|LLVMCodeGen|LLVMCore|LLVMCoroutines|LLVMDebugInfoCodeView|LLVMDebugInfoDWARF|LLVMDebugInfoMSF|LLVMDebugInfoPDB|LLVMExtensions|LLVMFrontendOpenMP|LLVMIRPrinter|LLVMIRReader|LLVMInstCombine|LLVMInstrumentation|LLVMLinker|LLVMMC|LLVMMCParser|LLVMNVPTXCodeGen|LLVMNVPTXDesc|LLVMNVPTXInfo|LLVMObjCARCOpts|LLVMObject|LLVMPasses|LLVMProfileData|LLVMRemarks|LLVMScalarOpts|LLVMSelectionDAG|LLVMSymbolize|LLVMTarget|LLVMTargetParser|LLVMTextAPI|LLVMTransformUtils|LLVMVectorize|LLVMipo)
+						use polly || continue
+						;;
 					# static libs
 					LLVM*)
 						continue
@@ -171,10 +175,7 @@ check_distribution_components() {
 }
 
 pre_src_unpack() {
-	if use polly ; then
-    	LLVM_COMPONENTS=( llvm cmake polly third-party)
-	fi
-    llvm.org_src_unpack
+	use polly && LLVM_COMPONENTS+=( polly third-party )
 }
 
 src_prepare() {
@@ -421,14 +422,12 @@ multilib_src_configure() {
 		-DOCAMLFIND=NO
 	)
 
-	if use polly ; then
-		mycmakeargs+=(
-			-DLLVM_ENABLE_PROJECTS="polly"
-			-DPOLLY_ENABLE_GPGPU_CODEGEN=ON
-			-DLLVM_TOOL_POLLY_BUILD=ON
-			-DLLVM_POLLY_LINK_INTO_TOOLS=ON
-		)
-	fi
+	use polly && mycmakeargs+=(
+		-DLLVM_ENABLE_PROJECTS="polly"
+		-DPOLLY_ENABLE_GPGPU_CODEGEN=ON
+		-DLLVM_TOOL_POLLY_BUILD=ON
+		-DLLVM_POLLY_LINK_INTO_TOOLS=ON
+	)
 
 	use lto && mycmakeargs+=( -DLLVM_ENABLE_LTO="Thin" )
 
@@ -546,17 +545,6 @@ src_install() {
 	# move wrapped headers back
 	mv "${ED}"/usr/include "${ED}"/usr/lib/llvm/${LLVM_MAJOR}/include || die
 }
-
-post_src_install() {
-    function polly_install() {
-		DESTDIR=${D} cmake_build tools/polly/install/strip
-    }
-    
-	if use polly ; then
-    	multilib_foreach_abi polly_install
-	fi
-}
-
 
 multilib_src_install() {
 	DESTDIR=${D} cmake_build install-distribution
