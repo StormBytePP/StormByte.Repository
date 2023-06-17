@@ -89,6 +89,7 @@ function force_lto_vars() {
 function force_polly_disable {
 	CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
 	CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
+	LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
 }
 
 # Useful variables
