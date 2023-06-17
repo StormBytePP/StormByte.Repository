@@ -129,6 +129,10 @@ check_distribution_components() {
 					# TableGen lib + deps
 					LLVMDemangle|LLVMSupport|LLVMTableGen)
 						;;
+					# Polly stuff
+					Polly|LLVMAggressiveInstCombine|LLVMAnalysis|LLVMAsmParser|LLVMAsmPrinter|LLVMBinaryFormat|LLVMBitReader|LLVMBitWriter|LLVMBitstreamReader|LLVMCodeGen|LLVMCore|LLVMCoroutines|LLVMDebugInfoCodeView|LLVMDebugInfoDWARF|LLVMDebugInfoMSF|LLVMDebugInfoPDB|LLVMExtensions|LLVMFrontendOpenMP|LLVMIRPrinter|LLVMIRReader|LLVMInstCombine|LLVMInstrumentation|LLVMLinker|LLVMMC|LLVMMCParser|LLVMNVPTXCodeGen|LLVMNVPTXDesc|LLVMNVPTXInfo|LLVMObjCARCOpts|LLVMObject|LLVMPasses|LLVMProfileData|LLVMRemarks|LLVMScalarOpts|LLVMSelectionDAG|LLVMSymbolize|LLVMTarget|LLVMTargetParser|LLVMTextAPI|LLVMTransformUtils|LLVMVectorize|LLVMipo)
+						use polly || continue
+						;;
 					# static libs
 					LLVM*)
 						continue
@@ -546,16 +550,6 @@ src_install() {
 
 	# move wrapped headers back
 	mv "${ED}"/usr/include "${ED}"/usr/lib/llvm/${LLVM_MAJOR}/include || die
-}
-
-post_src_install() {
-    function polly_install() {
-		DESTDIR=${D} cmake_build tools/polly/install/strip
-    }
-    
-	if use polly ; then
-    	multilib_foreach_abi polly_install
-	fi
 }
 
 multilib_src_install() {
