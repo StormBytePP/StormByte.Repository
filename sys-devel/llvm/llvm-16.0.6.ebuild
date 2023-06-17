@@ -177,10 +177,7 @@ check_distribution_components() {
 }
 
 pre_src_unpack() {
-	if use polly ; then
-    	LLVM_COMPONENTS=( llvm cmake polly third-party)
-	fi
-    llvm.org_src_unpack
+	use polly && LLVM_COMPONENTS+=( polly third-party )
 }
 
 src_prepare() {
@@ -435,14 +432,12 @@ multilib_src_configure() {
 		-DOCAMLFIND=NO
 	)
 
-	if use polly ; then
-		mycmakeargs+=(
-			-DLLVM_ENABLE_PROJECTS="polly"
-			-DPOLLY_ENABLE_GPGPU_CODEGEN=ON
-			-DLLVM_TOOL_POLLY_BUILD=ON
-			-DLLVM_POLLY_LINK_INTO_TOOLS=ON
-		)
-	fi
+	use polly && mycmakeargs+=(
+		-DLLVM_ENABLE_PROJECTS="polly"
+		-DPOLLY_ENABLE_GPGPU_CODEGEN=ON
+		-DLLVM_TOOL_POLLY_BUILD=ON
+		-DLLVM_POLLY_LINK_INTO_TOOLS=ON
+	)
 
 	use lto && mycmakeargs+=( -DLLVM_ENABLE_LTO="Thin" )
 
