@@ -86,8 +86,9 @@ function force_lto_vars() {
     RUSTFLAGS="${RUSTFLAGS} -Clinker-plugin-lto"
 }
 
-function force_ccache_disable {
-	FEATURES="-ccache"
+function force_polly_disable {
+	CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
+	CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
 }
 
 # Useful variables
