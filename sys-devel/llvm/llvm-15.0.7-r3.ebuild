@@ -127,7 +127,7 @@ check_distribution_components() {
 					# TableGen lib + deps
 					LLVMDemangle|LLVMSupport|LLVMTableGen)
 						;;
-					# Polly stuff
+					# Polly + deps
 					Polly|LLVMAggressiveInstCombine|LLVMAnalysis|LLVMAsmParser|LLVMAsmPrinter|LLVMBinaryFormat|LLVMBitReader|LLVMBitWriter|LLVMBitstreamReader|LLVMCodeGen|LLVMCore|LLVMCoroutines|LLVMDebugInfoCodeView|LLVMDebugInfoDWARF|LLVMDebugInfoMSF|LLVMDebugInfoPDB|LLVMExtensions|LLVMFrontendOpenMP|LLVMIRPrinter|LLVMIRReader|LLVMInstCombine|LLVMInstrumentation|LLVMLinker|LLVMMC|LLVMMCParser|LLVMNVPTXCodeGen|LLVMNVPTXDesc|LLVMNVPTXInfo|LLVMObjCARCOpts|LLVMObject|LLVMPasses|LLVMProfileData|LLVMRemarks|LLVMScalarOpts|LLVMSelectionDAG|LLVMSymbolize|LLVMTarget|LLVMTargetParser|LLVMTextAPI|LLVMTransformUtils|LLVMVectorize|LLVMipo)
 						use polly || continue
 						;;
@@ -175,7 +175,7 @@ check_distribution_components() {
 }
 
 pre_src_unpack() {
-	use polly && LLVM_COMPONENTS+=( polly third-party )
+	use polly && LLVM_COMPONENTS+=( polly )
 }
 
 src_prepare() {
@@ -548,6 +548,10 @@ src_install() {
 
 multilib_src_install() {
 	DESTDIR=${D} cmake_build install-distribution
+
+	if use polly; then
+		DESTDIR=${D} cmake_build tools/polly/install/strip
+	fi
 
 	# move headers to /usr/include for wrapping
 	rm -rf "${ED}"/usr/include || die
