@@ -192,4 +192,4 @@ LICENSE="Apache-2.0 BSD Boost-1.0 MIT Unlicense"
 SLOT="0"
 KEYWORDS="~amd64"
 
-PATCHES=( "${FILESDIR}/${P}-update-deps.patch" )
+PATCHES=( "${FILESDIR}/${PV}-update-deps.patch" )
