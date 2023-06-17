@@ -4,7 +4,7 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
     local GCC_FORCED_PACKAGES="sys-devel/gcc"
     local CXX11_FORCED_PACKAGES="dev-util/ddd media-libs/gexiv2"
     local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
-    local POLLY_DISABLE_PACKAGES="media-libs/libmad dev-util/valgrind"
+    local POLLY_DISABLE_PACKAGES="media-libs/libmad dev-util/valgrind media-video/ffmpeg"
 
     list_contains "${GCC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_gcc_vars
     list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
