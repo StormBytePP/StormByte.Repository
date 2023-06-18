@@ -17,7 +17,7 @@ COMPILER_OPTIMIZATION_LTO="-flto=thin"
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,--as-needed -Wl,--sort-common -Wl,-O2"
-LINKER_OPTIMIZATION_CLANG="-lomp"
+LINKER_OPTIMIZATION_CLANG=""
 LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
 LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
 LINKER_OPTIMIZATION_LLD="-fuse-ld=lld"
