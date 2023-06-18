@@ -9,7 +9,7 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
     list_contains "${GCC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_gcc_vars
     list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
     list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
-    list_contains "${POLLY_DISABLE_PACKAGES}" "${CATEGORY}/${PN}" && force_polly_disable
+    #list_contains "${POLLY_DISABLE_PACKAGES}" "${CATEGORY}/${PN}" && force_polly_disable
     [ "${CATEGORY}/${PN}:${SLOT}" == "gui-libs/gtk:4" ] && force_binutils_vars
     [ "${CATEGORY}/${PN}:${SLOT}" == "x11-libs/wxGTK:3.0-gtk3" ] && force_cxx11_vars
 
