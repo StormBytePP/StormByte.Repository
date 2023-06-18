@@ -1,6 +1,6 @@
 sys-devel/llvm lto zstd
 sys-devel/lld lto zstd
 sys-devel/clang lto
-sys-devel/clang-runtime sanitize
+sys-devel/clang-runtime -sanitize
 sys-libs/libcxx lto
 sys-libs/libcxxabi lto
