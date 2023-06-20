@@ -1,0 +1,4 @@
+# System folders
+LIBDIR_amd64="lib"
+LIBDIR_x32="libx32"
+LIBDIR_x86="lib"

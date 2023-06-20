@@ -1,2 +1,2 @@
 ..
-gentoo:arch/amd64/no-multilib
+../../features/no-multilib
