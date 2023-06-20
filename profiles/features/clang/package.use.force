@@ -6,4 +6,3 @@ sys-devel/clang-common default-libcxx default-compiler-rt default-lld
 sys-devel/clang-runtime compiler-rt libcxx openmp
 sys-libs/libcxx static-libs
 sys-libs/libcxxabi static-libs
-sys-devel/llvm binutils-plugin
