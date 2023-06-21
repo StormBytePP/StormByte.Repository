@@ -10,7 +10,8 @@ sys-devel/llvm binutils-plugin # musl has no binutils
 # msgfmt: Cannot convert from "CP932" to "UTF-8". msgfmt relies on iconv(), and iconv() does not support this conversion.
 # Bug #908961
 app-editors/vim-core nls
+app-text/opensp nls
 
 # numactl does not compile
 dev-db/mariadb numa
-media-libs/x265
+media-libs/x265 numa
