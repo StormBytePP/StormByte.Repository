@@ -5,3 +5,8 @@
 # upstream does not provide docs in musl tarball
 dev-lang/rust-bin doc
 sys-devel/llvm binutils-plugin # musl has no binutils
+
+# Does not compile
+# msgfmt: Cannot convert from "CP932" to "UTF-8". msgfmt relies on iconv(), and iconv() does not support this conversion.
+# Bug #908961
+app-editors/vim-core nls
