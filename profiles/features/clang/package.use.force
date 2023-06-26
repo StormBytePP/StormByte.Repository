@@ -3,6 +3,6 @@
 
 # Force Clang/LLVM flags
 sys-devel/clang-common default-libcxx default-compiler-rt default-lld
-sys-devel/clang-runtime compiler-rt libcxx openmp
+sys-devel/clang-runtime compiler-rt libcxx openmp sanitize
 sys-libs/libcxx static-libs
 sys-libs/libcxxabi static-libs
