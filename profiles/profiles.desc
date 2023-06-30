@@ -3,11 +3,15 @@ amd64               StormByte/intel-cet                                         
 amd64               StormByte/intel-cet/clang                                       stable
 amd64               StormByte/desktop/intel-cet                                     stable
 amd64               StormByte/desktop/intel-cet/clang                               stable
+amd64               StormByte/desktop/plasma/intel-cet                              stable
+amd64               StormByte/desktop/plasma/intel-cet/clang                        stable
 amd64               StormByte/no-multilib                                           stable
 amd64               StormByte/no-multilib/intel-cet                                 stable
 amd64               StormByte/no-multilib/intel-cet/clang                           stable
 amd64               StormByte/no-multilib/desktop/intel-cet                         stable
 amd64               StormByte/no-multilib/desktop/intel-cet/clang                   stable
+amd64               StormByte/no-multilib/desktop/plasma/intel-cet                  stable
+amd64               StormByte/no-multilib/desktop/plasma/intel-cet/clang            stable
 amd64               StormByte/no-multilib/hardened                                  stable
 amd64               StormByte/no-multilib/hardened/intel-cet                        stable
 amd64               StormByte/no-multilib/hardened/intel-cet/clang                  stable
