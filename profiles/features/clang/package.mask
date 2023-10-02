@@ -1,7 +1,10 @@
 # Mask LLVM-17.0.1 as of its bugs
 =sys-libs/libomp-17.0.1
 =sys-devel/llvm-17.0.1
+=sys-devel/llvm-toolchain-symlinks-17
 =sys-devel/clang-common-17.0.1
+=sys-devel/clang-runtime-17.0.1
+=sys-devel/clang-toolchain-symlinks-17
 =sys-devel/clang-17.0.1
 =sys-libs/compiler-rt-17.0.1
 =sys-libs/compiler-rt-sanitizers-17.0.1
