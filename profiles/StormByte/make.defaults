@@ -1,6 +1,9 @@
 # Use defaults
 USE="branding cjk unicode pic icu -bindist verify-sig"
 
+# Language
+L10N="es es_ES"
+
 # CCache
 FEATURES="ccache"
 CCACHE_DIR="/var/cache/ccache"
