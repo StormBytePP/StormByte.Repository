@@ -119,7 +119,7 @@ multilib_src_configure() {
 		)
 	fi
 
-	mycmakeargs+=( -DLIBUNWIND_ENABLE_CET=$(usex cet ON OFF) )
+	use cet && mycmakeargs+=( -DLIBUNWIND_ENABLE_CET=$(usex cet ON OFF) )
 
 	cmake_src_configure
 }

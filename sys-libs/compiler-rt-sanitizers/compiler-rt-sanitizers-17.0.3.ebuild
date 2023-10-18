@@ -149,8 +149,6 @@ src_configure() {
 		)
 	fi
 
-	use cet && mycmakeargs+=( -DCOMPILER_RT_ENABLE_CET=ON )
-
 	if use test; then
 		mycmakeargs+=(
 			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
@@ -181,6 +179,8 @@ src_configure() {
 			-DCMAKE_LIBTOOL="${EPREFIX}/usr/bin/${CHOST}-libtool"
 		)
 	fi
+
+	use cet && mycmakeargs+=( -DCOMPILER_RT_ENABLE_CET=ON )
 
 	cmake_src_configure
 
