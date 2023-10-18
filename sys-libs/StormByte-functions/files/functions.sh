@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.3.0
+# Version 1.4.0
 
 function displayError() {
 	echo $1
@@ -90,6 +90,10 @@ function force_polly_disable {
 	CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
 	CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
 	LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
+}
+
+function force_ld_undefined_version {
+	LDFLAGS="${LDFLAGS} -Wl,--undefined-version" 
 }
 
 # Useful variables
