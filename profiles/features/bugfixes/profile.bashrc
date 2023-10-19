@@ -10,7 +10,6 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
     list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
     list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
     list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
-    [ "${CATEGORY}/${PN}:${SLOT}" == "x11-libs/wxGTK:3.0-gtk3" ] && force_cxx11_vars
 
     # Glibc special options for valgrind
     if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
