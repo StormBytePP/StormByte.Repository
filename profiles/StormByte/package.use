@@ -1,3 +1,2 @@
 sys-devel/gcc vtv zstd
 sys-devel/binutils zstd
-app-alternatives/ninja -reference samurai
