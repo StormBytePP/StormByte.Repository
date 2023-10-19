@@ -8,7 +8,7 @@ EAPI=8
 # - media-libs/libmediainfo
 # - media-video/mediainfo
 
-WX_GTK_VER="3.0-gtk3"
+WX_GTK_VER="3.2-gtk3"
 inherit xdg-utils autotools wxwidgets
 
 DESCRIPTION="MediaInfo supplies technical and tag information about media files"
