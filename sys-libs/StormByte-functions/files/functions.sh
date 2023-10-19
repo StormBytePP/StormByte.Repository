@@ -93,7 +93,7 @@ function force_polly_disable {
 }
 
 function force_ld_undefined_version {
-	LDFLAGS="${LDFLAGS} -Wl,--undefined-version" 
+	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
 }
 
 # Useful variables
