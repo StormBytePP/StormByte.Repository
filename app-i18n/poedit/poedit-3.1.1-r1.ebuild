@@ -4,7 +4,7 @@
 EAPI=8
 
 PLOCALES="af an ar az be be@latin bg bs ca ckb co cs da de el en_GB es et eu fa fi fr ga gl he hr hu hy id is it ja ka kab kk ko lt lv ms nb nl oc pa pl pt_BR pt_PT ro ru sk sl sq sr sv tg th tr uk uz vi zh_CN zh_TW"
-WX_GTK_VER=3.0-gtk3
+WX_GTK_VER=3.2-gtk3
 
 inherit plocale wxwidgets xdg
 
@@ -24,7 +24,7 @@ RDEPEND="
 	>=dev-libs/pugixml-1.9
 	dev-libs/boost:=[nls]
 	dev-libs/icu:=
-	>=x11-libs/wxGTK-3.0.4:${WX_GTK_VER}[X,webkit]
+	x11-libs/wxGTK:${WX_GTK_VER}[X,webkit]
 	crowdin? (
 		dev-cpp/cpprest
 		app-crypt/libsecret
