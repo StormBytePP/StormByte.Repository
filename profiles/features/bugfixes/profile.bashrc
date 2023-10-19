@@ -2,7 +2,7 @@ source /lib/StormByte/functions.sh
 
 if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
     local GCC_FORCED_PACKAGES="sys-devel/gcc"
-    local CXX11_FORCED_PACKAGES="dev-util/ddd media-libs/gexiv2"
+    local CXX11_FORCED_PACKAGES=""
     local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
     local FORCE_LD_UNDEFINED_VERSION="dev-libs/libbsd"
 
