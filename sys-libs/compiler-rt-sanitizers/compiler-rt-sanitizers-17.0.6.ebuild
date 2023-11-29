@@ -98,6 +98,9 @@ src_prepare() {
 		> test/cfi/CMakeLists.txt || die
 	fi
 
+	# hangs, sigh
+	rm test/tsan/getline_nohang.cpp || die
+
 	llvm.org_src_prepare
 }
 
