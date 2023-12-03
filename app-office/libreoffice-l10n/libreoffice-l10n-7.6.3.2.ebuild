@@ -24,16 +24,16 @@ IUSE="offlinehelp"
 # when changing the language lists, please be careful to preserve the spaces (bug 491728)
 #
 # "en:en-US" for mapping from Gentoo "en" to upstream "en-US" etc.
-LANGUAGES_HELP=" de en-GB en:en-US en-ZA ru "
+LANGUAGES_HELP=" de en-GB en:en-US en-ZA es ru "
 LANGUAGES="${LANGUAGES_HELP}"
 
 for lang in ${LANGUAGES_HELP}; do
-	helppack="offlinehelp? ( ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz )"
+	helppack="offlinehelp? ( ${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz )"
 	SRC_URI+=" l10n_${lang%:*}? ( ${helppack} )"
 done
 for lang in ${LANGUAGES}; do
 	if [[ ${lang%:*} != en ]]; then
-		langpack="${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz"
+		langpack="${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz"
 		SRC_URI+=" l10n_${lang%:*}? ( ${langpack} )"
 	fi
 	IUSE+=" l10n_${lang%:*}"

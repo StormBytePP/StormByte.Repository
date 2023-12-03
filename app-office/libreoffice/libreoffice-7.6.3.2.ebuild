@@ -88,7 +88,7 @@ googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres test valgrin
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
-	base? ( firebird java )
+	base? ( java )
 	bluetooth? ( dbus )
 	libreoffice_extensions_nlpsolver? ( java )
 	libreoffice_extensions_scripting-beanshell? ( java )
@@ -288,6 +288,9 @@ PATCHES=(
 	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
 	"${FILESDIR}/${PN}-7.2.0.4-qt5detect.patch"
+
+	# maybe upstreamable
+	"${FILESDIR}/libreoffice-7.5.8.2-icu-74-compatibility.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -397,6 +400,9 @@ src_configure() {
 		NM=llvm-nm
 		RANLIB=llvm-ranlib
 		LDFLAGS+=" -fuse-ld=lld"
+
+		# Workaround for bug #915067
+		append-ldflags -Wl,--undefined-version
 
 		# Not implemented by Clang, bug #903889
 		filter-flags -Wlto-type-mismatch -Werror=lto-type-mismatch
@@ -559,7 +565,7 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 rhino.jar) )
 	fi
 
-	is-flagq "-flto*" && myeconfargs+=( --enable-lto )
+	use lto && mycmakeargs+=( --enable-lto )
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
