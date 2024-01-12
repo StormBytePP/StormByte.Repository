@@ -34,9 +34,9 @@ PORTAGE_TMPDIR="/tmp"
 ACCEPT_LICENSE="*"
 
 # Environment
-GRUB_PLATFORMS="efi-64"
-VIDEO_CARDS="nvidia"
-INPUT_DEVICES="libinput"
+GRUB_PLATFORMS="-* efi-64"
+VIDEO_CARDS="-* nvidia"
+INPUT_DEVICES="-* libinput"
 RUBY_TARGETS="-* ruby33"
 PORTAGE_WORKDIR_MODE = "0770"
 
