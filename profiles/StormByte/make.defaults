@@ -39,6 +39,7 @@ VIDEO_CARDS="-* nvidia"
 INPUT_DEVICES="-* libinput"
 RUBY_TARGETS="-* ruby33"
 PORTAGE_WORKDIR_MODE = "0770"
+NINJA_VERBOSE=OFF
 
 # Features
 FEATURES="ccache userpriv usersandbox"
