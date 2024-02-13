@@ -19,5 +19,6 @@ version</longdescription>
     <flag name="odk">Build the Office Development Kit</flag>
     <flag name="pdfimport">Enable PDF import via the Poppler library</flag>
     <flag name="vulkan">Enable Vulkan usage via the skia library (clang recommended)</flag>
+	<flag name="lto">Enable LTO build</flag>
   </use>
 </pkgmetadata>

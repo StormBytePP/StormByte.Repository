@@ -90,7 +90,7 @@ unset ADDONS_SRC
 # Extensions that need extra work:
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
-IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
+IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird lto
 googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres qt6 test valgrind vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
@@ -616,7 +616,7 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 rhino.jar) )
 	fi
 
-	tc-is-lto && myeconfargs+=( --enable-lto )
+	usex lto && myeconfargs+=( --enable-lto )
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
