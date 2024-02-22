@@ -24,6 +24,8 @@ BDEPEND=""
 DEPEND=""
 RDEPEND="${DEPEND}"
 
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
+
 QA_PREBUILT=""
 
 S="${WORKDIR}/${CEF_DIR}"
