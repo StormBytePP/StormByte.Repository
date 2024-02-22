@@ -3,3 +3,4 @@ sys-devel/lld lto zstd
 sys-devel/clang lto
 sys-libs/libcxx lto
 sys-libs/libcxxabi lto
+sys-libs/libomp hwloc ompt offload
