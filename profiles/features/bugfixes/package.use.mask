@@ -1,2 +1,0 @@
-# Bug 922163
-media-video/obs-studio browser
