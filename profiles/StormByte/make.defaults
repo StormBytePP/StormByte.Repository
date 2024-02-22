@@ -1,5 +1,5 @@
 # Use defaults
-USE="branding cjk unicode pic icu -bindist verify-sig"
+USE="branding cjk unicode pic icu -bindist verify-sig python"
 
 # Language
 L10N="es es-ES"
@@ -40,6 +40,9 @@ INPUT_DEVICES="-* libinput"
 RUBY_TARGETS="-* ruby33"
 PORTAGE_WORKDIR_MODE = "0770"
 NINJA_VERBOSE=OFF
+LLVM_TARGETS="X86 NVPTX"
+LLVM_SLOT="17"
+LUA_SINGLE_TARGET="lua5-4"
 
 # Features
 FEATURES="ccache userpriv usersandbox"
