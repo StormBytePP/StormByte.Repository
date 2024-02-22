@@ -1,1 +1,2 @@
-dev-lang/rust nightly
+# Rust is not prepared for CET yet
+# dev-lang/rust nightly

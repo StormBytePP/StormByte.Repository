@@ -1,2 +1,3 @@
 sys-devel/gcc -custom-cflags
-dev-lang/rust -nightly
+# Rust is not prepared for CET yet
+# dev-lang/rust -nightly

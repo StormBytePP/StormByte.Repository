@@ -1,4 +1,5 @@
 # Set Intel CET C/CXXFLAGS
 CFLAGS="${CFLAGS} ${COMPILER_OPTIMIZATION_CET}"
 CXXFLAGS="${CXXFLAFS} ${COMPILER_OPTIMIZATION_CET}"
-RUSTFLAGS="${RUSTFLAGS} -Zcf-protection=full"
+# Rust is not prepared for CET yet
+# RUSTFLAGS="${RUSTFLAGS} -Zcf-protection=full"
