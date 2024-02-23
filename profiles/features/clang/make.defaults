@@ -1,5 +1,6 @@
 CC="clang"
 CXX="clang++"
+CPP="clang-cpp"
 ADDR2LINE="llvm-addr2line"
 AS="llvm-as"
 AR="llvm-ar"
