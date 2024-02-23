@@ -1,5 +1,7 @@
 # Use defaults
-USE="branding cjk unicode pic icu -bindist verify-sig python"
+USE_BASE="branding cjk unicode pic icu -bindist python verify-sig"
+USE_SYSTEM="system-zlib"
+USE="${USE_BASE} ${USE_SYSTEM}"
 
 # Language
 L10N="es es-ES"

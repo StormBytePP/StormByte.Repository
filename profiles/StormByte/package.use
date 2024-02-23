@@ -1,2 +1,3 @@
 sys-devel/gcc vtv zstd
 sys-devel/binutils zstd
+dev-lang/python pgo
