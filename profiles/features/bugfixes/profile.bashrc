@@ -1,6 +1,6 @@
 source /lib/StormByte/functions.sh
 
-if [[ "${EBUILD_PHASE}" == "configure" ]] || [[ ! -z "$DISABLE_BUGFIXES" ]]; then
+if [[ "${EBUILD_PHASE}" == "configure" ]] && [[ ! -z "$DISABLE_BUGFIXES" ]]; then
     local GCC_FORCED_PACKAGES="sys-devel/gcc sys-libs/glibc"
     local CXX11_FORCED_PACKAGES=""
     local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
