@@ -1,4 +1,4 @@
-sys-devel/llvm lto zstd
+sys-devel/llvm lto zstd binutils-plugin
 sys-devel/lld lto zstd
 sys-devel/clang lto
 sys-libs/libcxx lto
