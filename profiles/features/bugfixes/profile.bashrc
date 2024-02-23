@@ -8,7 +8,7 @@ if [[ "${EBUILD_PHASE}" == "configure" ]]; then
 
     list_contains "${GCC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_gcc_vars
 
-	if [[ ! -z "$DISABLE_BUGFIXES" ]]; then
+	if [[ -z "$DISABLE_BUGFIXES" ]]; then
     	list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
     	list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
     	list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
