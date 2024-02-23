@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.4.0
+# Version 1.4.1
 
 function displayError() {
 	echo $1
@@ -64,6 +64,9 @@ function force_binutils_vars() {
 function force_gcc_vars() {
     OCC="gcc"
     OCXX="g++"
+	CC="gcc"
+	CXX="g++"
+	CPP="cpp"
     CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_CET} -fno-builtin-strlen"
     CXXFLAGS="${CFLAGS}"
     LDFLAGS="${LINKER_OPTIMIZATION_BASE} ${LINKER_OPTIMIZATION_BFD}"
