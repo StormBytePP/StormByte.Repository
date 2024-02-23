@@ -1,6 +1,3 @@
-sys-devel/llvm lto zstd binutils-plugin
-sys-devel/lld lto zstd
-sys-devel/clang lto
-sys-libs/libcxx lto
-sys-libs/libcxxabi lto
+sys-devel/llvm zstd binutils-plugin
+sys-devel/lld zstd
 sys-libs/libomp hwloc ompt offload

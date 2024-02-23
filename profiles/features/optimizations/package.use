@@ -1,0 +1,6 @@
+sys-devel/llvm lto
+sys-devel/lld lto
+sys-devel/clang lto
+sys-libs/libcxx lto
+sys-libs/libcxxabi lto
+sys-libs/glibc custom-cflags
