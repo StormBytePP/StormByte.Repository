@@ -33,10 +33,6 @@ PKGDIR="${BASEDIR}/packages"
 DISTDIR="/distfiles"
 PORTAGE_TMPDIR="/tmp"
 EMERGE_DEFAULT_OPTS="--ask --autounmask n --jobs=1 --verbose"
-BUILD_CORES="$(nproc --all)"
-BUILD_THREADS="${BUILD_CORES}"
-BUILD_LOAD="$(($BUILD_CORES - 2 ))"
-MAKEOPTS="-j${BUILD_THREADS} -l${BUILD_LOAD}"
 GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 
 # Licenses
