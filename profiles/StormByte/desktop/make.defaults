@@ -1,0 +1,10 @@
+COMPRESSION="bzip2 lz4 lzip lzma lzo zlib zlib zstd"
+CONNECTIVITY="bluetooth"
+FONTS="fontforge harfbuzz truetype woff2"
+MULTIMEDIA="apng gif jpeg png svg tiff webp"
+SECURITY="keyring"
+VIDEO="wayland"
+
+USE="${COMPRESSION} ${CONNECTIVITY} ${FONTS} ${MULTIMEDIA} ${SECURITY} ${VIDEO}"
+
+VIDEO_CARDS="nvidia"
