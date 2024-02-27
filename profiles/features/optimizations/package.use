@@ -5,3 +5,6 @@ sys-libs/libcxx lto
 sys-libs/libcxxabi lto
 sys-libs/glibc custom-cflags
 dev-lang/python pgo
+
+# CPU
+*/* $(cpuid2cpuflags)
