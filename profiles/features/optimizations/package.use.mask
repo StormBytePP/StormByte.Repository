@@ -1,1 +1,1 @@
-sys-libs/glibc -custom-cflags
+*/* -custom-cflags
