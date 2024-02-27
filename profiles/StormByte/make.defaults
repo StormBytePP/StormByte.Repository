@@ -34,17 +34,8 @@ DISTDIR="/distfiles"
 PORTAGE_TMPDIR="/tmp"
 EMERGE_DEFAULT_OPTS="--ask --autounmask n --jobs=1 --verbose"
 BUILD_CORES="$(nproc --all)"
-if [ $BUILD_CORES -gt 0 ]; then
-	BUILD_THREADS="${BUILD_CORES}"
-	if [ $(($BUILD_CORES - 2 )) -gt 0 ]; then
-		BUILD_LOAD="$(($BUILD_CORES - 2 ))"
-	else
-		BUILD_LOAD="1"
-	fi
-else
-	BUILD_THREADS="1"
-	BUILD_LOAD="1"
-fi
+BUILD_THREADS="${BUILD_CORES}"
+BUILD_LOAD="$(($BUILD_CORES - 2 ))"
 MAKEOPTS="-j${BUILD_THREADS} -l${BUILD_LOAD}"
 GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 
