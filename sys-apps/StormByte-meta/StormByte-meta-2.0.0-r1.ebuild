@@ -13,7 +13,7 @@ IUSE="utils stagemanager portageconfig"
 
 RDEPEND="
 	utils? ( sys-apps/StormByte-utils )
-	stagemanager? ( sys-apps/StormByte-stagemanager )
+	stagemanager? ( sys-apps/StormByte-StageManager )
 	portageconfig? ( app-portage/StormByte-portageconfig )
 "
 DEPEND="${RDEPEND}
