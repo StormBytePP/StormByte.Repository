@@ -5,8 +5,9 @@ HARDWARE="udev zeroconf"
 I18N="idn"
 MULTIMEDIA="apng gif jpeg png svg tiff webp"
 SECURITY="caps keyring"
-VIDEO="wayland"
+SOUND="gstreamer pulseaudio"
+VIDEO="ffmpeg wayland"
 
-USE="${COMPRESSION} ${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA} ${SECURITY} ${VIDEO}"
+USE="${COMPRESSION} ${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA} ${SECURITY} ${SOUND} ${VIDEO}"
 
 VIDEO_CARDS="nvidia"
