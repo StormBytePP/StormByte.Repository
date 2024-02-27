@@ -27,7 +27,7 @@ DEPEND="${RDEPEND}
 "
 
 src_install() {
-	dobin "${S}/Stormbyte-StageManager"
-	doconfd "${S}/Stormbyte-StageManager.conf"
+	dobin "${S}/StormByte-StageManager"
+	doconfd "${S}/StormByte-StageManager.conf"
 }
 
