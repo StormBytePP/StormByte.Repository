@@ -1,6 +1,6 @@
 COMPRESSION="bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 CONNECTIVITY="bluetooth"
-FONTS="fontforge harfbuzz truetype woff2"
+FONTS="fontconfig fontforge harfbuzz truetype woff2"
 HARDWARE="udev zeroconf"
 I18N="idn"
 MULTIMEDIA="apng gif jpeg png svg tiff webp"
