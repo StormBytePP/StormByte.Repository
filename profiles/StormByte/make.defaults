@@ -1,7 +1,8 @@
 # Use defaults
-USE_BASE="branding cjk unicode pic icu -bindist python verify-sig"
+USE_BASE="branding cjk unicode pic icu -bindist python"
+USE_SECURITY="caps filecaps verify-sig"
 USE_SYSTEM="system-zlib"
-USE="${USE_BASE} ${USE_SYSTEM}"
+USE="${USE_BASE} ${USE_SECURITY} ${USE_SYSTEM}"
 
 # Language
 L10N="es es-ES"
@@ -26,11 +27,26 @@ LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
 LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
 LINKER_OPTIMIZATION_LLD="-fuse-ld=lld"
 
-# Portage folders
+# Portage folders and config
 BASEDIR="/var/db/repos"
 PKGDIR="${BASEDIR}/packages"
 DISTDIR="/distfiles"
 PORTAGE_TMPDIR="/tmp"
+EMERGE_DEFAULT_OPTS="--ask --autounmask n --jobs=1 --verbose"
+BUILD_CORES="$(nproc --all)"
+if [ $BUILD_CORES -gt 0 ]; then
+	BUILD_THREADS="${BUILD_CORES}"
+	if [ $(($BUILD_CORES - 2 )) -gt 0 ]; then
+		BUILD_LOAD="$(($BUILD_CORES - 2 ))"
+	else
+		BUILD_LOAD="1"
+	fi
+else
+	BUILD_THREADS="1"
+	BUILD_LOAD="1"
+fi
+MAKEOPTS="-j${BUILD_THREADS} -l${BUILD_LOAD}"
+GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 
 # Licenses
 ACCEPT_LICENSE="*"
@@ -45,7 +61,7 @@ LLVM_TARGETS="X86 NVPTX"
 LLVM_SLOT="17"
 
 # Features
-FEATURES="ccache userpriv usersandbox"
+FEATURES="ccache metadata-transfer parallel-fetch userfetch userpriv usersandbox"
 
 ABI_X86="64"
 CPU_FLAGS_X86="aes avx avx2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 sse3 sse4_1 sse4_2 ssse3 vpclmulqdq"
