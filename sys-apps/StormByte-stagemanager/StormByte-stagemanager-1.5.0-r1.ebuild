@@ -27,7 +27,6 @@ DEPEND="${RDEPEND}
 "
 
 src_install() {
-	echo "S is: ${S}"
 	dobin "${S}/stormbyte-stagemanager"
 	doconfd "${S}/stormbyte-stagemanager.conf"
 }
