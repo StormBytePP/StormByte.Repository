@@ -1,0 +1,9 @@
+app-admin/sysklogd logger logrotate
+app-alternatives/bzip2 -reference pbzip2
+app-alternatives/gzip -reference pigz
+net-fs/nfs-utils -nfsv3
+net-misc/networkmanager dhcpcd iwd syslog
+sys-apps/util-linux -logger
+sys-firmware/intel-microcode hostonly initramfs
+sys-kernel/gentoo-kernel savedconfig
+sys-kernel/installkernel dracut grub
