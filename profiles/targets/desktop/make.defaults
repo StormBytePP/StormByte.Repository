@@ -1,6 +1,6 @@
 CONNECTIVITY="bluetooth"
 FONTS="fontconfig fontforge harfbuzz truetype woff2"
-HARDWARE="threads udev"
+HARDWARE="lm-sensors threads udev"
 I18N="idn"
 MULTIMEDIA_CODECS="apng dav1d fdk gif jpeg modplug mp3 openh264 opus png rav1e srt svg svt-av1 tiff vorbis vpx webp x264 x265 xvid"
 MULTIMEDIA_SUPPORT="ffmpeg gstreamer pulseaudio v4l vaapi vdpau vmaf wayland"
