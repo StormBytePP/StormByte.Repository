@@ -4,6 +4,7 @@ local GCC_FORCED_PACKAGES="sys-devel/gcc sys-libs/glibc"
 local CXX11_FORCED_PACKAGES=""
 local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
 local FORCE_LD_UNDEFINED_VERSION="dev-libs/totem-pl-parser media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/slang"
+local DISABLE_CCACHE="dev-java/openjdk"
 
 list_contains "${GCC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_gcc_vars
 
@@ -11,6 +12,7 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
 	list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
 	list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
+	list_contains "${DISABLE_CCACHE}" "${CATEGORY}/${PN}" && FEATURES="${FEATURES[@]/ccache}"
 fi
 
 # Glibc special options for valgrind
