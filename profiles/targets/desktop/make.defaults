@@ -10,7 +10,7 @@ NETWORK="http2 networkmanager zeroconf"
 QT="qml qt5 qt6"
 SECURITY="caps keyring"
 SOUND="jack openal pipewire pulseaudio"
-VIDEO="gles2 opengl vulkan"
+VIDEO="gles2 gui opengl vulkan"
 WEB="webkit"
 
 USE="${CONNECTIVITY} ${DEVELOPMENT} ${FONTS} ${HARDWARE} ${I18N} ${MISC} ${MULTIMEDIA_CODECS} ${MULTIMEDIA_SUPPORT} ${NETWORK} ${QT} ${SECURITY} ${SOUND} ${VIDEO} ${WEB}"
