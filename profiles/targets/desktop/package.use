@@ -2,6 +2,7 @@ app-office/libreoffice gtk java pdfimport -qt5 -qt6
 dev-db/postgresql llvm uuid
 dev-qt/qtbase mysql postgres
 dev-qt/qttools designer
+kde-frameworks/sonnet designer doc
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers

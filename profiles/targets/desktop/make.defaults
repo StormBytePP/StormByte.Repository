@@ -1,4 +1,5 @@
 CONNECTIVITY="bluetooth"
+DEVELOPMENT="boost"
 FONTS="fontconfig fontforge harfbuzz truetype woff2"
 HARDWARE="lm-sensors threads udev"
 I18N="idn"
@@ -11,7 +12,7 @@ SOUND="jack openal pipewire pulseaudio"
 VIDEO="gles2 opengl vulkan"
 WEB="webkit"
 
-USE="${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA_CODECS} ${MULTIMEDIA_SUPPORT} ${NETWORK} ${QT} ${SECURITY} ${SOUND} ${VIDEO} ${WEB}"
+USE="${CONNECTIVITY} ${DEVELOPMENT} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA_CODECS} ${MULTIMEDIA_SUPPORT} ${NETWORK} ${QT} ${SECURITY} ${SOUND} ${VIDEO} ${WEB}"
 
 VIDEO_CARDS="nvidia"
 SANE_BACKENDS="-* hp"
