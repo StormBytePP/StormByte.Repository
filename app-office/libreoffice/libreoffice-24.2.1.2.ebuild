@@ -233,6 +233,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	qt5? (
 		dev-qt/qtcore:5
 		dev-qt/qtgui:5
+		dev-qt/qtnetwork:5
 		dev-qt/qtwidgets:5
 		dev-qt/qtx11extras:5
 	)
