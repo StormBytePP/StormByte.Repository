@@ -1,26 +1,25 @@
+app-emulation/libvirt nfs virtualbox
+app-emulation/qemu fuse nfs spice usbredir virgl virtfs
 app-office/libreoffice gtk java pdfimport
 dev-db/postgresql llvm uuid
+dev-libs/appstream-glib fonts
 dev-qt/qtbase mysql postgres
+dev-qt/qtscript scripttools
 dev-qt/qttools designer
 kde-frameworks/sonnet designer doc
+media-fonts/corefonts tahoma
+media-fonts/fonts-meta ms
+media-gfx/xsane gimp
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers
+media-sound/audacity id3tag
 media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
-x11-base/xorg-server xvfb
-sys-apps/StormByte-meta stagemanager utils videoconvert
-
-net-misc/spice-gtk usbredir
 net-dns/dnsmasq script
 net-libs/gnutls pkcs11 tools
-app-emulation/qemu fuse nfs spice usbredir virgl virtfs
-app-emulation/libvirt nfs virtualbox
-media-fonts/fonts-meta ms
-media-fonts/corefonts tahoma
-media-gfx/xsane gimp
-dev-libs/appstream-glib fonts
+net-misc/spice-gtk usbredir
+sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-libs/zlib minizip
-dev-qt/qtscript scripttools
-media-sound/audacity id3tag
+x11-base/xorg-server xvfb
