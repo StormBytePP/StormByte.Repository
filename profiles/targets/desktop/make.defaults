@@ -1,6 +1,6 @@
 CONNECTIVITY="bluetooth"
 FONTS="fontconfig fontforge harfbuzz truetype woff2"
-HARDWARE="udev zeroconf"
+HARDWARE="threads udev zeroconf"
 I18N="idn"
 MULTIMEDIA="apng dav1d fdk gif jpeg modplug mp3 openh264 opus png rav1e srt svg svt-av1 tiff v4l vaapi vdpau vmaf vorbis vpx webp x264 x265 xvid"
 SECURITY="caps keyring"
