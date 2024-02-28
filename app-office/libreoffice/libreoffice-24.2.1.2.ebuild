@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="threads(+),xml(+)"
 
 MY_PV="${PV/_alpha/.alpha}"
@@ -91,7 +91,7 @@ unset ADDONS_SRC
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
 IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres qt5 qt6 test valgrind vulkan lto
+googledrive gstreamer +gtk kde ldap lto +mariadb odk pdfimport postgres qt5 qt6 test valgrind vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -109,7 +109,6 @@ RESTRICT="!test? ( test )"
 LICENSE="|| ( LGPL-3 MPL-1.1 )"
 SLOT="0"
 
-[[ ${MY_PV} == *9999* ]] || \
 KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86 ~amd64-linux"
 
 COMMON_DEPEND="${PYTHON_DEPS}
@@ -134,7 +133,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	app-text/libwpg:0.3
 	>=app-text/libwps-0.4
 	app-text/mythes
-	dev-cpp/abseil-cpp:=
 	>=dev-cpp/clucene-2.3.3.4-r2
 	>=dev-cpp/libcmis-0.6.2:0=
 	dev-db/unixODBC
@@ -161,7 +159,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=media-libs/harfbuzz-5.1.0:=[graphite,icu]
 	media-libs/lcms:2
 	>=media-libs/libcdr-0.1.0
-	>=media-libs/libepoxy-1.3.1
+	>=media-libs/libepoxy-1.3.1[X]
 	>=media-libs/libfreehand-0.1.0
 	media-libs/libjpeg-turbo:=
 	media-libs/libpagemaker
@@ -176,7 +174,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	sci-mathematics/lpsolve:=
 	sys-libs/zlib
 	virtual/opengl
-	x11-libs/cairo
+	x11-libs/cairo[X]
 	x11-libs/libXinerama
 	x11-libs/libXrandr
 	x11-libs/libXrender
@@ -201,11 +199,12 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		media-libs/gst-plugins-base:1.0
 	)
 	gtk? (
+		app-accessibility/at-spi2-core:2
 		dev-libs/glib:2
 		dev-libs/gobject-introspection
 		gnome-base/dconf
-		media-libs/mesa
-		x11-libs/gtk+:3
+		media-libs/mesa[egl(+)]
+		x11-libs/gtk+:3[X]
 		x11-libs/pango
 	)
 	kde? (
@@ -293,6 +292,9 @@ BDEPEND="
 			(	sys-devel/clang:16
 				sys-devel/llvm:16
 				=sys-devel/lld-16*	)
+			(	sys-devel/clang:15
+				sys-devel/llvm:15
+				=sys-devel/lld-15*	)
 		)
 	)
 	odk? ( >=app-text/doxygen-1.8.4 )
@@ -507,7 +509,6 @@ src_configure() {
 		--with-system-libs
 		--enable-build-opensymbol
 		--enable-cairo-canvas
-		--enable-gui
 		--enable-largefile
 		--enable-mergelibs=more
 		--enable-python=system
@@ -515,7 +516,6 @@ src_configure() {
 		--enable-release-build
 		--disable-breakpad
 		--disable-bundle-mariadb
-		--disable-libcmis
 		--disable-epm
 		--disable-fetch-external
 		--disable-gtk3-kde5
@@ -530,15 +530,16 @@ src_configure() {
 		--with-external-tar="${DISTDIR}"
 		--with-lang=""
 		--with-parallelism=$(makeopts_jobs)
-		--with-system-abseil
 		--with-system-openjpeg
 		--with-tls=nss
 		--with-vendor="Gentoo Foundation"
+		--with-x
 		--without-fonts
 		--without-myspell-dicts
 		--with-help="html"
 		--without-helppack-integration
 		--with-system-gpgmepp
+		--without-system-abseil
 		--without-system-dragonbox
 		--without-system-frozen
 		--without-system-jfreereport
