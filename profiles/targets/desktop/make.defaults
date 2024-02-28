@@ -1,4 +1,3 @@
-COMPRESSION="bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 CONNECTIVITY="bluetooth"
 FONTS="fontconfig fontforge harfbuzz truetype woff2"
 HARDWARE="udev zeroconf"
@@ -8,6 +7,6 @@ SECURITY="caps keyring"
 SOUND="gstreamer pulseaudio"
 VIDEO="ffmpeg wayland"
 
-USE="${COMPRESSION} ${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA} ${SECURITY} ${SOUND} ${VIDEO}"
+USE="${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA} ${SECURITY} ${SOUND} ${VIDEO}"
 
 VIDEO_CARDS="nvidia"
