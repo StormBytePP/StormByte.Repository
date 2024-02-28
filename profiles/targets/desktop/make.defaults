@@ -7,7 +7,7 @@ MULTIMEDIA_SUPPORT="ffmpeg gstreamer pulseaudio v4l vaapi vdpau vmaf wayland"
 NETWORK="zeroconf"
 SECURITY="caps keyring"
 SOUND=""
-VIDEO=""
+VIDEO="gles2 opengl vulkan vulkan-layers"
 
 USE="${CONNECTIVITY} ${FONTS} ${HARDWARE} ${I18N} ${MULTIMEDIA_CODECS} ${MULTIMEDIA_SUPPORT} ${NETWORK} ${SECURITY} ${SOUND} ${VIDEO}"
 
