@@ -87,12 +87,12 @@ src_configure() {
 	local mycmakeargs=(
 		-DGETTEXT="$(usex nls)"
 		-DSDL="$(usex sdl)"
-		-DLibVA="$(usex vaapi)"
-		-DOPENGL="$(usex opengl)"
-		-DVDPAU="$(usex vdpau)"
 		-DXVIDEO="$(usex xv)"
-		-DENABLE_QT4=OFF
-		-DENABLE_QT6=OFF
+	)
+
+	use opengl && mycmakeargs+=(
+		-DOPENGL="$(usex opengl)"
+		-DOpenGL_GL_PREFERENCE=GLVND
 	)
 
 	use gui && mycmakeargs+=(

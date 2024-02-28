@@ -82,13 +82,10 @@ src_configure() {
 
 	# See bug 432322.
 	use x86 && replace-flags -O0 -O1
-	# Bug 768210
-	append-cxxflags -std=gnu++14
 
 	local mycmakeargs=(
 		-DAVIDEMUX_SOURCE_DIR='${S}'
 		-DGETTEXT="$(usex nls)"
-		-DNVENC=no
 		-DSDL="$(usex sdl)"
 		-DLIBVA="$(usex vaapi)"
 		-DNVENC="$(usex nvenc)"
