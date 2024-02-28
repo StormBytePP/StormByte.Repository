@@ -25,11 +25,7 @@ DEPEND="
 	~media-libs/avidemux-core-${PV}:${SLOT}[nls?,sdl?,vaapi?,vdpau?,xv?]
 	opengl? ( virtual/opengl )
 	gui? (
-		dev-qt/qtcore:6
-		dev-qt/qtgui:6
-		dev-qt/qtnetwork:6
-		dev-qt/qtopengl:6
-		dev-qt/qtwidgets:6
+		dev-qt/qtbase[gui,opengl,widgets]:6
 	)
 	vaapi? ( media-libs/libva:= )
 "
