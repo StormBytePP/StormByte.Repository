@@ -55,9 +55,7 @@ COMMON_DEPEND="
 	opus? ( media-libs/opus )
 	pulseaudio? ( media-libs/libpulse )
 	gui? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtwidgets:5
+		dev-qt/qtbase[gui,widgets]:6
 	)
 	truetype? ( media-libs/freetype:2 )
 	twolame? ( media-sound/twolame )
