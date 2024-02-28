@@ -6,7 +6,7 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
     list_contains "${LTO_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_lto_vars
 fi
 
-if [[ ${FEATURES} == *ccache* && ${EBUILD_PHASE_FUNC} == src_* ]]; then
+if [[ ${EBUILD_PHASE_FUNC} == src_* ]] && [ list_contains "${FEATURES[@]}" "ccache"]; then
 	if [[ ${CCACHE_DIR} == /var/cache/ccache ]]; then
 		export CCACHE_DIR=/var/cache/ccache/${CATEGORY}/${PN}:${SLOT}
 		mkdir -p "${CCACHE_DIR}" || die

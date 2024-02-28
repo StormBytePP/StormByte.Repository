@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.5.0
+# Version 1.5.1
 
 function displayError() {
 	echo $1
@@ -100,9 +100,7 @@ function force_ld_undefined_version {
 }
 
 function force_disable_ccache {
-	FEATURES="${FEATURES[@]/ccache}"
-	CC=$(which clang)
-	CXX=$(which clang++)
+	FEATURES="${FEATURES[@]/ccache} -ccache"
 }
 
 # Useful variables
