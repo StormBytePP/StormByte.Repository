@@ -59,9 +59,15 @@ src_prepare() {
 		# it depends on files the system ffmpeg doesn't install.
 		local error="Failed to remove bundled ffmpeg."
 
-		rm -r cmake/admFFmpeg* cmake/ffmpeg* avidemux_core/ffmpeg_package buildCore/ffmpeg || die "${error}"
-		sed -e 's/include(admFFmpegUtil)//g' -e '/registerFFmpeg/d' -i avidemux/commonCmakeApplication.cmake || die "${error}"
+		die ${error}
+
+		rm -r cmake/admFFmpeg* cmake/ffmpeg* avidemux_core/ffmpeg_package || die "${error}"
+		sed -e 's/include(admFFmpegUtil)//g' -e '/registerFFmpeg/d' -i cmake/commonCmakeApplication.cmake || die "${error}"
 		sed -e 's/include(admFFmpegBuild)//g' -i avidemux_core/CMakeLists.txt || die "${error}"
+		for file in avidemux_core/ADM_core/src/CMakeLists.txt avidemux_core/ADM_coreAudioParser/src/CMakeLists.txt avidemux_core/ADM_coreImage/src/CMakeLists.txt avidemux_core/ADM_coreMuxer/src/CMakeLists.txt avidemux_core/ADM_coreMuxer/src/CMakeLists.txt avidemux_core/ADM_coreUtils/src/CMakeLists.txt avidemux_core/ADM_coreVideoCodec/src/CMakeLists.txt avidemux_core/ADM_coreVideoEncoder/src/CMakeLists.txt; do
+			sed -e 's/ADM_libavutil/avutil/g' -e 's/ADM_libavcodec/avcodec/g' -e 's/ADM_libavformat/avformat/g' -e 's/ADM_libswscale/swscale/g' -e 's/ADM_libpostproc/postproc/g' -i ${file} || die "${error}"
+		done
+
 	else
 		local ffmpeg_args=(
 			--cc=$(tc-getCC)
@@ -77,8 +83,10 @@ src_prepare() {
 }
 
 src_configure() {
-	# Delete non applicable patches
-	rm -f avidemux_core/ffmpeg_package/patches/libavcodec_mathops.h_binutils_241.patch
+	if ! use system-ffmpeg ; then
+		# Delete non applicable patches
+		rm -f avidemux_core/ffmpeg_package/patches/libavcodec_mathops.h_binutils_241.patch
+	fi
 
 	# See bug 432322.
 	use x86 && replace-flags -O0 -O1
