@@ -509,8 +509,10 @@ src_configure() {
 		--with-system-libs
 		--enable-build-opensymbol
 		--enable-cairo-canvas
+		--enable-ccache
 		--enable-largefile
 		--enable-mergelibs=more
+		--enable-pch
 		--enable-python=system
 		--enable-randr
 		--enable-release-build
