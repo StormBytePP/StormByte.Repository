@@ -12,11 +12,11 @@ KEYWORDS="amd64 x86"
 IUSE="utils stagemanager portageconfig"
 
 RDEPEND="
+	sys-libs/StormByte-functions
 	utils? ( sys-apps/StormByte-utils )
 	stagemanager? ( sys-apps/StormByte-StageManager )
 	portageconfig? ( app-portage/StormByte-portageconfig )
 "
-DEPEND="${RDEPEND}
-"
+DEPEND="${RDEPEND}"
 
 

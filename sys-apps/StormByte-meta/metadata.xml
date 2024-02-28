@@ -7,7 +7,6 @@
 	</maintainer>
 	<use>
 		<flag name="stagemanager">Install StormByte's Stage Manager script</flag>
-		<flag name="makekernel">Install StormByte's Genkernel Helper Layer script</flag>
 		<flag name="portageconfig">Install StormByte's Portage Config Helper script</flag>
 		<flag name="utils">Install StormByte's misc utils</flag>
 	</use>
