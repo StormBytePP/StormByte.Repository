@@ -24,7 +24,6 @@ RDEPEND="${DEPEND}"
 BDEPEND=""
 
 src_configure() {
-	ls "${S}"
 	local mycmakeargs=(
 		-DCMAKE_BUILD_TYPE=Release
 		-DENABLE_HEVC=$(usex x265)
