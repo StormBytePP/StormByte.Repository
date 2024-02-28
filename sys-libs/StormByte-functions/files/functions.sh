@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.4.1
+# Version 1.5.0
 
 function displayError() {
 	echo $1
@@ -97,6 +97,12 @@ function force_polly_disable {
 
 function force_ld_undefined_version {
 	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
+}
+
+function force_disable_ccache {
+	FEATURES="${FEATURES[@]/ccache}"
+	CC=$(which clang)
+	CXX=$(which clang++)
 }
 
 # Useful variables
