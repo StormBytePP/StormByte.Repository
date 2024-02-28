@@ -1,0 +1,2 @@
+# Block pulseaudio daemon in favor to pipewire
+media-sound/pulseaudio-daemon
