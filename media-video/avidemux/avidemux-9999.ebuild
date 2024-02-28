@@ -25,11 +25,11 @@ DEPEND="
 	~media-libs/avidemux-core-${PV}:${SLOT}[nls?,sdl?,vaapi?,vdpau?,xv?]
 	opengl? ( virtual/opengl )
 	gui? (
-		dev-qt/qtcore:5
-		dev-qt/qtgui:5
-		dev-qt/qtnetwork:5
-		dev-qt/qtopengl:5
-		dev-qt/qtwidgets:5
+		dev-qt/qtcore:6
+		dev-qt/qtgui:6
+		dev-qt/qtnetwork:6
+		dev-qt/qtopengl:6
+		dev-qt/qtwidgets:6
 	)
 	vaapi? ( media-libs/libva:= )
 "
@@ -96,8 +96,8 @@ src_configure() {
 	)
 
 	use gui && mycmakeargs+=(
-			-DENABLE_QT5="$(usex gui)"
-			-DLRELEASE_EXECUTABLE="$(qt5_get_bindir)/lrelease"
+			-DENABLE_QT6="$(usex gui)"
+			-DLRELEASE_EXECUTABLE="$(qt6_get_bindir)/lrelease"
 	)
 
 	use debug && mycmakeargs+=( -DVERBOSE=1 -DADM_DEBUG=1 )
