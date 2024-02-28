@@ -1,6 +1,6 @@
-*dev-vcs/git
 *app-portage/eix
 *app-portage/gentoolkit
 *dev-util/ccache
-*sys-libs/StormByte-functions
+*dev-vcs/git
+*sys-apps/StormByte-meta
 *sys-libs/timezone-data
