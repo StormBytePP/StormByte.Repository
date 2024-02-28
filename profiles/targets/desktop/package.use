@@ -6,8 +6,8 @@ kde-frameworks/sonnet designer doc
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers
-media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 nvenc rubberband shaderc twolame vidstab zeromq zimg
-media-video/obs-studio browser nvenc
+media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
+media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 x11-base/xorg-server xvfb
 sys-apps/StormByte-meta stagemanager utils videoconvert
@@ -17,3 +17,10 @@ net-dns/dnsmasq script
 net-libs/gnutls pkcs11 tools
 app-emulation/qemu fuse nfs spice usbredir virgl virtfs
 app-emulation/libvirt nfs virtualbox
+media-fonts/fonts-meta ms
+media-fonts/corefonts tahoma
+media-gfx/xsane gimp
+dev-libs/appstream-glib fonts
+sys-libs/zlib minizip
+dev-qt/qtscript scripttools
+media-sound/audacity id3tag
