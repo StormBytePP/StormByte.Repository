@@ -1,10 +1,10 @@
-media-libs/libvpx postproc
-media-libs/vulkan-loader layers
-media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
-media-libs/opus custom-modes
-media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 nvenc rubberband shaderc twolame vidstab zeromq zimg
-x11-base/xorg-server xvfb
-media-video/obs-studio browser nvenc
-dev-qt/qtbase mysql postgres
-dev-db/postgresql llvm uuid
 app-office/libreoffice java pdfimport
+dev-db/postgresql llvm uuid
+dev-qt/qtbase mysql postgres
+media-libs/libvpx postproc
+media-libs/opus custom-modes
+media-libs/vulkan-loader layers
+media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 nvenc rubberband shaderc twolame vidstab zeromq zimg
+media-video/obs-studio browser nvenc
+media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
+x11-base/xorg-server xvfb
