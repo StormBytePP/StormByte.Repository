@@ -40,7 +40,7 @@ function loadConfig() {
 		source "${workdir}/${self}.conf"
 	elif [ -f "/etc/conf.d/${self}.conf" ]; then
 		source "/etc/conf.d/${self}.conf"
-	else
+	else	list_contains "${DISABLE_CCACHE}" "${CATEGORY}/${PN}" && force_disable_ccache
 		echo "Configuration file ${self}.conf not found neither in current directory neither in /etc/conf.d!"
 		exit 1
 	fi
@@ -97,10 +97,6 @@ function force_polly_disable {
 
 function force_ld_undefined_version {
 	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
-}
-
-function force_disable_ccache {
-	FEATURES="${FEATURES[@]/ccache} -ccache"
 }
 
 # Useful variables
