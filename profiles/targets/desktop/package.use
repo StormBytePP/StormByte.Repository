@@ -1,1 +1,6 @@
 media-libs/libvpx postproc
+media-libs/vulkan-loader layers
+media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
+media-libs/opus custom-modes
+media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 nvenc rubberband shaderc twolame vidstab zeromq zimg
+x11-base/xorg-server xvfb
