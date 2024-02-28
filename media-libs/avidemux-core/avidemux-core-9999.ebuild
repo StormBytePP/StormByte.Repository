@@ -4,11 +4,11 @@
 EAPI=8
 
 CMAKE_MAKEFILE_GENERATOR="emake"
-inherit cmake flag-o-matic toolchain-funcs
+inherit cmake flag-o-matic git-r3 toolchain-funcs
 
 DESCRIPTION="Core libraries for simple video cutting, filtering and encoding tasks"
 HOMEPAGE="http://fixounet.free.fr/avidemux"
-SRC_URI="https://github.com/mean00/avidemux2/archive/${PV}.tar.gz -> avidemux-${PV}.tar.gz"
+EGIT_REPO_URI="https://github.com/mean00/avidemux2.git"
 
 # Multiple licenses because of all the bundled stuff.
 # See License.txt.
@@ -21,7 +21,7 @@ IUSE="debug nls nvenc sdl system-ffmpeg vaapi vdpau xv"
 DEPEND="
 	dev-db/sqlite:3
 	sys-libs/zlib
-	nvenc? ( amd64? ( <media-libs/nv-codec-headers-12.0.0.0 ) )
+	nvenc? ( amd64? ( >=media-libs/nv-codec-headers-11.1.5.3 ) )
 	sdl? ( media-libs/libsdl )
 	system-ffmpeg? ( >=media-video/ffmpeg-9:0[mp3,theora] )
 	vaapi? ( media-libs/libva:= )
@@ -45,8 +45,11 @@ PATCHES=(
 	"${FILESDIR}"/avidemux-core-2.8.1-ffmpeg-2.41.patch
 )
 
-S="${WORKDIR}/avidemux2-${PV}"
 CMAKE_USE_DIR="${S}/${PN/-/_}"
+
+src_unpack() {
+	git-r3_src_unpack
+}
 
 src_prepare() {
 	cmake_src_prepare
@@ -74,6 +77,9 @@ src_prepare() {
 }
 
 src_configure() {
+	# Delete non applicable patches
+	rm -f avidemux_core/ffmpeg_package/patches/libavcodec_mathops.h_binutils_241.patch
+
 	# See bug 432322.
 	use x86 && replace-flags -O0 -O1
 	# Bug 768210
