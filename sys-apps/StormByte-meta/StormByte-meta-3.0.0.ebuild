@@ -9,13 +9,14 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="utils stagemanager portageconfig"
+IUSE="portageconfig stagemanager utils videoconvert"
 
 RDEPEND="
 	sys-libs/StormByte-functions
-	utils? ( sys-apps/StormByte-utils )
-	stagemanager? ( sys-apps/StormByte-StageManager )
 	portageconfig? ( app-portage/StormByte-portageconfig )
+	stagemanager? ( sys-apps/StormByte-StageManager )
+	utils? ( sys-apps/StormByte-utils )
+	videoconvert? ( media-video/StormByte-VideoConvert )
 "
 DEPEND="${RDEPEND}"
 

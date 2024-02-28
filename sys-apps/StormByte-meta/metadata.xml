@@ -6,8 +6,9 @@
 		<name>David C. Manuelda</name>
 	</maintainer>
 	<use>
-		<flag name="stagemanager">Install StormByte's Stage Manager script</flag>
 		<flag name="portageconfig">Install StormByte's Portage Config Helper script</flag>
+		<flag name="stagemanager">Install StormByte's Stage Manager script</flag>
 		<flag name="utils">Install StormByte's misc utils</flag>
+		<flag name="videoconvert">Install StormByte's Video Convert</flag>
 	</use>
 </pkgmetadata>
