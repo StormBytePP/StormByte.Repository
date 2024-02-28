@@ -126,6 +126,7 @@ src_configure() {
 			-DOSS="$(usex oss)"
 			-DPULSEAUDIO="$(usex pulseaudio)"
 			-DENABLE_QT4=OFF
+			-DENABLE_QT5=OFF
 			-DENABLE_QT6=OFF
 			-DFREETYPE2="$(usex truetype)"
 			-DTWOLAME="$(usex twolame)"
@@ -143,7 +144,7 @@ src_configure() {
 			-DUSE_EXTERNAL_LIBMP4V2=yes
 		)
 
-		use gui && mycmakeargs+=( -DENABLE_QT5=True )
+		use gui && mycmakeargs+=( -DENABLE_QT6=True )
 		use debug && mycmakeargs+=( -DVERBOSE=1 -DADM_DEBUG=1 )
 
 		CMAKE_USE_DIR="${S}"/${process#*:} BUILD_DIR="${build}" cmake_src_configure
