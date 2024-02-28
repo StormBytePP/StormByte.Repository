@@ -1,1 +1,1 @@
-app-office/libreoffice -gtk qt6
+app-office/libreoffice -gtk -qt5 qt6
