@@ -16,7 +16,10 @@ DEPEND="
 	dev-db/sqlite:3[static-libs?]
 	dev-libs/libconfig[cxx,static-libs?]
 	media-video/ffmpeg[encode]
-	x265? ( media-video/ffmpeg[x265] )
+	x265? (
+		media-video/ffmpeg[x265]
+		media-video/hdr10plus_tool
+	)
 	fdk? ( media-video/ffmpeg[fdk] )
 	opus? ( media-video/ffmpeg[opus] )
 "

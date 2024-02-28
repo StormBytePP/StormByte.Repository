@@ -9,14 +9,12 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="+videoconvert"
+IUSE=""
 
 RDEPEND="
 	sys-apps/findutils
 	sys-process/parallel
-	media-video/ffmpeg
-	media-video/hdr10plus_tool
-	videoconvert? ( media-video/StormByte-VideoConvert )
+	media-video/ffmpeg[opus]
 "
 DEPEND="${RDEPEND}
 "
