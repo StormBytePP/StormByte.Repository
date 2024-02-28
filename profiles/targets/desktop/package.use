@@ -11,3 +11,9 @@ media-video/obs-studio browser nvenc
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 x11-base/xorg-server xvfb
 sys-apps/StormByte-meta stagemanager utils videoconvert
+
+net-misc/spice-gtk usbredir
+net-dns/dnsmasq script
+net-libs/gnutls pkcs11 tools
+app-emulation/qemu fuse nfs spice usbredir virgl virtfs
+app-emulation/libvirt nfs virtualbox
