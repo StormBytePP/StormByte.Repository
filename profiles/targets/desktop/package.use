@@ -1,4 +1,4 @@
-app-office/libreoffice gtk java pdfimport -qt5 -qt6
+app-office/libreoffice gtk java pdfimport
 dev-db/postgresql llvm uuid
 dev-qt/qtbase mysql postgres
 dev-qt/qttools designer
