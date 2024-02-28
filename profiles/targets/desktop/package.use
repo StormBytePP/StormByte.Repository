@@ -1,1 +1,2 @@
 media-libs/libvpx postproc
+app-office/libreoffice gtk -qt5 -qt6
