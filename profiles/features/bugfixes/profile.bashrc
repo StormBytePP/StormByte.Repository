@@ -12,7 +12,7 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	list_contains "${CXX11_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_cxx11_vars
 	list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
 	list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
-	list_contains "${DISABLE_CCACHE}" "${CATEGORY}/${PN}" && FEATURES="${FEATURES[@]/ccache}"
+	list_contains "${DISABLE_CCACHE}" "${CATEGORY}/${PN}" && force_disable_ccache
 fi
 
 # Glibc special options for valgrind
