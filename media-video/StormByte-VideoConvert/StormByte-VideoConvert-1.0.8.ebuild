@@ -15,12 +15,13 @@ DEPEND="
 	dev-libs/boost
 	dev-db/sqlite:3[static-libs?]
 	dev-libs/libconfig[cxx,static-libs?]
+	media-video/ffmpeg[encode]
 	x265? ( media-video/ffmpeg[x265] )
 	fdk? ( media-video/ffmpeg[fdk] )
 	opus? ( media-video/ffmpeg[opus] )
 "
 RDEPEND="${DEPEND}"
-BDEPEND="media-video/ffmpeg[encode]"
+BDEPEND=""
 
 src_configure() {
 	ls "${S}"

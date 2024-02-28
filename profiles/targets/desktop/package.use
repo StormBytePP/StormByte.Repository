@@ -8,4 +8,4 @@ media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml
 media-video/obs-studio browser nvenc
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 x11-base/xorg-server xvfb
-sys-apps/StormByte-meta stagemanager utils
+sys-apps/StormByte-meta stagemanager utils videoconvert
