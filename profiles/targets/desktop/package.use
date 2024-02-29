@@ -31,3 +31,4 @@ sys-apps/xdg-desktop-portal geolocation
 gnome-base/gdm plymouth
 x11-misc/colord scanner
 sys-boot/grub mount
+sys-process/htop delayacct hwloc

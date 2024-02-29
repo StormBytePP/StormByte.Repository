@@ -1,6 +1,6 @@
 CONNECTIVITY="bluetooth"
 DEVELOPMENT="boost"
-FONTS="fontconfig fontforge harfbuzz truetype woff2"
+FONTS="fontconfig fontforge freetype harfbuzz truetype woff2"
 HARDWARE="lm-sensors threads udev"
 I18N="idn"
 MISC="bash-completion"
