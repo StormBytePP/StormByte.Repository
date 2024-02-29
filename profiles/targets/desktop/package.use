@@ -18,8 +18,10 @@ media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 net-dns/dnsmasq script
-net-libs/gnutls pkcs11 tools
+net-libs/gnutls tools
 net-misc/spice-gtk usbredir
+net-p2p/transmission-remote-gtk geoip
+net-print/hplip hpijs scanner
 sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-libs/zlib minizip
 x11-base/xorg-server xvfb
