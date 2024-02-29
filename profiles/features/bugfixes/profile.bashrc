@@ -3,7 +3,7 @@ source /lib/StormByte/functions.sh
 local GCC_FORCED_PACKAGES="sys-devel/gcc sys-libs/glibc"
 local CXX11_FORCED_PACKAGES=""
 local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
-local FORCE_LD_UNDEFINED_VERSION="dev-libs/totem-pl-parser media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/slang sys-libs/tdb"
+local FORCE_LD_UNDEFINED_VERSION="dev-libs/totem-pl-parser media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb"
 
 list_contains "${GCC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_gcc_vars
 
