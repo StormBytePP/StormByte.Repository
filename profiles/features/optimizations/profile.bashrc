@@ -7,8 +7,8 @@ if [[ "${EBUILD_PHASE}" == "configure" ]] ; then
 fi
 
 if [[ ${EBUILD_PHASE_FUNC} == src_* ]]; then
-	if [[ ${CCACHE_DIR} == /var/cache/ccache ]]; then
-		export CCACHE_DIR=/var/cache/ccache/${CATEGORY}/${PN}:${SLOT}
+	if [[ ! -z ${CCACHE_DIR} ]]; then
+		export CCACHE_DIR="/var/cache/ccache/${CATEGORY}/${P}"
 		mkdir -p "${CCACHE_DIR}"
 	fi
 fi
