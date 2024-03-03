@@ -49,7 +49,7 @@ LLVM_TARGETS="X86 NVPTX"
 LLVM_SLOT="17"
 
 # Features
-FEATURES="ccache metadata-transfer parallel-fetch userfetch userpriv usersandbox"
+FEATURES="ccache metadata-transfer parallel-fetch userfetch"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
