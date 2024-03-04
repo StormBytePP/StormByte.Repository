@@ -10,7 +10,7 @@
 +	if test "$enableval" = "yes"; then
 +		AC_DEFINE_UNQUOTED([OS_URL],"http://blog.stormbyte.org/")
 +		AC_DEFINE_UNQUOTED([ROOTDEV_MANUFACTURERURL],"http://blog.stormbyte.org/")
-+		AC_DEFINE_UNQUOTED([ROOTDEV_MANUFACTURER],"SormByte")
++		AC_DEFINE_UNQUOTED([ROOTDEV_MANUFACTURER],"StormByte")
 +		AC_DEFINE_UNQUOTED([ROOTDEV_MODELNAME],"StormByte Cube")
 +		AC_DEFINE_UNQUOTED([ROOTDEV_MODELDESCRIPTION],"Cube")
 +		AC_MSG_RESULT([yes])
