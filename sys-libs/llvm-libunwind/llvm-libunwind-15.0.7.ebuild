@@ -1,9 +1,9 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{9..11} )
 inherit cmake-multilib flag-o-matic llvm llvm.org python-any-r1 \
 	toolchain-funcs
 
@@ -12,7 +12,7 @@ HOMEPAGE="https://llvm.org/docs/ExceptionHandling.html"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="amd64 ~arm arm64 ~loong ~ppc ~ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
+KEYWORDS="amd64 arm arm64 ~ppc ppc64 ~riscv sparc x86 ~x64-macos"
 IUSE="cet +clang debug static-libs test"
 REQUIRED_USE="test? ( clang )"
 RESTRICT="!test? ( test )"
@@ -66,15 +66,6 @@ multilib_src_configure() {
 	# https://github.com/gentoo/gentoo/pull/21516
 	local use_compiler_rt=OFF
 	[[ $(tc-get-c-rtlib) == compiler-rt ]] && use_compiler_rt=ON
-
-	# Respect upstream build type assumptions (bug #910436) where they do:
-	# -DLIBUNWIND_ENABLE_ASSERTIONS=ON =>
-	#       -DCMAKE_BUILD_TYPE=DEBUG  => -UNDEBUG
-	#       -DCMAKE_BUILD_TYPE!=debug => -DNDEBUG
-	# -DLIBUNWIND_ENABLE_ASSERTIONS=OFF =>
-	#       -UNDEBUG
-	# See also https://github.com/llvm/llvm-project/issues/86#issuecomment-1649668826.
-	use debug || append-cppflags -DNDEBUG
 
 	local mycmakeargs=(
 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"

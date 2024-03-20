@@ -1,4 +1,4 @@
-# Copyright 1999-2023 Gentoo Authors
+# Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -11,15 +11,15 @@ HOMEPAGE="https://llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="${LLVM_MAJOR}"
-KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86 ~amd64-linux ~ppc-macos ~x64-macos"
-IUSE="+abi_x86_32 abi_x86_64 +clang debug test cet llvm-libunwind"
+KEYWORDS="amd64 ~arm arm64 ~loong ~ppc64 ~riscv x86 ~amd64-linux ~arm64-macos ~ppc-macos ~x64-macos"
+IUSE="+abi_x86_32 abi_x86_64 cet +clang debug llvm-libunwind test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
 DEPEND="
 	sys-devel/llvm:${LLVM_MAJOR}
+	llvm-libunwind? ( sys-libs/llvm-libunwind[static-libs] )
 "
 BDEPEND="
-	>=dev-build/cmake-3.16
 	clang? ( sys-devel/clang )
 	test? (
 		$(python_gen_any_dep ">=dev-python/lit-15[\${PYTHON_USEDEP}]")
@@ -157,6 +157,9 @@ src_configure() {
 		)
 	fi
 
+	use cet && mycmakeargs+=( -DCOMPILER_RT_ENABLE_CET=ON )
+	use llvm-libunwind && mycmakeargs+=( -DCOMPILER_RT_USE_LLVM_UNWINDER=ON )
+
 	if use test; then
 		mycmakeargs+=(
 			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
@@ -166,9 +169,6 @@ src_configure() {
 			-DCOMPILER_RT_TEST_CXX_COMPILER="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}/bin/clang++"
 		)
 	fi
-
-	use cet && mycmakeargs+=( -DCOMPILER_RT_ENABLE_CET=ON )
-	use llvm-libunwind && mycmakeargs+=( -DCOMPILER_RT_USE_LLVM_UNWINDER=ON )
 
 	cmake_src_configure
 }
