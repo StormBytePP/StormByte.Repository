@@ -175,8 +175,8 @@ src_configure() {
 	# Work around stack alignment issue, bug #647954. in case we ever have x86
 	use x86 && append-flags -mincoming-stack-boundary=2
 
-	# Work around -fno-common ( GCC10 default ), bug #713180
-	append-flags -fcommon
+	# bug 906987; append-cppflags doesnt work
+	use elibc_musl && append-flags -D_LARGEFILE64_SOURCE
 
 	# Strip some flags users may set, but should not. #818502
 	filter-flags -fexceptions
@@ -260,7 +260,7 @@ src_compile() {
 		$(usex doc docs '')
 		$(usex jbootstrap bootcycle-images product-images)
 	)
-	emake "${myemakeargs[@]}" -j1 #nowarn
+	emake "${myemakeargs[@]}" -j1
 }
 
 src_install() {
