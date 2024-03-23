@@ -7,6 +7,5 @@ WAF_VERBOSE=OFF
 FEATURES="-ebuild-locks -merge-wait"
 
 CPU_FLAGS_X86="aes avx avx2 f16c fma3 mmx mmxext pclmul popcnt rdrand sha sse sse2 sse3 sse4_1 sse4_2 ssse3 vpclmulqdq"
-COMPILER_OPTIMIZATION_GCC_NATIVE_EXPAND="-march=alderlake -mabm -mno-cldemote -mno-kl -mno-pconfig -mno-sgx -mno-widekl -mshstk --param=l1-cache-line-size=64 --param=l1-cache-size=32 --param=l2-cache-size=36864"
 
 USE="custom-cflags lto pgo"

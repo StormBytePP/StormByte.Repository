@@ -1,2 +1,2 @@
-sys-devel/gcc custom-cflags default-stack-clash-protection graphite vtv
+sys-devel/gcc default-stack-clash-protection graphite vtv
 sys-devel/binutils gold
