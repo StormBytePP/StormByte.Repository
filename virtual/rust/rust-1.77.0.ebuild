@@ -9,7 +9,7 @@ DESCRIPTION="Virtual for Rust language compiler"
 
 LICENSE=""
 
-SLOT="0/llvm-17"
+SLOT="0/llvm-18"
 
 KEYWORDS="~amd64"
 IUSE="rustfmt"
