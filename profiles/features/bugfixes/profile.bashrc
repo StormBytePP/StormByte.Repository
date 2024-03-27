@@ -1,7 +1,7 @@
 source /lib/StormByte/functions.sh
 
 local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
-local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb"
+local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/libva media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb"
 
 if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
