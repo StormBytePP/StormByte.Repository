@@ -175,7 +175,6 @@ PATCHES=(
 	"${FILESDIR}"/1.75.0-musl-dynamic-linking.patch
 	"${FILESDIR}"/1.76.0-loong-code-model.patch  # remove for >=1.78.0
 )
-)
 
 S="${WORKDIR}/${MY_P}-src"
 
