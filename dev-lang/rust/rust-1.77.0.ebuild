@@ -172,6 +172,9 @@ PATCHES=(
 	"${FILESDIR}"/0001-Use-lld-provided-by-system.patch
 	"${FILESDIR}"/0003-compiler-Change-LLVM-targets.patch
 	"${FILESDIR}"/rustc-1.77.0-unbundle-sqlite.patch
+	"${FILESDIR}"/1.75.0-musl-dynamic-linking.patch
+	"${FILESDIR}"/1.76.0-loong-code-model.patch  # remove for >=1.78.0
+)
 )
 
 S="${WORKDIR}/${MY_P}-src"
