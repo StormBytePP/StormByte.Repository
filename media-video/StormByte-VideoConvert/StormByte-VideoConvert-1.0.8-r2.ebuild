@@ -26,6 +26,8 @@ DEPEND="
 RDEPEND="${DEPEND}"
 BDEPEND=""
 
+S="${WORKDIR}/Alchemist-${PV}"
+
 src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_BUILD_TYPE=Release
