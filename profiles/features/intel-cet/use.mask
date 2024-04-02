@@ -1,2 +1,0 @@
-# Disable Intel CET USE mask
--cet
