@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.5.1
+# Version 1.6.0
 
 function displayError() {
 	echo $1
@@ -67,14 +67,10 @@ function force_gcc_vars() {
 	CC="gcc"
 	CXX="g++"
 	CPP="cpp"
-    CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_CET} -fno-builtin-strlen"
+    CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC}"
     CXXFLAGS="${CFLAGS}"
     LDFLAGS="${LINKER_OPTIMIZATION_BASE} ${LINKER_OPTIMIZATION_BFD}"
     force_binutils_vars
-}
-
-function force_cxx11_vars() {
-    CXXFLAGS="${CXXFLAGS} -std=c++11"
 }
 
 function force_pic_vars() {
@@ -87,12 +83,6 @@ function force_lto_vars() {
     CXXFLAGS="${CXXFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
     LDFLAGS="${LDFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
     RUSTFLAGS="${RUSTFLAGS} -Clinker-plugin-lto"
-}
-
-function force_polly_disable {
-	CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
-	CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} -Wno-unused-command-line-argument ${COMPILER_OPTIMIZATION_CET}"
-	LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
 }
 
 function force_ld_undefined_version {
