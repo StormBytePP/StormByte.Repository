@@ -14,9 +14,8 @@ CCACHE_DIR="/var/cache/ccache"
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
 COMPILER_OPTIMIZATION_CPU="-march=native"
-COMPILER_OPTIMIZATION_CET="-fcf-protection=full"
 COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
-COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument"
+COMPILER_OPTIMIZATION_CLANG=""
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
 
