@@ -13,11 +13,12 @@ CCACHE_DIR="/var/cache/ccache"
 
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
-COMPILER_OPTIMIZATION_CPU="-march=native"
-COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 COMPILER_OPTIMIZATION_CLANG=""
-COMPILER_OPTIMIZATION_DEBUG="-g -ggdb"
+COMPILER_OPTIMIZATION_CPU="-march=native"
+COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
+COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
+COMPILER_OPTIMIZATION_SECURITY="-fcf-protection=full"
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2"
@@ -52,9 +53,9 @@ FEATURES="ccache metadata-transfer parallel-fetch userfetch"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
-CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC}"
-CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC}"
+CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_SECURITY}"
+CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_SECURITY}"
 FCFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
 FFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
-RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3"
 LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3"
