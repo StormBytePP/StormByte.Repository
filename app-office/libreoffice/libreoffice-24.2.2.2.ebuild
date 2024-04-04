@@ -91,7 +91,7 @@ unset ADDONS_SRC
 LO_EXTS="nlpsolver scripting-beanshell scripting-javascript wiki-publisher"
 
 IUSE="accessibility base bluetooth +branding clang coinmp +cups custom-cflags +dbus debug eds firebird
-googledrive gstreamer +gtk kde ldap lto +mariadb odk pdfimport postgres qt5 qt6 test valgrind vulkan
+googledrive gstreamer +gtk kde ldap +mariadb odk pdfimport postgres qt5 qt6 test valgrind vulkan
 $(printf 'libreoffice_extensions_%s ' ${LO_EXTS})"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -233,7 +233,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	qt5? (
 		dev-qt/qtcore:5
 		dev-qt/qtgui:5
-		dev-qt/qtnetwork:5
 		dev-qt/qtwidgets:5
 		dev-qt/qtx11extras:5
 	)
@@ -254,7 +253,7 @@ DEPEND="${COMMON_DEPEND}
 	x11-libs/libXt
 	x11-libs/libXtst
 	java? (
-		dev-java/ant-core
+		dev-java/ant:0
 		>=virtual/jdk-17
 	)
 	test? (
@@ -319,10 +318,9 @@ PATCHES=(
 	# maybe upstreamable
 	"${FILESDIR}/${PN}-7.5.8.2-icu-74-compatibility.patch"
 
-	# git master, pending 24.2
-	"${FILESDIR}/${PN}-24.2-kf6-configure.patch"
-	"${FILESDIR}/${PN}-24.2-kf6-buildfix.patch"
-
+	# TODO: upstream
+	"${FILESDIR}/${PN}-7.6-unused-qt5network.patch"
+	"${FILESDIR}/${PN}-24.2-unused-qt6network.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -523,7 +521,6 @@ src_configure() {
 		--disable-gtk3-kde5
 		--disable-online-update
 		--disable-openssl
-		--disable-pch
 		--disable-pdfium
 		--with-extra-buildid="${gentoo_buildid}"
 		--enable-extension-integration
@@ -609,7 +606,7 @@ src_configure() {
 			myeconfargs+=( --with-rhino-jar=$(java-pkg_getjar rhino-1.6 rhino.jar) )
 	fi
 
-	usex lto && myeconfargs+=( --enable-lto )
+	tc-is-lto && myeconfargs+=( --enable-lto )
 
 	MARIADBCONFIG="$(type -p $(usex mariadb mariadb mysql)_config)" \
 	econf "${myeconfargs[@]}"
