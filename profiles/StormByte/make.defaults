@@ -22,7 +22,7 @@ COMPILER_OPTIMIZATION_SECURITY="-fcf-protection=full"
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2"
-LINKER_OPTIMIZATION_CLANG=""
+LINKER_OPTIMIZATION_CLANG="-fopenmp=libomp"
 LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
 LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
 LINKER_OPTIMIZATION_LLD="-fuse-ld=lld"
