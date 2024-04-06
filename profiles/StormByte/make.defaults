@@ -13,7 +13,7 @@ CCACHE_DIR="/var/cache/ccache"
 
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
-COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument -O3 -mllvm -polly -mllvm -polly-parallel -mllvm -polly-vectorizer=stripmine -mllvm -polly-run-dce -mllvm -polly-scheduling-chunksize=1 -mllvm -polly-scheduling=dynamic -mllvm -polly-num-threads=32 -mllvm -polly-omp-backend=LLVM -fopenmp"
+COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument -O3 -mllvm -polly -mllvm -polly-parallel -mllvm -polly-vectorizer=stripmine -mllvm -polly-run-dce -mllvm -polly-scheduling-chunksize=1 -mllvm -polly-scheduling=dynamic -mllvm -polly-num-threads=32 -mllvm -polly-omp-backend=LLVM -mllvm -polly-invariant-load-hoisting -fopenmp"
 COMPILER_OPTIMIZATION_CPU="-march=native"
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
 COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
