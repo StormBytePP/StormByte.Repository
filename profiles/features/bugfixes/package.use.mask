@@ -1,2 +1,0 @@
-# It makes linked programs not to link properly
-media-libs/libsoundtouch openmp
