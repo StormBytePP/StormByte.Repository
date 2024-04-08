@@ -565,9 +565,9 @@ pkg_postinst() {
 	# It is harmless if polly optimizations are not used
 	if use polly; then
 		local LLVM_libdir="/usr/lib/llvm/${LLVM_MAJOR}/$(get_libdir)"
-		local libLLVM=$(find "${LLVM_libdir}" -type f -name 'libLLVM.so*')
+		local libLLVM=$(find "${LLVM_libdir}" -maxdepth 1 -type f -name 'libLLVM.so*' | tail -n1)
 
-		einfo "Patching libLLVM.so to automatically load LLVMPolly.so ..."
+		einfo "Patching ${libLLVM} to automatically load LLVMPolly.so ..."
 		patchelf --add-needed "LLVMPolly.so" "${libLLVM}"
 	fi
 	
