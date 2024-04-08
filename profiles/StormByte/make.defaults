@@ -18,7 +18,7 @@ COMPILER_OPTIMIZATION_CPU="-march=native"
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
 COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
-COMPILER_OPTIMIZATION_SECURITY="-fcf-protection=full"
+COMPILER_OPTIMIZATION_SECURITY="" # Already included in clang[cet]
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2"
