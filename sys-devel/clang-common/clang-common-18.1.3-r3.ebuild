@@ -14,6 +14,7 @@ IUSE="
 	default-compiler-rt default-libcxx default-lld
 	bootstrap-prefix cet hardened llvm-libunwind polly
 "
+KEYWORDS="x86 amd64"
 
 PDEPEND="
 	sys-devel/clang:*

@@ -14,6 +14,7 @@ LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
 IUSE="+debug test"
 RESTRICT="!test? ( test )"
+KEYWORDS="x86 amd64"
 
 DEPEND="
 	~sys-devel/llvm-${PV}:${LLVM_MAJOR}=[debug=]
