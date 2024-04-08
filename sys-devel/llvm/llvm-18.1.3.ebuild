@@ -52,6 +52,7 @@ BDEPEND="
 		<sys-libs/libcxx-${LLVM_VERSION}.9999
 	)
 	libffi? ( virtual/pkgconfig )
+	polly? ( dev-util/patchelf )
 "
 # There are no file collisions between these versions but having :0
 # installed means llvm-config there will take precedence.
@@ -139,8 +140,8 @@ check_distribution_components() {
 					# testing libraries
 					LLVMTestingAnnotations|LLVMTestingSupport)
 						;;
-					# Polly + deps
-					Polly|LLVMAggressiveInstCombine|LLVMAnalysis|LLVMAsmParser|LLVMBinaryFormat|LLVMBitReader|LLVMBitWriter|LLVMBitstreamReader|LLVMCFGuard|LLVMCodeGen|LLVMCodeGenTypes|LLVMCore|LLVMCoroutines|LLVMDebugInfoBTF|LLVMDebugInfoCodeView|LLVMDebugInfoDWARF|LLVMDebugInfoMSF|LLVMDebugInfoPDB|LLVMExtensions|LLVMFrontendOffloading|LLVMFrontendOpenMP|LLVMHipStdPar|LLVMIRPrinter|LLVMIRReader|LLVMInstCombine|LLVMInstrumentation|LLVMLinker|LLVMMC|LLVMMCParser|LLVMObjCARCOpts|LLVMObject|LLVMPasses|LLVMProfileData|LLVMRemarks|LLVMScalarOpts|LLVMSymbolize|LLVMTarget|LLVMTargetParser|LLVMTextAPI|LLVMTransformUtils|LLVMVectorize|LLVMipo)
+					# Polly
+					LLVMPolly|Polly|PollyISL)
 						use polly || continue
 						;;
 					# static libs
@@ -351,50 +352,9 @@ get_distribution_components() {
 			llvm-debuginfod
 		)
 		use polly && out+=(
+			LLVMPolly
 			Polly
 			PollyISL
-			LLVMAggressiveInstCombine
-			LLVMAnalysis
-			LLVMAsmParser
-			LLVMBinaryFormat
-			LLVMBitReader
-			LLVMBitWriter
-			LLVMBitstreamReader
-			LLVMCFGuard
-			LLVMCodeGen
-			LLVMCodeGenTypes
-			LLVMCore
-			LLVMCoroutines
-			LLVMDebugInfoBTF
-			LLVMDebugInfoCodeView
-			LLVMDebugInfoDWARF
-			LLVMDebugInfoMSF
-			LLVMDebugInfoPDB
-			LLVMExtensions # Not needed for LLVM but needed for tools like clang
-			LLVMFrontendOffloading
-			LLVMFrontendOpenMP
-			LLVMHipStdPar
-			LLVMIRPrinter
-			LLVMIRReader
-			LLVMInstCombine
-			LLVMInstrumentation
-			LLVMLinker
-			LLVMMC
-			LLVMMCParser
-			LLVMObjCARCOpts
-			LLVMObject
-			LLVMPasses
-			LLVMProfileData
-			LLVMRemarks
-			LLVMScalarOpts
-			LLVMSymbolize
-			LLVMTarget
-			LLVMTargetParser
-			LLVMTextAPI
-			LLVMTransformUtils
-			LLVMVectorize
-			LLVMipo
-			llvm-debuginfod
 		)
 	fi
 
@@ -468,7 +428,7 @@ multilib_src_configure() {
 	use polly && mycmakeargs+=(
 		-DLLVM_ENABLE_PROJECTS="polly"
 		-DLLVM_TOOL_POLLY_BUILD=ON
-		-DLLVM_POLLY_LINK_INTO_TOOLS=ON
+		-DLLVM_POLLY_LINK_INTO_TOOLS=OFF
 	)
 
 	local suffix=
@@ -579,10 +539,6 @@ src_install() {
 multilib_src_install() {
 	DESTDIR=${D} cmake_build install-distribution
 
-	if use polly; then
-		DESTDIR=${D} cmake_build tools/polly/install/strip
-	fi
-
 	# move headers to /usr/include for wrapping
 	rm -rf "${ED}"/usr/include || die
 	mv "${ED}"/usr/lib/llvm/${LLVM_MAJOR}/include "${ED}"/usr/include || die
@@ -605,6 +561,16 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
+	# Always load LLVMPolly.so so -Xclang -load -Xclang LLVMPolly.so is not needed to use Polly
+	# It is harmless if polly optimizations are not used
+	if use polly; then
+		local LLVM_libdir="/usr/lib/llvm/${LLVM_MAJOR}/$(get_libdir)"
+		local libLLVM=$(find "${LLVM_libdir}" -type f -name 'libLLVM.so*')
+
+		einfo "Patching libLLVM.so to automatically load LLVMPolly.so ..."
+		patchelf --add-needed "LLVMPolly.so" "${libLLVM}"
+	fi
+	
 	elog "You can find additional opt-viewer utility scripts in:"
 	elog "  ${EROOT}/usr/lib/llvm/${LLVM_MAJOR}/share/opt-viewer"
 	elog "To use these scripts, you will need Python along with the following"
