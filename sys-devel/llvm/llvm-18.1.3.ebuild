@@ -564,10 +564,10 @@ pkg_postinst() {
 	# Always load LLVMPolly.so so -Xclang -load -Xclang LLVMPolly.so is not needed to use Polly
 	# It is harmless if polly optimizations are not used
 	if use polly; then
-		local LLVM_libdir="/usr/lib/llvm/${LLVM_MAJOR}/$(get_libdir)"
+		local LLVM_libdir="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}/$(get_libdir)"
 		local libLLVM=$(find "${LLVM_libdir}" -maxdepth 1 -type f -name 'libLLVM.so*' | tail -n1)
 
-		einfo "Patching ${libLLVM} to automatically load LLVMPolly.so ..."
+		einfo "Patching $(basename ${libLLVM}) to automatically load LLVMPolly.so ..."
 		patchelf --add-needed "LLVMPolly.so" "${libLLVM}"
 	fi
 	
