@@ -12,7 +12,7 @@ HOMEPAGE="https://polly.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
-IUSE="+debug test"
+IUSE="debug test"
 RESTRICT="!test? ( test )"
 KEYWORDS="x86 amd64"
 
