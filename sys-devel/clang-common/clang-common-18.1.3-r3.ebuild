@@ -153,7 +153,7 @@ src_install() {
 		--unwindlib=$(usex default-compiler-rt libunwind libgcc)
 		--stdlib=$(usex default-libcxx libc++ libstdc++)
 		-fuse-ld=$(usex default-lld lld bfd)
-		$(usex polly "-Xclang -load -Xclang LLVMPolly.so" "")
+		$(usex polly -fplugin=LLVMPolly.so "")
 	EOF
 
 	newins - gentoo-gcc-install.cfg <<-EOF
