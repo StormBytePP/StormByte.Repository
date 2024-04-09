@@ -16,6 +16,7 @@ IUSE="
 "
 KEYWORDS="x86 amd64"
 
+DEPEND=" polly? ( ~sys-devel/polly-${PV} ) "
 PDEPEND="
 	sys-devel/clang:*
 	default-compiler-rt? (
@@ -28,7 +29,6 @@ PDEPEND="
 	!default-libcxx? ( sys-devel/gcc )
 	default-lld? ( >=sys-devel/lld-${PV} )
 	!default-lld? ( sys-devel/binutils )
-	polly? ( ~sys-devel/polly-${PV} )
 "
 IDEPEND="
 	!default-compiler-rt? ( sys-devel/gcc-config )
