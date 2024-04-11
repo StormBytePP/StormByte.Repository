@@ -1,0 +1,2 @@
+# MAsk polly until clang bug https://github.com/llvm/llvm-project/issues/88173 is resolved
+sys-devel/clang-common polly
