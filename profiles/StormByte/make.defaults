@@ -13,19 +13,20 @@ CCACHE_DIR="/var/cache/ccache"
 
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
-COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument" # -O3 -mllvm -polly -mllvm -polly-parallel -mllvm -polly-vectorizer=stripmine -mllvm -polly-run-dce -mllvm -polly-scheduling-chunksize=1 -mllvm -polly-scheduling=dynamic -mllvm -polly-num-threads=32 -mllvm -polly-omp-backend=LLVM -mllvm -polly-invariant-load-hoisting -fopenmp"
+COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument"
 COMPILER_OPTIMIZATION_CPU="-march=native"
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
-COMPILER_OPTIMIZATION_GCC="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
+COMPILER_OPTIMIZATION_GCC=""
+COMPILER_OPTIMIZATION_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
-COMPILER_OPTIMIZATION_SECURITY="" # Already included in clang[cet]
+COMPILER_OPTIMIZATION_POLLY="-O3 -mllvm -polly -mllvm -polly-parallel -mllvm -polly-vectorizer=stripmine -mllvm -polly-run-dce -mllvm -polly-scheduling-chunksize=1 -mllvm -polly-scheduling=dynamic -mllvm -polly-num-threads=32 -mllvm -polly-omp-backend=LLVM -mllvm -polly-invariant-load-hoisting -fopenmp"
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2"
-#LINKER_OPTIMIZATION_CLANG="-fopenmp=libomp"
 LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
 LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
 LINKER_OPTIMIZATION_LLD="-fuse-ld=lld"
+LINKER_OPTIMIZATION_POLLY="-fopenmp=libomp"
 
 # Portage folders and config
 BASEDIR="/var/db/repos"
@@ -53,9 +54,9 @@ FEATURES="ccache metadata-transfer parallel-fetch userfetch"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
-CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_SECURITY}"
-CXXFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_SECURITY}"
+CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_GRAPHITE}"
+CXXFLAGS="${CFLAGS}"
 FCFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
 FFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
 LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
-RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3"
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=2"
