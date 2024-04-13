@@ -7,7 +7,7 @@ FIREFOX_PATCHSET="firefox-115esr-patches-09.tar.xz"
 
 LLVM_MAX_SLOT=18
 
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..11} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -57,7 +57,7 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 DESCRIPTION="Thunderbird Mail Client"
 HOMEPAGE="https://www.thunderbird.net/"
 
-KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
+KEYWORDS="amd64 ~arm64 ~ppc64 x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -65,7 +65,7 @@ LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
 IUSE="+clang cpu_flags_arm_neon dbus debug eme-free hardened hwaccel"
 IUSE+=" jack libproxy lto +openh264 pgo pulseaudio sndio selinux"
 IUSE+=" +system-av1 +system-harfbuzz +system-icu +system-jpeg +system-libevent +system-libvpx system-png system-python-libs +system-webp"
-IUSE+=" wayland wifi +X +privacy"
+IUSE+=" wayland wifi +X"
 
 # Thunderbird-only USE flags.
 IUSE+=" +system-librnp"
@@ -91,12 +91,21 @@ BDEPEND="${PYTHON_DEPS}
 			)
 		)
 		(
-			sys-devel/clang:17
-			sys-devel/llvm:17
+			sys-devel/clang:16
+			sys-devel/llvm:16
 			clang? (
-				sys-devel/lld:17
-				virtual/rust:0/llvm-17
-				pgo? ( =sys-libs/compiler-rt-sanitizers-17*[profile] )
+				sys-devel/lld:16
+				virtual/rust:0/llvm-16
+				pgo? ( =sys-libs/compiler-rt-sanitizers-16*[profile] )
+			)
+		)
+		(
+			sys-devel/clang:15
+			sys-devel/llvm:15
+			clang? (
+				sys-devel/lld:15
+				virtual/rust:0/llvm-15
+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
 			)
 		)
 	)
@@ -239,7 +248,12 @@ llvm_check_deps() {
 }
 
 MOZ_LANGS=(
-	de en-CA en-GB en-US ru
+	af ar ast be bg br ca cak cs cy da de dsb
+	el en-CA en-GB en-US es-AR es-ES es-MX et eu
+	fi fr fy-NL ga-IE gd gl he hr hsb hu
+	id is it ja ka kab kk ko lt lv ms nb-NO nl nn-NO
+	pa-IN pl pt-BR pt-PT rm ro ru
+	sk sl sq sr sv-SE th tr uk uz vi zh-CN zh-TW
 )
 
 mozilla_set_globals() {
@@ -553,18 +567,18 @@ pkg_setup() {
 		# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
 		# get your own set of keys.
 		if [[ -z "${MOZ_API_KEY_GOOGLE+set}" ]] ; then
-			MOZ_API_KEY_GOOGLE=""
+			MOZ_API_KEY_GOOGLE="AIzaSyDEAOvatFogGaPi0eTgsV_ZlEzx0ObmepsMzfAc"
 		fi
 
 		if [[ -z "${MOZ_API_KEY_LOCATION+set}" ]] ; then
-			MOZ_API_KEY_LOCATION=""
+			MOZ_API_KEY_LOCATION="AIzaSyB2h2OuRgGaPicUgy5N-5hsZqiPW6sH3n_rptiQ"
 		fi
 
 		# Mozilla API keys (see https://location.services.mozilla.com/api)
 		# Note: These are for Gentoo Linux use ONLY. For your own distribution, please
 		# get your own set of keys.
 		if [[ -z "${MOZ_API_KEY_MOZILLA+set}" ]] ; then
-			MOZ_API_KEY_MOZILLA=""
+			MOZ_API_KEY_MOZILLA="edb3d487-3a84-46m0ap1e3-9dfd-92b5efaaa005"
 		fi
 
 		# Ensure we use C locale when building, bug #746215
@@ -656,7 +670,12 @@ src_prepare() {
 		|| die "sed failed to disable ccache stats call"
 
 	einfo "Removing pre-built binaries ..."
-	find "${S}"/third_party -type f \( -name '*.so' -o -name '*.o' -o -name '*.la' -o -name '*.a' \) -print -delete || die
+
+	find "${S}"/third_party -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
+
+	# Clear cargo checksums from crates we have patched
+	# moz_clear_vendor_checksums crate
+	moz_clear_vendor_checksums audio_thread_priority
 
 	# Create build dir
 	BUILD_DIR="${WORKDIR}/${PN}_build"
@@ -666,73 +685,6 @@ src_prepare() {
 	echo -n "${MOZ_API_KEY_GOOGLE//gGaPi/}" > "${S}"/api-google.key || die
 	echo -n "${MOZ_API_KEY_LOCATION//gGaPi/}" > "${S}"/api-location.key || die
 	echo -n "${MOZ_API_KEY_MOZILLA//m0ap1/}" > "${S}"/api-mozilla.key || die
-
-	####### My stuff
-	### Privacy-esr patches
-	einfo ++++++++++++++++++++++++
-	einfo Applying privacy patches
-	einfo ++++++++++++++++++++++++
-	for i in $(cat "${FILESDIR}/privacy-patchset/series"); do eapply "${FILESDIR}/privacy-patchset/$i"; done
-	rm -rv browser/extensions/{doh-rollout,webcompat,report-site-issue}
-	### Debian patches
-	einfo "Applying Debian's patches"
-	for p in $(cat "${FILESDIR}/debian-patchset-$(ver_cut 1)"/series);do
-		patch --dry-run --silent -p1 -i "${FILESDIR}/debian-patchset-$(ver_cut 1)"/$p 2>/dev/null
-		if [ $? -eq 0 ]; then
-			eapply "${FILESDIR}/debian-patchset-$(ver_cut 1)"/$p;
-			einfo +++++++++++++++++++++++++;
-			einfo Patch $p is APPLIED;
-			einfo +++++++++++++++++++++++++
-		else
-			einfo -------------------------;
-			einfo Patch $p is NOT applied and IGNORED;
-			einfo -------------------------
-		fi
-	done
-	#######
-	### FreeBSD patches
-	einfo ++++++++++++++++++++++++++
-	einfo "Applying FreeBSD's patches"
-	einfo ++++++++++++++++++++++++++
-	for i in $(cat "${FILESDIR}/freebsd-patchset-$(ver_cut 1)/series"); do eapply "${FILESDIR}/freebsd-patchset-$(ver_cut 1)/$i";	done
-	### Fedora patches
-	einfo "Applying Fedora's patches"
-	for p in $(cat "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/series);do
-		patch --dry-run --silent -p1 -i "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/$p 2>/dev/null
-		if [ $? -eq 0 ]; then
-			eapply "${FILESDIR}/fedora-patchset-$(ver_cut 1)"/$p;
-			einfo +++++++++++++++++++++++++;
-			einfo Patch $p is APPLIED;
-			einfo +++++++++++++++++++++++++
-		else
-			einfo -------------------------;
-			einfo Patch $p is NOT applied and IGNORED;
-			einfo -------------------------
-		fi
-	done
-	#######
-	### KissLinux patches
-	einfo +++++++++++++++++++++++++++++
-	einfo "Applying KissLinux's patches"
-	einfo +++++++++++++++++++++++++++++
-	for p in $(cat "${FILESDIR}/kiss-patchset-$(ver_cut 1)"/series);do
-		patch --dry-run --silent -p1 -i "${FILESDIR}/kiss-patchset-$(ver_cut 1)"/$p 2>/dev/null
-		if [ $? -eq 0 ]; then
-			eapply "${FILESDIR}/kiss-patchset-$(ver_cut 1)"/$p;
-			einfo +++++++++++++++++++++++++;
-			einfo Patch $p is APPLIED;
-			einfo +++++++++++++++++++++++++
-		else
-			einfo -------------------------;
-			einfo Patch $p is NOT applied and IGNORED;
-			einfo -------------------------
-		fi
-	done
-	#######
-
-	# Clear cargo checksums from crates we have patched
-	# moz_clear_vendor_checksums crate
-	moz_clear_vendor_checksums audio_thread_priority
 
 	xdg_environment_reset
 }
@@ -820,6 +772,7 @@ src_configure() {
 		--disable-updater \
 		--disable-wmf \
 		--enable-js-shell \
+		--enable-legacy-profile-creation \
 		--enable-negotiateauth \
 		--enable-new-pass-manager \
 		--enable-official-branding \
@@ -959,9 +912,6 @@ src_configure() {
 			fi
 
 			mozconfig_add_options_ac '+lto' --enable-lto=cross
-			mozconfig_add_options_ac '+lto-cross' MOZ_LTO=cross
-			mozconfig_add_options_ac '+lto-cross' MOZ_LTO_RUST=1
-			mozconfig_add_options_ac '+pgo-rust' MOZ_PGO_RUST=1
 
 		else
 			# ThinLTO is currently broken, see bmo#1644409.
@@ -976,7 +926,6 @@ src_configure() {
 			if use clang ; then
 				# Used in build/pgo/profileserver.py
 				export LLVM_PROFDATA="llvm-profdata"
-				mozconfig_add_options_ac '+pgo-rust' MOZ_PGO_RUST=1
 			fi
 		fi
 	else
@@ -1062,14 +1011,26 @@ src_configure() {
 		fi
 	fi
 
-	# With profile 23.0 elf-hack=legacy is broken with gcc.
-	# With Firefox-115esr elf-hack=relr isn't available (only in rapid).
-	# Solution: Disable build system's elf-hack completely, and add "-z,pack-relative-relocs"
-	#  manually with gcc.
-	mozconfig_add_options_ac 'elf-hack disabled' --disable-elf-hack
+	if use clang ; then
+		# https://bugzilla.mozilla.org/show_bug.cgi?id=1482204
+		# https://bugzilla.mozilla.org/show_bug.cgi?id=1483822
+		# toolkit/moz.configure Elfhack section: target.cpu in ('arm', 'x86', 'x86_64')
+		local disable_elf_hack=
+		if use amd64 ; then
+			disable_elf_hack=yes
+		elif use x86 ; then
+			disable_elf_hack=yes
+		elif use arm ; then
+			disable_elf_hack=yes
+		fi
 
-	if use amd64 || use x86 ; then
-		! use clang && append-ldflags "-z,pack-relative-relocs"
+		if [[ -n ${disable_elf_hack} ]] ; then
+			mozconfig_add_options_ac 'elf-hack is broken when using Clang' --disable-elf-hack
+		fi
+	fi
+
+	if use elibc_musl && use arm64 ; then
+		mozconfig_add_options_ac 'elf-hack is broken when using musl/arm64' --disable-elf-hack
 	fi
 
 	# Additional ARCH support
@@ -1137,100 +1098,6 @@ src_configure() {
 			mozconfig_add_options_ac "EXTRA_ECONF" --${opt#--}
 		done
 	fi
-
-	#######
-	### Disable features
-	mozconfig_add_options_ac '' --disable-accessibility
-	mozconfig_add_options_ac '' --disable-address-sanitizer
-	mozconfig_add_options_ac '' --disable-address-sanitizer-reporter
-
-	mozconfig_add_options_ac '' --disable-callgrind
-	mozconfig_add_options_ac '' --disable-crashreporter
-
-	mozconfig_add_options_ac '' --disable-debug
-	mozconfig_add_options_ac '' --disable-debug-js-modules
-	mozconfig_add_options_ac '' --disable-debug-symbols
-	mozconfig_add_options_ac '' --disable-dmd
-	mozconfig_add_options_ac '' --disable-dtrace
-	mozconfig_add_options_ac '' --disable-dump-painting
-
-	mozconfig_add_options_ac '' --disable-frame-pointers
-
-	mozconfig_add_options_ac '' --disable-gpsd
-	mozconfig_add_options_ac '' --disable-gtest-in-build
-
-	mozconfig_add_options_ac '' --disable-instruments
-
-	mozconfig_add_options_ac '' --disable-jprof
-
-	mozconfig_add_options_ac '' --disable-libproxy
-	mozconfig_add_options_ac '' --disable-logrefcnt
-
-	mozconfig_add_options_ac '' --disable-memory-sanitizer
-	mozconfig_add_options_ac '' --disable-mobile-optimize
-
-	mozconfig_add_options_ac '' --disable-necko-wifi
-
-	mozconfig_add_options_ac '' --disable-parental-controls
-	mozconfig_add_options_ac '' --disable-perf
-	mozconfig_add_options_ac '' --disable-profiling
-
-	mozconfig_add_options_ac '' --disable-reflow-perf
-	mozconfig_add_options_ac '' --disable-rust-debug
-	mozconfig_add_options_ac '' --disable-rust-tests
-
-	mozconfig_add_options_ac '' --disable-signed-overflow-sanitizer
-	mozconfig_add_options_ac '' --disable-spidermonkey-telemetry
-	mozconfig_add_options_ac '' --disable-system-extension-dirs
-
-	mozconfig_add_options_ac '' --disable-thread-sanitizer
-
-	mozconfig_add_options_ac '' --disable-undefined-sanitizer
-	mozconfig_add_options_ac '' --disable-unsigned-overflow-sanitizer
-	mozconfig_add_options_ac '' --disable-updater
-
-	mozconfig_add_options_ac '' --disable-valgrind
-	mozconfig_add_options_ac '' --disable-vtune
-
-	mozconfig_add_options_ac '' --disable-warnings-as-errors
-	mozconfig_add_options_ac '' --disable-wasm-codegen-debug
-	mozconfig_add_options_ac '' --disable-webrender-debugger
-
-	mozconfig_add_options_ac '' --without-debug-label
-	mozconfig_add_options_ac '' --without-google-location-service-api-keyfile
-	mozconfig_add_options_ac '' --without-google-safebrowsing-api-keyfile
-	mozconfig_add_options_ac '' --without-mozilla-api-keyfile
-	mozconfig_add_options_ac '' --without-pocket-api-keyfile
-
-	mozconfig_add_options_ac '' MOZ_DATA_REPORTING=0
-	mozconfig_add_options_ac '' MOZ_DEVICES=0
-	mozconfig_add_options_ac '' MOZ_LOGGING=0
-	mozconfig_add_options_ac '' MOZ_PAY=0
-	mozconfig_add_options_ac '' MOZ_SERVICES_HEALTHREPORTER=0
-	mozconfig_add_options_ac '' MOZ_SERVICES_METRICS=0
-	mozconfig_add_options_ac '' MOZ_TELEMETRY_REPORTING=0
-	mozconfig_add_options_ac '' MOZ_X11=
-	mozconfig_add_options_ac '' USE_X11=0
-
-	### Enable good features
-	mozconfig_add_options_ac '' --enable-icf
-	mozconfig_add_options_ac '' --enable-install-strip
-	mozconfig_add_options_ac '' --enable-rust-simd
-	mozconfig_add_options_ac '' --enable-strip
-	mozconfig_add_options_ac '' --enable-webrtc
-	mozconfig_add_options_ac '' MOZ_ENABLE_WAYLAND=1
-
-	echo "export MOZ_DATA_REPORTING=0" >> "${S}"/.mozconfig
-	echo "export MOZ_DEVICES=0" >> "${S}"/.mozconfig
-	echo "export MOZ_LOGGING=0" >> "${S}"/.mozconfig
-	echo "export MOZ_PAY=0" >> "${S}"/.mozconfig
-	echo "export MOZ_SERVICES_HEALTHREPORTER=0" >> "${S}"/.mozconfig
-	echo "export MOZ_SERVICES_METRICS=0" >> "${S}"/.mozconfig
-	echo "export MOZ_TELEMETRY_REPORTING=" >> "${S}"/.mozconfig
-	echo "export MOZ_X11=" >> "${S}"/.mozconfig
-	echo "export USE_X11=0" >> "${S}"/.mozconfig
-	echo "export MOZ_ENABLE_WAYLAND=1" >> "${S}"/.mozconfig
-	#######
 
 	echo
 	echo "=========================================================="
@@ -1302,13 +1169,7 @@ src_install() {
 	# Install policy (currently only used to disable application updates)
 	insinto "${MOZILLA_FIVE_HOME}/distribution"
 	newins "${FILESDIR}"/distribution.ini distribution.ini
-	#######
-	if use privacy; then 
-		newins "${FILESDIR}"/enable-privacy.policy.json policies.json
-	else
-		newins "${FILESDIR}"/disable-auto-update.policy.json policies.json
-	fi
-	#######
+	newins "${FILESDIR}"/disable-auto-update.policy.json policies.json
 
 	# Install system-wide preferences
 	local PREFS_DIR="${MOZILLA_FIVE_HOME}/defaults/pref"
@@ -1345,16 +1206,6 @@ src_install() {
 		sticky_pref("gfx.font_rendering.graphite.enabled", true);
 		EOF
 	fi
-
-	#######
-	cat "${FILESDIR}"/opensuse-kde/kde.js >> \
-	"${GENTOO_PREFS}" \
-	|| die
-
-	cat "${FILESDIR}"/privacy-patchset/privacy.js >> \
-	"${GENTOO_PREFS}" \
-	|| die
-	#######
 
 	# Install language packs
 	local langpacks=( $(find "${WORKDIR}/language_packs" -type f -name '*.xpi') )
