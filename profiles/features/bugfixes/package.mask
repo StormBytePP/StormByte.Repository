@@ -1,0 +1,2 @@
+# Does not compile
+=mail-client/thunderbird-115.9.0
