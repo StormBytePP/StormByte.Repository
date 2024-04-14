@@ -1,1 +1,4 @@
+# Causes undefined-version-references
+
 media-libs/libraw -openmp
+media-libs/libsoundtouch -openmp
