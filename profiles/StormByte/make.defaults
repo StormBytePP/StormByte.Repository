@@ -47,7 +47,7 @@ INPUT_DEVICES="-* libinput"
 RUBY_TARGETS="-* ruby33"
 PORTAGE_WORKDIR_MODE = "0770"
 LLVM_TARGETS="X86 NVPTX"
-LLVM_SLOT="17"
+LLVM_SLOT="-* 18"
 
 # Features
 FEATURES="ccache metadata-transfer parallel-fetch userfetch"
