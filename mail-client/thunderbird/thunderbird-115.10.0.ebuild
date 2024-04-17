@@ -57,7 +57,7 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 DESCRIPTION="Thunderbird Mail Client"
 HOMEPAGE="https://www.thunderbird.net/"
 
-KEYWORDS="amd64 ~arm64 ~ppc64 x86"
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -81,15 +81,6 @@ TB_ONLY_DEPEND="!<x11-plugins/enigmail-2.2
 	system-librnp? ( dev-util/librnp )"
 BDEPEND="${PYTHON_DEPS}
 	|| (
-		(
-			sys-devel/clang:18
-			sys-devel/llvm:18
-			clang? (
-				sys-devel/lld:18
-				virtual/rust:0/llvm-18
-				pgo? ( =sys-libs/compiler-rt-sanitizers-18*[profile] )
-			)
-		)
 		(
 			sys-devel/clang:17
 			sys-devel/llvm:17
