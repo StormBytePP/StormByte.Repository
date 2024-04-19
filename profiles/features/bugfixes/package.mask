@@ -1,0 +1,16 @@
+# Mask all LLVM18 as it can not be used solelly in system
+>=sys-devel/llvm-18.0.0
+>=sys-devel/llvm-toolchain-symlinks-18
+>=sys-devel/llvmgold-18
+>=sys-devel/lld-18.0.0
+>=sys-devel/lld-toolchain-symlinks-18
+>=sys-devel/clang-common-18.0.0
+>=sys-devel/clang-18.0.0
+>=sys-libs/compiler-rt-18.0.0
+>=sys-libs/libcxxabi-18.0.0
+>=sys-libs/llvm-libunwind-18.0.0
+>=sys-devel/clang-toolchain-symlinks-18
+>=sys-libs/compiler-rt-sanitizers-18.0.0
+>=sys-libs/libomp-18.0.0
+>=sys-libs/libcxx-18.0.0
+>=sys-devel/clang-runtime-18.0.0
