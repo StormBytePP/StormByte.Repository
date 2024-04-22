@@ -34,4 +34,5 @@ x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-misc/colord scanner
 xfce-base/libxfce4ui system-info
+xfce-extra/thunar-vcs-plugin -subversion
 x11-misc/xscreensaver fonts gdm gles offensive
