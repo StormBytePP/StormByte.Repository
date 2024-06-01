@@ -41,12 +41,9 @@ ACCEPT_LICENSE="*"
 GRUB_PLATFORMS="-* efi-64"
 VIDEO_CARDS="-*"
 INPUT_DEVICES="-* libinput"
-RUBY_TARGETS="-* ruby33"
 PORTAGE_WORKDIR_MODE = "0770"
 LLVM_TARGETS="X86 NVPTX"
 #LLVM_SLOT="-* 18" #Leave Gentoo default for now
-PYTHON_SINGLE_TARGET="-* python3_11"
-PYTHON_TARGETS="-* python3_11"
 
 # Features
 FEATURES="metadata-transfer parallel-fetch userfetch"
