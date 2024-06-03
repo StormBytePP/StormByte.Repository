@@ -21,7 +21,7 @@ RESTRICT="test"
 DEPEND="dev-libs/boost:=[zlib]"
 RDEPEND="${DEPEND}"
 
-DOCS=( AUTHORS README.rst )
+DOCS=( AUTHORS )
 
 PATCHES=(
 	"${FILESDIR}/${P}-boost-1.85.patch"
