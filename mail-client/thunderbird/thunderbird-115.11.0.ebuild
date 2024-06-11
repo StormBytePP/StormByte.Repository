@@ -7,7 +7,7 @@ FIREFOX_PATCHSET="firefox-115esr-patches-09.tar.xz"
 
 LLVM_MAX_SLOT=18
 
-PYTHON_COMPAT=( python3_{10..11} )
+PYTHON_COMPAT=( python3_{10..12} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
 WANT_AUTOCONF="2.1"
@@ -57,7 +57,7 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 DESCRIPTION="Thunderbird Mail Client"
 HOMEPAGE="https://www.thunderbird.net/"
 
-KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
+KEYWORDS="amd64 ~arm64 ~ppc64 x86"
 
 SLOT="0"
 LICENSE="MPL-2.0 GPL-2 LGPL-2.1"
@@ -124,10 +124,13 @@ BDEPEND="${PYTHON_DEPS}
 	>=dev-util/cbindgen-0.24.3
 	net-libs/nodejs
 	virtual/pkgconfig
-	!clang? ( >=virtual/rust-1.65 )
+	!clang? (
+		>=virtual/rust-1.65
+		<virtual/rust-1.78
+	)
 	!elibc_glibc? (
 		|| (
-			dev-lang/rust
+			<dev-lang/rust-1.78
 			<dev-lang/rust-bin-1.73
 		)
 	)
@@ -140,7 +143,10 @@ BDEPEND="${PYTHON_DEPS}
 			x11-apps/xhost
 		)
 		wayland? (
-			>=gui-libs/wlroots-0.15.1-r1[tinywl]
+			|| (
+				gui-wm/tinywl
+				<gui-libs/wlroots-0.17.3[tinywl(-)]
+			)
 			x11-misc/xkeyboard-config
 		)
 	)"
@@ -1024,7 +1030,13 @@ src_configure() {
 	# With Firefox-115esr elf-hack=relr isn't available (only in rapid).
 	# Solution: Disable build system's elf-hack completely, and add "-z,pack-relative-relocs"
 	#  manually with gcc.
-	mozconfig_add_options_ac 'elf-hack disabled' --disable-elf-hack
+	#
+	# # elf-hack configure option isn't available on ppc64/riscv, #916259, #929244, #930046.
+	if use ppc64 || use riscv ; then
+		:;
+	else
+		mozconfig_add_options_ac 'elf-hack disabled' --disable-elf-hack
+	fi
 
 	if use amd64 || use x86 ; then
 		! use clang && append-ldflags "-z,pack-relative-relocs"
