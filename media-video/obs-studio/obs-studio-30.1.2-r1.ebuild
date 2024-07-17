@@ -54,8 +54,10 @@ BDEPEND="
 "
 # media-video/ffmpeg[opus] required due to bug 909566
 DEPEND="
+	dev-cpp/nlohmann_json
 	dev-libs/glib:2
 	dev-libs/jansson:=
+	dev-libs/uthash
 	dev-qt/qtbase:6[network,widgets,xml(+)]
 	dev-qt/qtsvg:6
 	media-libs/libglvnd[X]
@@ -79,7 +81,6 @@ DEPEND="
 			>=app-accessibility/at-spi2-core-2.46.0:2
 			( app-accessibility/at-spi2-atk dev-libs/atk )
 		)
-		dev-cpp/nlohmann_json
 		dev-libs/expat
 		dev-libs/glib
 		dev-libs/nspr
@@ -132,7 +133,6 @@ DEPEND="
 	)
 	websocket? (
 		dev-cpp/asio
-		dev-cpp/nlohmann_json
 		dev-cpp/websocketpp
 		dev-libs/qr-code-generator
 	)
@@ -225,6 +225,7 @@ src_configure() {
 		-DENABLE_FREETYPE=$(usex truetype)
 		-DENABLE_JACK=$(usex jack)
 		-DENABLE_LIBFDK=$(usex fdk)
+		-DENABLE_NATIVE_NVENC=$(usex nvenc)
 		-DENABLE_NEW_MPEGTS_OUTPUT=$(usex mpegts)
 		-DENABLE_PIPEWIRE=$(usex pipewire)
 		-DENABLE_PULSEAUDIO=$(usex pulseaudio)
