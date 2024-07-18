@@ -11,8 +11,8 @@ inherit cmake flag-o-matic lua-single optfeature python-single-r1 xdg
 
 CEF_DIR="cef_binary_5060_linux_x86_64"
 CEF_REVISION="_v3"
-OBS_BROWSER_COMMIT="996b5a7bc43d912f1f4992e0032d4f263ac8b060"
-OBS_WEBSOCKET_COMMIT="d2d4bfb3e78cf2b02c8e2f5dda1d805eda8d8f32"
+OBS_BROWSER_COMMIT="c81851a1d7696c2d7ba319122eec387c1568ad44"
+OBS_WEBSOCKET_COMMIT="f8bc7c4f593c7957ecdb45a24faaff3e95f24e8b"
 
 DESCRIPTION="Software for Recording and Streaming Live Video Content"
 HOMEPAGE="https://obsproject.com"
