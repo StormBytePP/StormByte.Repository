@@ -16,7 +16,7 @@ COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
 COMPILER_OPTIMIZATION_GCC=""
 COMPILER_OPTIMIZATION_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 COMPILER_OPTIMIZATION_LTO="-flto=thin"
-COMPILER_OPTIMIZATION_POLLY="-O3 -mllvm -polly -mllvm -polly-parallel -mllvm -polly-vectorizer=stripmine -mllvm -polly-run-dce -mllvm -polly-scheduling-chunksize=1 -mllvm -polly-scheduling=dynamic -mllvm -polly-num-threads=32 -mllvm -polly-omp-backend=LLVM -mllvm -polly-invariant-load-hoisting -fopenmp"
+COMPILER_OPTIMIZATION_POLLY="-O3 -fplugin-arg-polly-polly -fplugin-arg-polly-polly-parallel -fplugin-arg-polly-polly-vectorizer=stripmine -fplugin-arg-polly-polly-run-dce -fplugin-arg-polly-polly-scheduling-chunksize=1 -fplugin-arg-polly-polly-scheduling=dynamic -fplugin-arg-polly-polly-num-threads=32 -fplugin-arg-polly-polly-omp-backend=LLVM -fplugin-arg-polly-polly-invariant-load-hoisting -fopenmp=libomp"
 
 # Linker optimizations
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2"
