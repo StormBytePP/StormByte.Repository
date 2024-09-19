@@ -113,6 +113,12 @@ IUSE="+strip"
 # root=/dev/gpt-auto-root ro
 : "${KERNEL_GENERIC_UKI_CMDLINE:="root=/dev/gpt-auto-root ro"}"
 
+# @ECLASS_VARIABLE: KERNEL_VERBOSE
+# @USER_VARIABLE
+# @DESCRIPTION:
+# Set to OFF to disable verbose messages during compilation
+: "${KERNEL_VERBOSE:=ON}"
+
 if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then
 	IUSE+=" modules-sign"
 	REQUIRED_USE="secureboot? ( modules-sign )"
@@ -198,8 +204,13 @@ kernel-build_src_configure() {
 	fi
 
 	tc-export_build_env
+	local VERBOSITY
+    case "${KERNEL_VERBOSE}" in
+		OFF) VERBOSITY="0";;
+       	*) VERBOSITY="1"
+	esac
 	MAKEARGS=(
-		V=1
+		V="${VERBOSITY}"
 
 		HOSTCC="$(tc-getBUILD_CC)"
 		HOSTCXX="$(tc-getBUILD_CXX)"
@@ -304,7 +315,7 @@ kernel-build_src_compile() {
 
 	local target
 	for target in "${targets[@]}" ; do
-		emake "${EMAKE_EXTRA}" O="${WORKDIR}"/build "${MAKEARGS[@]}" "${target}"
+		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" "${target}"
 	done
 }
 
