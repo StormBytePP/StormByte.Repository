@@ -6,6 +6,7 @@ dev-libs/appstream-glib fonts
 dev-qt/qtbase mysql postgres
 dev-qt/qtscript scripttools
 dev-qt/qttools designer
+dev-qt/qtwayland compositor
 gnome-base/gdm plymouth
 gnome-base/gvfs google nfs
 kde-frameworks/sonnet designer doc
@@ -33,7 +34,7 @@ sys-process/htop delayacct hwloc
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-misc/colord scanner
+x11-misc/xscreensaver fonts gdm gles offensive
 xfce-base/libxfce4ui system-info
 xfce-extra/thunar-vcs-plugin -subversion
 xfce-extra/xfce4-sensors-plugin hddtemp
-x11-misc/xscreensaver fonts gdm gles offensive
