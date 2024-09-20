@@ -21,6 +21,7 @@ media-sound/audacity id3tag
 media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
+net-dns/avahi mdnsresponder-compat
 net-dns/dnsmasq script
 net-libs/gnutls tools
 net-misc/spice-gtk usbredir
