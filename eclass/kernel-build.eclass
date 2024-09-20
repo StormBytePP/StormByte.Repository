@@ -204,13 +204,13 @@ kernel-build_src_configure() {
 	fi
 
 	tc-export_build_env
-	local VERBOSITY
+	local v
     case "${KERNEL_VERBOSE}" in
-		OFF) VERBOSITY="0";;
-       	*) VERBOSITY="1"
+		OFF) v=0;;
+       	*) v=1
 	esac
 	MAKEARGS=(
-		V="${VERBOSITY}"
+		V="${v}"
 
 		HOSTCC="$(tc-getBUILD_CC)"
 		HOSTCXX="$(tc-getBUILD_CXX)"
