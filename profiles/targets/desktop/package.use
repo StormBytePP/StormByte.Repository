@@ -9,7 +9,7 @@ dev-qt/qttools designer
 dev-qt/qtwayland compositor
 gnome-base/gdm plymouth
 gnome-base/gvfs google nfs
-kde-frameworks/sonnet designer doc
+kde-frameworks/sonnet designer
 media-fonts/corefonts tahoma
 media-fonts/fonts-meta ms
 media-gfx/xsane gimp
