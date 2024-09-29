@@ -1,2 +1,2 @@
-# System is not yet prepared for LLVM19
->=sys-devel/llvm-19.0.0
+# A lot of software fails with this version
+>=sys-libs/libcxx-19.0.0
