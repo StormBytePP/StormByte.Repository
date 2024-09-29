@@ -1,0 +1,2 @@
+# System is not yet prepared for LLVM19
+>=sys-devel/llvm-19.0.0

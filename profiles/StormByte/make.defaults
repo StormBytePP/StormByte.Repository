@@ -43,8 +43,6 @@ RUBY_TARGETS="-* ruby33"
 VIDEO_CARDS="-*"
 INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE = "0770"
-LLVM_TARGETS="X86 NVPTX"
-LLVM_SLOT="-* 18"
 
 # Features
 FEATURES="metadata-transfer parallel-fetch userfetch"
