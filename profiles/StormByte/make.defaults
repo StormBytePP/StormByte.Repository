@@ -9,6 +9,7 @@ USE="${BASE} ${COMPRESSION} ${SECURITY} ${SYSTEM}"
 L10N="es es-ES"
 
 # Compiler custom optimizations
+CCACHE_DIR="/var/cache/ccache"
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
 COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument"
 COMPILER_OPTIMIZATION_CPU="-march=native"
@@ -45,7 +46,7 @@ INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE = "0770"
 
 # Features
-FEATURES="metadata-transfer parallel-fetch userfetch"
+FEATURES="ccache metadata-transfer parallel-fetch userfetch"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
