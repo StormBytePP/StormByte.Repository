@@ -1,2 +1,0 @@
-# pbzip2 no longer compiles bug #940196
-app-alternatives/bzip2 -pbzip2 reference
