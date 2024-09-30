@@ -30,7 +30,7 @@ BASEDIR="/var/db/repos"
 PKGDIR="${BASEDIR}/packages"
 DISTDIR="/distfiles"
 PORTAGE_TMPDIR="/tmp"
-EMERGE_DEFAULT_OPTS="--ask --autounmask n --jobs=1 --verbose"
+EMERGE_DEFAULT_OPTS="--ask --autounmask n --buildpkg --jobs=1 --verbose"
 GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 PORTAGE_SYNC_STALE=5
 
