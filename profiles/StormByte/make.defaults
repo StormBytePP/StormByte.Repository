@@ -33,6 +33,7 @@ PORTAGE_TMPDIR="/tmp"
 EMERGE_DEFAULT_OPTS="--ask --autounmask n --buildpkg --jobs=1 --verbose"
 GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 PORTAGE_SYNC_STALE=5
+BINPKG_COMPRESS="zstd"
 
 # Licenses
 ACCEPT_LICENSE="*"
@@ -45,7 +46,7 @@ INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE = "0770"
 
 # Features
-FEATURES="metadata-transfer parallel-fetch userfetch"
+FEATURES="buildpkg metadata-transfer parallel-fetch userfetch"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
