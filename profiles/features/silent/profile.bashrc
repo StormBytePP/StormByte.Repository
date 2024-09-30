@@ -1,4 +1,5 @@
 if [ -z "$EMERGE_VERBOSE" ]; then
+    export CARGO_TERM_VERBOSE=false
     export CMAKE_VERBOSE=OFF
     export CUDA_VERBOSE=OFF
     export EXTRA_EMAKE="V=0"
@@ -8,6 +9,7 @@ if [ -z "$EMERGE_VERBOSE" ]; then
     export PORTAGE_QUIET=1
     export WAF_VERBOSE=OFF
 else
+    export CARGO_TERM_VERBOSE=true
     export CMAKE_VERBOSE=ON
     export CUDA_VERBOSE=ON
     export EXTRA_EMAKE="V=1"
