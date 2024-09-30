@@ -17,6 +17,6 @@ fi
 
 if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 	force_gcc_vars
-	CFLAGS="-march=alderlake -mabm -mno-cldemote -mno-kl -mno-pconfig -mno-sgx -mno-widekl -mshstk --param=l1-cache-line-size=64 --param=l1-cache-size=32 --param=l2-cache-size=36864 -O2 -pipe"
+	CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
 	CXXFLAGS="${CFLAGS}"
 fi
