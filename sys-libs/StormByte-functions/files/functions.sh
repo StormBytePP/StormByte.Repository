@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.7.0
+# Version 1.8.0
 
 function displayError() {
 	echo $1
@@ -94,3 +94,4 @@ workdir="${0%/*}"
 self=`basename $0`
 parameters=("${@:1}")
 current_dir=`pwd`
+cores=$(nproc)
