@@ -1,0 +1,3 @@
+sys-devel/llvm -binutils-plugin
+# PGO does not compile for python 3.13 (bug #939463)
+=dev-lang/python-3.13.0_rc3 -pgo
