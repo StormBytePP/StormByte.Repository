@@ -6,4 +6,4 @@
 dev-lang/rust-bin doc
 
 # PGO does not compile for python 3.13 (bug #939463)
-dev-lang/python pgo
+dev-lang/python:3.13 pgo
