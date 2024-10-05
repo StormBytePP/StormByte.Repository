@@ -5,6 +5,6 @@ app-portage/eix sqlite
 net-misc/networkmanager dhcpcd iwd syslog
 sys-apps/util-linux -logger
 sys-firmware/intel-microcode hostonly initramfs
-sys-kernel/gentoo-kernel savedconfig experimental
+sys-kernel/gentoo-kernel experimental
 sys-kernel/gentoo-sources experimental
 sys-kernel/installkernel dracut grub
