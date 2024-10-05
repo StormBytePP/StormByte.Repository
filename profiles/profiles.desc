@@ -10,8 +10,8 @@ amd64				StormByte/no-multilib											stable
 amd64				StormByte/no-multilib/llvm							            stable
 amd64				StormByte/no-multilib/desktop									stable
 amd64				StormByte/no-multilib/desktop/llvm					            stable
-amd64               StormByte/no-multilib/desktop/musl                              experimental
-amd64               StormByte/no-multilib/desktop/musl/llvm                         experimental
+amd64               StormByte/no-multilib/desktop/musl                              exp
+amd64               StormByte/no-multilib/desktop/musl/llvm                         exp
 amd64				StormByte/no-multilib/desktop/gnome								stable
 amd64				StormByte/no-multilib/desktop/gnome/llvm				        stable
 amd64				StormByte/no-multilib/desktop/plasma							stable
