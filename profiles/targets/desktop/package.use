@@ -29,7 +29,9 @@ net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
 sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
+sys-block/parted device-mapper
 sys-boot/grub mount
+sys-fs/lvm2 lvm
 sys-libs/zlib minizip
 sys-process/htop delayacct hwloc
 x11-base/xorg-server xvfb
