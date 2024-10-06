@@ -1,4 +1,4 @@
-app-emulation/libvirt nfs virtiofsd virtualbox wireshark-plugins
+app-emulation/libvirt fuse nfs numa parted pcap virtiofsd virtualbox wireshark-plugins
 app-emulation/qemu fuse nfs spice usbredir virgl virtfs
 app-office/libreoffice gtk java pdfimport
 dev-db/postgresql llvm uuid
