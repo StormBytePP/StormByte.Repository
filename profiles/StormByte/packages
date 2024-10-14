@@ -3,3 +3,4 @@
 *dev-vcs/git
 *sys-apps/StormByte-meta
 *sys-libs/timezone-data
+*sys-devel/binutils
