@@ -35,8 +35,9 @@ GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 PORTAGE_SYNC_STALE=5
 BINPKG_COMPRESS="zstd"
 
-# Python config
+# Versioning
 PYTHON_TARGETS="python3_12 python3_13" # Check from time to time if system is prepared to remove python 3.12
+POSTGRES_TARGETS="postgres17"
 
 # Licenses
 ACCEPT_LICENSE="*"
