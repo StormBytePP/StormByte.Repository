@@ -42,7 +42,9 @@ src_configure() {
 	cmake_src_configure
 }
 
-pkg_preinst() {
-	chmod +x "${D}/etc/init.d/StormByte-VideoConvert"
-}
+src_install() {
+	doinitd "${FILESDIR}/StormByte-VideoConvert"
+	doconfd "${FILESDIR}/StormByte-VideoConvert.conf"
 
+	cmake_src_install
+}

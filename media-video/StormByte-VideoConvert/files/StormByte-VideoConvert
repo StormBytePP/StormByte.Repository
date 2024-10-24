@@ -1,0 +1,37 @@
+#!/sbin/openrc-run
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+extra_commands="configtest wakeup"
+
+PIDFILE="/var/run/StormByte-VideoConvert.pid"
+COMMAND="/usr/bin/StormByte-VideoConvert"
+USER="stormbyte"
+
+depend() {
+    	use logger
+	need localmount
+}
+
+start() {
+	ebegin "Starting StormByte Video Convert daemon"
+	start-stop-daemon --start --background --make-pidfile --user ${USER} --pidfile ${PIDFILE} --exec ${COMMAND} -- --daemon
+	eend $?
+}
+
+stop() {
+	ebegin "Stopping StormByte Video Convert daemon"
+	start-stop-daemon --pidfile $PIDFILE --stop
+	eend $?
+}
+
+configtest() {
+	ebegin "Checking for StormByte Video Convert daemon start without starting it"
+	start-stop-daemon --start --user ${USER} --exec ${COMMAND} -- -c > /dev/null
+	eend $?
+}
+
+wakeup() {
+	ebegin "Waking up StormByte Video Convert to look for new films"
+	start-stop-daemon --pidfile $PIDFILE --signal SIGUSR2
+	eend $?
+}
