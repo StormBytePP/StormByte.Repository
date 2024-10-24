@@ -20,7 +20,7 @@ start() {
 
 stop() {
 	ebegin "Stopping StormByte Video Convert daemon"
-	start-stop-daemon --pidfile $PIDFILE --stop
+	start-stop-daemon --signal TERM --retry 30 --pidfile $PIDFILE --stop
 	eend $?
 }
 
