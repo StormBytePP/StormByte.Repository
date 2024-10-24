@@ -24,7 +24,7 @@ DEPEND="
 	opus? ( media-video/ffmpeg[opus] )
 "
 RDEPEND="${DEPEND}"
-BDEPEND=""
+BDEPEND=">=dev-build/cmake-3.30.0"
 
 S="${WORKDIR}/Alchemist-${PV}"
 
