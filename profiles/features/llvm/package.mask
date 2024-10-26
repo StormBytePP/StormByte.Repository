@@ -1,0 +1,3 @@
+# A lot of compile errors
+>=sys-libs/libcxx-19.0.0
+>=sys-libs/libcxxabi-19.0.0
