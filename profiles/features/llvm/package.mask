@@ -1,3 +1,14 @@
-# A lot of compile errors
+# A lot of compile errors with LLVM19
+>=sys-devel/clang-19.0.0
+>=sys-devel/clang-common-19.0.0
+>=sys-devel/clang-runtime-19.0.0
+>=sys-devel/lld-19.0.0
+>=sys-devel/llvm-19.0.0
+>=sys-devel/llvm-common-19.0.0
+>=sys-devel/llvmgold-19.0.0
+>=sys-libs/compiler-rt-19.0.0
+>=sys-libs/compiler-rt-sanitizers-19.0.0
 >=sys-libs/libcxx-19.0.0
 >=sys-libs/libcxxabi-19.0.0
+>=sys-libs/libomp-19.0.0
+>=sys-libs/llvm-libunwind-19.0.0
