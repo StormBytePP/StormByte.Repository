@@ -12,3 +12,6 @@
 >=sys-libs/libcxxabi-19.0.0
 >=sys-libs/libomp-19.0.0
 >=sys-libs/llvm-libunwind-19.0.0
+
+#Also rust/llvm19
+>=virtual/rust-1.82.0
