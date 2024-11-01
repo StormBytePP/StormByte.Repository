@@ -10,7 +10,7 @@ L10N="es es-ES"
 
 # Compiler custom optimizations
 COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
-COMPILER_OPTIMIZATION_CLANG="-Wno-unused-command-line-argument"
+COMPILER_OPTIMIZATION_CLANG="" # -Wno-unused-command-line-argument"
 COMPILER_OPTIMIZATION_CPU="-march=native"
 COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
 COMPILER_OPTIMIZATION_GCC=""
