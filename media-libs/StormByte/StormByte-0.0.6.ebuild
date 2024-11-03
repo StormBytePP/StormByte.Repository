@@ -2,9 +2,9 @@ EAPI=7
 
 inherit cmake
 
-DESCRIPTION="StormByte++ Library"
-HOMEPAGE="https://github.com/StormBytePP/StormBytePP"
-SRC_URI="https://github.com/StormBytePP/StormBytePP/archive/${PV}.tar.gz -> ${P}.tar.gz"
+DESCRIPTION="StormByte C++ Library"
+HOMEPAGE="https://github.com/StormBytePP/StormByte"
+SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL"
 SLOT="0"
@@ -13,12 +13,10 @@ IUSE=""
 
 DEPEND="
 	dev-db/sqlite:3
-	dev-libs/libconfig[cxx]
+	>=dev-libs/libconfig-1.7.3[cxx]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
-
-S="${WORKDIR}/StormBytePP-${PV}"
 
 src_configure() {
 	local mycmakeargs=(
