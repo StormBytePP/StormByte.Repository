@@ -14,4 +14,5 @@
 >=sys-libs/llvm-libunwind-19.0.0
 
 #Also rust/llvm19
->=virtual/rust-1.82.0
+dev-lang/rust:1.82.0
+virtual/rust:0/llvm-19
