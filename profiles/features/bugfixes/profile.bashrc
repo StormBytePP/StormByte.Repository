@@ -18,7 +18,7 @@ if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
 fi
 
 if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
-	if [[ -z "$DISABLE_BUGFIXES" ]]; then
+	if [[ -z "$AMD" ]]; then
 		force_gcc_vars
 		CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
 		CXXFLAGS="${CFLAGS}"
