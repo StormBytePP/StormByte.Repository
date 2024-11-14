@@ -2,3 +2,4 @@ gentoo:default/linux/amd64/23.0
 StormByte:features/optimizations
 StormByte:features/bugfixes
 StormByte:features/silent
+StormByte:features/cet
