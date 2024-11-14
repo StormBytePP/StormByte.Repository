@@ -18,13 +18,8 @@ if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
 fi
 
 if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
-	if [[ -z "$AMD" ]]; then
-		force_gcc_vars
-		CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
-		CXXFLAGS="${CFLAGS}"
-	else
-		CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC}"
-        CXXFLAGS="${CFLAGS}"
-        LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
-	fi
+	force_gcc_vars
+	CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
+	CXXFLAGS="${CFLAGS}"
+    LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
 fi
