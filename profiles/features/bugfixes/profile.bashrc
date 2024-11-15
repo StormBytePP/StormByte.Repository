@@ -1,7 +1,7 @@
 source /lib/StormByte/functions.sh
 
 local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
-local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/libva media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/libblockdev sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb sys-apps/util-linux"
+local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/alsa-lib media-libs/libva media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/libblockdev sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb sys-apps/util-linux"
 local FORCE_BINUTILS_VARS="app-crypt/efitools dev-lang/ocaml"
 local FORCE_GCC_VARS=""
 
