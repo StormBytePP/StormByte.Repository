@@ -36,8 +36,8 @@ PORTAGE_SYNC_STALE=5
 BINPKG_COMPRESS="zstd"
 
 # Versioning
-PYTHON_TARGETS="-* python3_12 python3_13" # Check from time to time if system is prepared to remove python 3.12
-PYTHON_SINGLE_TARGET="-* python3_13"
+PYTHON_TARGETS="-* python3_12" # Check from time to time if system is prepared to remove python 3.12
+PYTHON_SINGLE_TARGET="-* python3_12"
 POSTGRES_TARGETS="-* postgres17"
 PERL_FEATURES="ithreads"
 
