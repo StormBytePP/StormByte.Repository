@@ -1,6 +1,6 @@
 app-emulation/libvirt fuse nfs numa parted pcap virtiofsd virtualbox wireshark-plugins
 app-emulation/qemu fuse nfs numa plugins spice usbredir virgl virtfs
-app-office/libreoffice gtk java pdfimport
+app-office/libreoffice base gtk java pdfimport
 dev-db/postgresql llvm uuid
 dev-libs/appstream-glib fonts
 dev-qt/qtbase mysql postgres
