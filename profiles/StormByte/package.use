@@ -8,3 +8,4 @@ sys-firmware/intel-microcode hostonly initramfs
 sys-kernel/gentoo-kernel experimental
 sys-kernel/gentoo-sources experimental
 sys-kernel/installkernel dracut grub
+sys-apps/kmod pkcs7
