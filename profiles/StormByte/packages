@@ -1,7 +1,9 @@
+*app-crypt/sbsigntools
+*app-misc/resolve-march-native
 *app-portage/eix
 *app-portage/gentoolkit
 *dev-vcs/git
 *sys-apps/StormByte-meta
-*sys-libs/timezone-data
+*sys-boot/mokutil
 *sys-devel/binutils
-*app-misc/resolve-march-native
+*sys-libs/timezone-data
