@@ -2,7 +2,7 @@
 BASE="branding cjk -debug unicode pic icu -bindist python"
 COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 SECURITY="caps filecaps modules-sign modules-compress secureboot -strip verify-sig"
-SYSTEM="system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib"
+SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
 USE="${BASE} ${COMPRESSION} ${SECURITY} ${SYSTEM}"
 
 # Language
