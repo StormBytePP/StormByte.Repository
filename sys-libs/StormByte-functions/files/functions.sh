@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.9.0
+# Version 1.9.1
 
 function displayError() {
 	echo $1
@@ -59,17 +59,17 @@ function force_binutils_vars() {
     READELF="readelf"
     STRINGS="strings"
     STRIP="strip"
+    LDFLAGS="${LINKER_OPTIMIZATION_BASE} ${LINKER_OPTIMIZATION_BFD}"
 }
 
 function force_gcc_vars() {
     OCC="gcc"
     OCXX="g++"
-	CC="gcc"
-	CXX="g++"
-	CPP="cpp"
+    CC="gcc"
+    CXX="g++"
+    CPP="cpp"
     CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_GRAPHITE}"
-	CXXFLAGS="${CFLAGS}"
-    force_binutils_linker
+    CXXFLAGS="${CFLAGS}"
     force_binutils_vars
 }
 
@@ -87,10 +87,6 @@ function force_lto_vars() {
 
 function force_ld_undefined_version {
 	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
-}
-
-function force_binutils_linker {
-	LDFLAGS="${LINKER_OPTIMIZATION_BASE} ${LINKER_OPTIMIZATION_BFD}"
 }
 
 # Useful variables
