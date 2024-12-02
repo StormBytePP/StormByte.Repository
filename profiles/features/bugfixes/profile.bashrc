@@ -1,11 +1,13 @@
 source /lib/StormByte/functions.sh
 
-local PIC_FORCED_PACKAGES="sys-libs/libcxx sys-libs/libcxxabi"
+local FORCE_BINUTIL_VARS="app-crypt/efitools"
 local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/alsa-lib media-libs/libva media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez sys-libs/ldb sys-libs/libblockdev sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb sys-apps/util-linux"
-local FORCE_GCC_VARS="app-text/ghostscript-gpl dev-lang/ocaml app-crypt/efitools"
+local FORCE_GCC_VARS="app-text/ghostscript-gpl"
+local FORCE_PIC_VARS="sys-libs/libcxx sys-libs/libcxxabi"
 
 if [[ -z "$DISABLE_BUGFIXES" ]]; then
-	list_contains "${PIC_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_pic_vars
+	list_contains "${FORCE_BINUTIL_VARS}" "${CATEGORY}/${PN}" && force_binutils_vars
+	list_contains "${FORCE_PIC_VARS}" "${CATEGORY}/${PN}" && force_pic_vars
 	list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
 	list_contains "${FORCE_GCC_VARS}" "${CATEGORY}/${PN}" && force_gcc_vars
 fi
