@@ -1,11 +1,13 @@
+non262/Date/15.9.5.7.js
 non262/Date/time-zone-etc_localetime.js
 non262/Intl/Collator/big5han-gb2312han.js
 non262/Intl/Collator/implicithan.js
 non262/Intl/DateTimeFormat/day-period-hour-cycle.js
+non262/Intl/DateTimeFormat/formatRange-timeZone-offset.js
+non262/Intl/DateTimeFormat/formatRange-timeZoneName-matches-format.js
+non262/Intl/DateTimeFormat/formatRange-timeZoneName.js
 non262/Intl/DateTimeFormat/fractional-second-digits-append-item.js
 non262/Intl/DateTimeFormat/related-year.js
-non262/Intl/DateTimeFormat/timeZone_backzone.js
-non262/Intl/DateTimeFormat/timeZone_version.js
 non262/Intl/DisplayNames/calendar.js
 non262/Intl/DisplayNames/currency.js
 non262/Intl/DisplayNames/language-dialect.js
@@ -15,8 +17,6 @@ non262/Intl/Locale/likely-subtags.js
 non262/Intl/NumberFormat/currency-narrow-symbol.js
 non262/Intl/available-locales-resolved.js
 non262/Intl/available-locales-supported.js
-non262/Intl/supportedValuesOf-timeZones-canonical.js
-non262/Intl/supportedValuesOf-timeZones.js
 test262/built-ins/RegExp/property-escapes/generated/Alphabetic.js
 test262/built-ins/RegExp/property-escapes/generated/Assigned.js
 test262/built-ins/RegExp/property-escapes/generated/General_Category_-_Letter.js
@@ -41,5 +41,4 @@ test262/built-ins/RegExp/property-escapes/generated/Sentence_Terminal.js
 test262/built-ins/RegExp/property-escapes/generated/Unified_Ideograph.js
 test262/built-ins/RegExp/property-escapes/generated/XID_Continue.js
 test262/built-ins/RegExp/property-escapes/generated/XID_Start.js
-test262/intl402/Intl/supportedValuesOf/timeZones-accepted-by-DateTimeFormat.js
-test262/intl402/Locale/likely-subtags.js
+test262/intl402/NumberFormat/prototype/format/useGrouping-extended-en-IN.js

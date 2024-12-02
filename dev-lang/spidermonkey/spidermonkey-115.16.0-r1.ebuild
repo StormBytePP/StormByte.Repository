@@ -4,17 +4,19 @@
 EAPI="8"
 
 # Patch version
-FIREFOX_PATCHSET="firefox-102esr-patches-13.tar.xz"
-SPIDERMONKEY_PATCHSET="spidermonkey-102-patches-05j.tar.xz"
+FIREFOX_PATCHSET="firefox-115esr-patches-13.tar.xz"
+SPIDERMONKEY_PATCHSET="spidermonkey-115-patches-02.tar.xz"
 
-LLVM_MAX_SLOT=18
+LLVM_COMPAT=( {18..19} )
 
-PYTHON_COMPAT=( python3_{10..11} )
-PYTHON_REQ_USE="ssl,xml(+)"
+PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_REQ_USE="ncurses,ssl,xml(+)"
+
+RUST_NEEDS_LLVM="1"
 
 WANT_AUTOCONF="2.1"
 
-inherit autotools check-reqs flag-o-matic llvm multiprocessing prefix python-any-r1 toolchain-funcs
+inherit autotools check-reqs flag-o-matic llvm-r1 multiprocessing prefix python-any-r1 rust toolchain-funcs
 
 MY_PN="mozjs"
 MY_PV="${PV/_pre*}" # Handle Gentoo pre-releases
@@ -51,8 +53,8 @@ if [[ ${PV} == *_rc* ]] ; then
 fi
 
 PATCH_URIS=(
-	https://dev.gentoo.org/~{juippis,whissi}/mozilla/patchsets/${FIREFOX_PATCHSET}
-	https://dev.gentoo.org/~{juippis,whissi}/mozilla/patchsets/${SPIDERMONKEY_PATCHSET}
+	https://dev.gentoo.org/~juippis/mozilla/patchsets/${FIREFOX_PATCHSET}
+	https://dev.gentoo.org/~juippis/mozilla/patchsets/${SPIDERMONKEY_PATCHSET}
 )
 
 SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}.source.tar.xz
@@ -61,7 +63,7 @@ SRC_URI="${MOZ_SRC_BASE_URI}/source/${MOZ_P}.source.tar.xz -> ${MOZ_P_DISTFILES}
 DESCRIPTION="SpiderMonkey is Mozilla's JavaScript engine written in C and C++"
 HOMEPAGE="https://spidermonkey.dev https://firefox-source-docs.mozilla.org/js/index.html "
 
-KEYWORDS="amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv x86"
+KEYWORDS="amd64 arm arm64 ~loong ~mips ppc ppc64 ~riscv ~sparc x86"
 
 SLOT="$(ver_cut 1)"
 LICENSE="MPL-2.0"
@@ -71,54 +73,18 @@ IUSE="clang cpu_flags_arm_neon debug +jit lto test"
 RESTRICT="!test? ( test )"
 
 BDEPEND="${PYTHON_DEPS}
-	|| (
-		(
-			sys-devel/llvm:18
-			clang? (
-				sys-devel/clang:18
-				sys-devel/lld:18
-				virtual/rust:0/llvm-18
-			)
-		)
-		(
-			sys-devel/llvm:17
-			clang? (
-				sys-devel/clang:17
-				sys-devel/lld:17
-				virtual/rust:0/llvm-17
-			)
-		)
-		(
-			sys-devel/llvm:16
-			clang? (
-				sys-devel/clang:16
-				sys-devel/lld:16
-				virtual/rust:0/llvm-16
-			)
-		)
-		(
-			sys-devel/llvm:15
-			clang? (
-				sys-devel/clang:15
-				virtual/rust:0/llvm-15
-				lto? ( sys-devel/lld:15 )
-			)
-		)
-		(
-			sys-devel/llvm:14
-			clang? (
-				sys-devel/clang:14
-				virtual/rust:0/llvm-14
-				lto? ( sys-devel/lld:14 )
-			)
-		)
-	)
-	!clang? ( virtual/rust )
 	virtual/pkgconfig
+	$(llvm_gen_dep '
+		sys-devel/llvm:${LLVM_SLOT}
+		clang? (
+			sys-devel/clang:${LLVM_SLOT}
+			sys-devel/lld:${LLVM_SLOT}
+		)
+	')
 	test? (
 		$(python_gen_any_dep 'dev-python/six[${PYTHON_USEDEP}]')
 	)"
-DEPEND=">=dev-libs/icu-71.1:=
+DEPEND=">=dev-libs/icu-73.1:=
 	dev-libs/nspr
 	sys-libs/readline:0=
 	sys-libs/zlib"
@@ -138,12 +104,7 @@ llvm_check_deps() {
 			return 1
 		fi
 
-		if ! has_version -b "virtual/rust:0/llvm-${LLVM_SLOT}" ; then
-			einfo "virtual/rust:0/llvm-${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
-			return 1
-		fi
-
-		if use lto ; then
+		if ! tc-ld-is-mold ; then
 			if ! has_version -b "sys-devel/lld:${LLVM_SLOT}" ; then
 				einfo "sys-devel/lld:${LLVM_SLOT} is missing! Cannot use LLVM slot ${LLVM_SLOT} ..." >&2
 				return 1
@@ -158,6 +119,40 @@ python_check_deps() {
 	if use test ; then
 		python_has_version "dev-python/six[${PYTHON_USEDEP}]"
 	fi
+}
+
+# This is a straight copypaste from toolchain-funcs.eclass's 'tc-ld-is-lld', and is temporarily
+# placed here until toolchain-funcs.eclass gets an official support for mold linker.
+# Please see:
+# https://github.com/gentoo/gentoo/pull/28366 ||
+# https://github.com/gentoo/gentoo/pull/28355
+tc-ld-is-mold() {
+	local out
+
+	# Ensure ld output is in English.
+	local -x LC_ALL=C
+
+	# First check the linker directly.
+	out=$($(tc-getLD "$@") --version 2>&1)
+	if [[ ${out} == *"mold"* ]] ; then
+		return 0
+	fi
+
+	# Then see if they're selecting mold via compiler flags.
+	# Note: We're assuming they're using LDFLAGS to hold the
+	# options and not CFLAGS/CXXFLAGS.
+	local base="${T}/test-tc-linker"
+	cat <<-EOF > "${base}.c"
+	int main() { return 0; }
+	EOF
+	out=$($(tc-getCC "$@") ${CFLAGS} ${CPPFLAGS} ${LDFLAGS} -Wl,--version "${base}.c" -o "${base}" 2>&1)
+	rm -f "${base}"*
+	if [[ ${out} == *"mold"* ]] ; then
+		return 0
+	fi
+
+	# No mold here!
+	return 1
 }
 
 pkg_pretend() {
@@ -180,9 +175,10 @@ pkg_setup() {
 
 		check-reqs_pkg_setup
 
-		llvm_pkg_setup
+		llvm-r1_pkg_setup
+		rust_pkg_setup
 
-		if use clang && use lto ; then
+		if use clang && use lto && tc-ld-is-lld ; then
 			local version_lld=$(ld.lld --version 2>/dev/null | awk '{ print $2 }')
 			[[ -n ${version_lld} ]] && version_lld=$(ver_cut 1 "${version_lld}")
 			[[ -z ${version_lld} ]] && die "Failed to read ld.lld version!"
@@ -224,6 +220,15 @@ src_prepare() {
 
 	use lto && rm -v "${WORKDIR}"/firefox-patches/*-LTO-Only-enable-LTO-*.patch
 
+	if ! use ppc64; then
+		rm -v "${WORKDIR}"/firefox-patches/*ppc64*.patch || die
+	fi
+
+	# Workaround for bgo #915651,915651,929013 on musl
+	if use elibc_glibc ; then
+		rm -v "${WORKDIR}"/firefox-patches/*bgo-748849-RUST_TARGET_override.patch || die
+	fi
+
 	eapply "${WORKDIR}"/firefox-patches
 	eapply "${WORKDIR}"/spidermonkey-patches
 
@@ -231,6 +236,17 @@ src_prepare() {
 
 	# Make cargo respect MAKEOPTS
 	export CARGO_BUILD_JOBS="$(makeopts_jobs)"
+
+	# Workaround for bgo #915651,915651,929013 on musl
+	if ! use elibc_glibc ; then
+		if use amd64 ; then
+			export RUST_TARGET="x86_64-unknown-linux-musl"
+		elif use x86 ; then
+			export RUST_TARGET="i686-unknown-linux-musl"
+		else
+			die "Unknown musl chost, please post your rustc -vV along with emerge --info on Gentoo's bug #915651"
+		fi
+	fi
 
 	# sed-in toolchain prefix
 	sed -i \
@@ -248,7 +264,6 @@ src_prepare() {
 	mkdir "${MOZJS_BUILDDIR}" || die
 
 	popd &>/dev/null || die
-	eautoconf
 }
 
 src_configure() {
@@ -262,14 +277,20 @@ src_configure() {
 	if use clang; then
 		# Force clang
 		einfo "Enforcing the use of clang due to USE=clang ..."
+
+		local version_clang=$(clang --version 2>/dev/null | grep -F -- 'clang version' | awk '{ print $3 }')
+		[[ -n ${version_clang} ]] && version_clang=$(ver_cut 1 "${version_clang}")
+		[[ -z ${version_clang} ]] && die "Failed to read clang version!"
+
 		if tc-is-gcc; then
 			have_switched_compiler=yes
 		fi
 		AR=llvm-ar
-		CC=${CHOST}-clang
-		CXX=${CHOST}-clang++
+		CC=${CHOST}-clang-${version_clang}
+		CXX=${CHOST}-clang++-${version_clang}
 		NM=llvm-nm
 		RANLIB=llvm-ranlib
+
 	elif ! use clang && ! tc-is-gcc ; then
 		# Force gcc
 		have_switched_compiler=yes
@@ -287,7 +308,8 @@ src_configure() {
 		strip-unsupported-flags
 	fi
 
-	# Ensure we use correct toolchain
+	# Ensure we use correct toolchain,
+	# AS is used in a non-standard way by upstream, #bmo1654031
 	export HOST_CC="$(tc-getBUILD_CC)"
 	export HOST_CXX="$(tc-getBUILD_CXX)"
 	export AS="$(tc-getCC) -c"
@@ -307,6 +329,7 @@ src_configure() {
 		--disable-smoosh
 		--disable-strip
 
+		--enable-project=js
 		--enable-readline
 		--enable-release
 		--enable-shared-js
@@ -325,12 +348,14 @@ src_configure() {
 	if use debug; then
 		myeconfargs+=( --disable-optimize )
 		myeconfargs+=( --enable-debug-symbols )
+		myeconfargs+=( --enable-real-time-tracing )
 	else
 		myeconfargs+=( --enable-optimize )
 		myeconfargs+=( --disable-debug-symbols )
+		myeconfargs+=( --disable-real-time-tracing )
 	fi
 
-	# Always troubling with newer rust versions.
+	# We always end up disabling this at some point due to newer rust versions. bgo#933372
 	myeconfargs+=( --disable-rust-simd )
 
 	# Modifications to better support ARM, bug 717344
@@ -347,8 +372,13 @@ src_configure() {
 	# Tell build system that we want to use LTO
 	if use lto ; then
 		if use clang ; then
-			myeconfargs+=( --enable-linker=lld )
+			if tc-ld-is-mold ; then
+				myeconfargs+=( --enable-linker=mold )
+			else
+				myeconfargs+=( --enable-linker=lld )
+			fi
 			myeconfargs+=( --enable-lto=cross )
+
 		else
 			myeconfargs+=( --enable-linker=bfd )
 			myeconfargs+=( --enable-lto=full )
@@ -390,64 +420,10 @@ src_test() {
 
 	cp "${FILESDIR}"/spidermonkey-${SLOT}-known-test-failures.txt "${T}"/known_failures.list || die
 
-	if [[ $(tc-endian) == "big" ]] ; then
-		echo "non262/extensions/clone-errors.js" >> "${T}"/known_failures.list
-		echo "test262/built-ins/Date/UTC/fp-evaluation-order.js" >> "${T}"/known_failures.list
+	if use sparc ; then
+		echo "non262/Array/regress-157652.js" >> "${T}"/known_failures.list
+		echo "non262/regress/regress-422348.js" >> "${T}"/known_failures.list
 		echo "test262/built-ins/TypedArray/prototype/set/typedarray-arg-set-values-same-buffer-other-type.js" >> "${T}"/known_failures.list
-	fi
-
-	if use ppc; then
-		echo "non262/Array/fill.js" >> "${T}"/known_failures.list
-		echo "non262/Array/sort_basics.js" >> "${T}"/known_failures.list
-		echo "non262/Symbol/typed-arrays.js" >> "${T}"/known_failures.list
-		echo "non262/Intl/TypedArray/toLocaleString.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/entries.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/fill.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/map-species.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/iterator.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/reverse.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/join.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/sort_comparators.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/forEach.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/slice.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/sort_compare_nan.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/set-toobject.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/sort-non-function.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/includes.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/subarray-species.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/indexOf-never-returns-negative-zero.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/map-and-filter.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/at.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/from_errors.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/values.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/set-wrapped.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/every-and-some.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/from_mapping.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/lastIndexOf-never-returns-negative-zero.js" >> "${T}"/known_failures.list
-		echo "non262/Reflect/preventExtensions.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/sort_sorted.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/of.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/keys.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/from_realms.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/from_iterable.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/filter-species.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/object-defineproperty.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/uint8clamped-constructor.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/indexOf-and-lastIndexOf.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/slice-species.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/set-tointeger.js" >> "${T}"/known_failures.list
-		echo "non262/Reflect/ownKeys.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/seal-and-freeze.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/reduce-and-reduceRight.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/from_basics.js" >> "${T}"/known_failures.list
-		echo "non262/TypedArray/find-and-findIndex.js" >> "${T}"/known_failures.list
-		echo "non262/Reflect/isExtensible.js" >> "${T}"/known_failures.list
-		echo "non262/regress/regress-571014.js" >> "${T}"/known_failures.list
-		echo "non262/extensions/reviver-mutates-holder-object-nonnative.js" >> "${T}"/known_failures.list
-		echo "non262/extensions/typedarray-set-neutering.js" >> "${T}"/known_failures.list
-		echo "non262/extensions/reviver-mutates-holder-array-nonnative.js" >> "${T}"/known_failures.list
-		echo "non262/extensions/typedarray.js" >> "${T}"/known_failures.list
-		echo "non262/Math/fround.js" >> "${T}"/known_failures.list
 	fi
 
 	if use x86 ; then
