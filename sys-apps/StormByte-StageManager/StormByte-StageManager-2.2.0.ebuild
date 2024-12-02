@@ -11,7 +11,7 @@ SRC_URI="https://github.com/StormBytePP/StormByte-StageManager/archive/${PV}.tar
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="+pbzip2 +pigz +pxz"
+IUSE="pbzip2 +pigz +pxz"
 
 RDEPEND="
 	app-alternatives/bzip2[pbzip2=]
