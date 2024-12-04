@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 PYTHON_REQ_USE="threads(+),xml(+)"
 
 MY_PV="${PV/_alpha/.alpha}"
@@ -26,6 +26,7 @@ inherit autotools bash-completion-r1 check-reqs flag-o-matic java-pkg-opt-2 mult
 DESCRIPTION="A full office productivity suite"
 HOMEPAGE="https://www.libreoffice.org"
 SRC_URI="branding? ( https://dev.gentoo.org/~dilfridge/distfiles/${BRANDING} )"
+SRC_URI+=" https://dev.gentoo.org/~asturm/distfiles/${PN}-24.2.3.2-icu-74.tar.xz"
 [[ -n ${PATCHSET} ]] && SRC_URI+=" https://dev.gentoo.org/~asturm/distfiles/${PATCHSET}"
 
 # Split modules following git/tarballs; Core MUST be first!
@@ -134,7 +135,6 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	app-text/libwpg:0.3
 	>=app-text/libwps-0.4
 	app-text/mythes
-	dev-cpp/abseil-cpp:=
 	>=dev-cpp/clucene-2.3.3.4-r2
 	>=dev-cpp/libcmis-0.6.2:0=
 	dev-db/unixODBC
@@ -143,7 +143,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	dev-libs/expat
 	dev-libs/hyphen
 	dev-libs/icu:=
-	dev-libs/libassuan
+	dev-libs/libassuan:=
 	dev-libs/libgpg-error
 	>=dev-libs/liborcus-0.18.0:0/0.18
 	dev-libs/librevenge
@@ -161,7 +161,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	>=media-libs/harfbuzz-5.1.0:=[graphite,icu]
 	media-libs/lcms:2
 	>=media-libs/libcdr-0.1.0
-	>=media-libs/libepoxy-1.3.1
+	>=media-libs/libepoxy-1.3.1[X]
 	>=media-libs/libfreehand-0.1.0
 	media-libs/libjpeg-turbo:=
 	media-libs/libpagemaker
@@ -176,7 +176,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	sci-mathematics/lpsolve:=
 	sys-libs/zlib
 	virtual/opengl
-	x11-libs/cairo
+	x11-libs/cairo[X]
 	x11-libs/libXinerama
 	x11-libs/libXrandr
 	x11-libs/libXrender
@@ -201,11 +201,12 @@ COMMON_DEPEND="${PYTHON_DEPS}
 		media-libs/gst-plugins-base:1.0
 	)
 	gtk? (
+		app-accessibility/at-spi2-core:2
 		dev-libs/glib:2
 		dev-libs/gobject-introspection
 		gnome-base/dconf
-		media-libs/mesa
-		x11-libs/gtk+:3
+		media-libs/mesa[egl(+)]
+		x11-libs/gtk+:3[X]
 		x11-libs/pango
 	)
 	kde? (
@@ -284,6 +285,9 @@ BDEPEND="
 	virtual/pkgconfig
 	clang? (
 		|| (
+			(	sys-devel/clang:19
+				sys-devel/llvm:19
+				=sys-devel/lld-19*	)
 			(	sys-devel/clang:18
 				sys-devel/llvm:18
 				=sys-devel/lld-18*	)
@@ -293,6 +297,9 @@ BDEPEND="
 			(	sys-devel/clang:16
 				sys-devel/llvm:16
 				=sys-devel/lld-16*	)
+			(	sys-devel/clang:15
+				sys-devel/llvm:15
+				=sys-devel/lld-15*	)
 		)
 	)
 	odk? ( >=app-text/doxygen-1.8.4 )
@@ -309,16 +316,21 @@ PATCHES=(
 	# "${WORKDIR}"/${PATCHSET/.tar.xz/}
 
 	# not upstreamable stuff
-	"${FILESDIR}/${PN}-5.3.4.2-kioclient5.patch"
 	"${FILESDIR}/${PN}-6.1-nomancompress.patch"
 	"${FILESDIR}/${PN}-24.2-qtdetect.patch"
-
-	# maybe upstreamable
-	"${FILESDIR}/${PN}-7.5.8.2-icu-74-compatibility.patch"
 
 	# TODO: upstream
 	"${FILESDIR}/${PN}-7.6-unused-qt5network.patch"
 	"${FILESDIR}/${PN}-24.2-unused-qt6network.patch"
+
+	# 24.8 branch
+	"${FILESDIR}/${P}-no-std-basic_string-int.patch" # bug #923950
+
+	# git master
+	# bug #917618, thx to Debian:
+	"${WORKDIR}/${PN}-24.2.3.2-icu-74/${PN}-24.2.3.2-icu-74.2-reviewed-breakIterator-customizations.patch"
+	"${WORKDIR}/${PN}-24.2.3.2-icu-74/${PN}-24.2.3.2-icu-74.2-breakiterator-updates.patch"
+	"${WORKDIR}/${PN}-24.2.3.2-icu-74/${PN}-24.2.3.2-icu-74-unicode.patch"
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
@@ -506,15 +518,15 @@ src_configure() {
 		--with-system-libs
 		--enable-build-opensymbol
 		--enable-cairo-canvas
-		--enable-gui
 		--enable-largefile
 		--enable-mergelibs=more
 		--enable-python=system
 		--enable-randr
 		--enable-release-build
+		--disable-atspi-tests # bug 933257
 		--disable-breakpad
 		--disable-bundle-mariadb
-		--disable-libcmis
+		--disable-ccache
 		--disable-epm
 		--disable-fetch-external
 		--disable-gtk3-kde5
@@ -529,15 +541,16 @@ src_configure() {
 		--with-external-tar="${DISTDIR}"
 		--with-lang=""
 		--with-parallelism=$(makeopts_jobs)
-		--with-system-abseil
 		--with-system-openjpeg
 		--with-tls=nss
 		--with-vendor="Gentoo Foundation"
+		--with-x
 		--without-fonts
 		--without-myspell-dicts
 		--with-help="html"
 		--without-helppack-integration
 		--with-system-gpgmepp
+		--without-system-abseil
 		--without-system-dragonbox
 		--without-system-frozen
 		--without-system-jfreereport
