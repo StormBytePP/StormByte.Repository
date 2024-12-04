@@ -1,3 +1,5 @@
 >dev-lang/python-3.12.9999
 # Does not build with llvm19
 app-text/doxygen
+# Causes problems
+=sys-devel/gettext-0.23
