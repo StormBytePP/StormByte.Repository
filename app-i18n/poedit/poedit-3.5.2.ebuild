@@ -19,6 +19,7 @@ SLOT="0"
 
 RDEPEND="
 	app-text/gtkspell:3
+	dev-cpp/cpprest
 	x11-libs/gtk+:3
 	>=dev-cpp/lucene++-3.0.5
 	>=dev-libs/pugixml-1.9
