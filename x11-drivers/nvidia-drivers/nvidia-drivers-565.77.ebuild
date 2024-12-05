@@ -7,7 +7,7 @@ MODULES_OPTIONAL_IUSE=+modules
 inherit desktop flag-o-matic linux-mod-r1 readme.gentoo-r1
 inherit systemd toolchain-funcs unpacker user-info
 
-MODULES_KERNEL_MAX=6.11
+MODULES_KERNEL_MAX=6.12
 NV_URI="https://download.nvidia.com/XFree86/"
 
 DESCRIPTION="NVIDIA Accelerated Graphics Driver"
@@ -108,6 +108,7 @@ pkg_setup() {
 		~DRM_KMS_HELPER
 		~SYSVIPC
 		~!LOCKDEP
+		~!PREEMPT_RT
 		~!SLUB_DEBUG_ON
 		!DEBUG_MUTEXES
 		$(usev powerd '~CPU_FREQ')
@@ -133,6 +134,10 @@ pkg_setup() {
 	local ERROR_MMU_NOTIFIER="CONFIG_MMU_NOTIFIER: is not set but needed to build with USE=kernel-open.
 	Cannot be directly selected in the kernel's menuconfig, and may need
 	selection of another option that requires it such as CONFIG_KVM."
+	local ERROR_PREEMPT_RT="CONFIG_PREEMPT_RT: is set but is unsupported by NVIDIA upstream and
+	will fail to build unless the env var IGNORE_PREEMPT_RT_PRESENCE=1 is
+	set. Please do not report issues if run into e.g. kernel panics while
+	ignoring this."
 
 	linux-mod-r1_pkg_setup
 }
@@ -190,6 +195,11 @@ src_compile() {
 	if use modules; then
 		local o_cflags=${CFLAGS} o_cxxflags=${CXXFLAGS} o_ldflags=${LDFLAGS}
 
+		# conftest.sh is broken with c23 due to func() changing meaning,
+		# and then fails later due to ealier misdetections
+		# TODO: try without now and then + drop modargs' CC= (bug #944092)
+		KERNEL_CC+=" -std=gnu17"
+
 		local modlistargs=video:kernel
 		if use kernel-open; then
 			modlistargs+=-module-source:kernel-module-source/kernel-open
@@ -205,8 +215,14 @@ src_compile() {
 
 		local modlist=( nvidia{,-drm,-modeset,-peermem,-uvm}=${modlistargs} )
 		local modargs=(
+			CC="${KERNEL_CC}" # needed for above gnu17 workaround
 			IGNORE_CC_MISMATCH=yes NV_VERBOSE=1
 			SYSOUT="${KV_OUT_DIR}" SYSSRC="${KV_DIR}"
+
+			# kernel takes "x86" and "x86_64" as meaning the same, but nvidia
+			# makes the distinction (since 550.135) and is not happy with "x86"
+			# TODO?: it should be ok/better for tc-arch-kernel to do x86_64
+			$(usev amd64 ARCH=x86_64)
 		)
 
 		# temporary workaround for bug #914468
@@ -461,7 +477,7 @@ documentation that is installed alongside this README."
 	# don't attempt to strip firmware files (silences errors)
 	dostrip -x ${paths[FIRMWARE]}
 
-	# sandbox issues with /dev/nvidiactl others (bug #904292,#921578)
+	# sandbox issues with /dev/nvidiactl and others (bug #904292,#921578)
 	# are widespread and sometime affect revdeps of packages built with
 	# USE=opencl/cuda making it hard to manage in ebuilds (minimal set,
 	# ebuilds should handle manually if need others or addwrite)
