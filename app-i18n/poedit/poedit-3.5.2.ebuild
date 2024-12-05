@@ -11,7 +11,7 @@ inherit plocale wxwidgets xdg
 DESCRIPTION="GUI gettext translations editor"
 HOMEPAGE="https://poedit.net"
 SRC_URI="https://github.com/vslavik/${PN}/releases/download/v${PV}-oss/${P}.tar.gz"
-IUSE="+crowdin"
+IUSE="crowdin"
 
 KEYWORDS="~amd64"
 LICENSE="MIT"
@@ -19,7 +19,6 @@ SLOT="0"
 
 RDEPEND="
 	app-text/gtkspell:3
-	dev-cpp/cpprest
 	x11-libs/gtk+:3
 	>=dev-cpp/lucene++-3.0.5
 	>=dev-libs/pugixml-1.9
