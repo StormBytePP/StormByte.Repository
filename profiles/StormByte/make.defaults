@@ -27,9 +27,10 @@ LINKER_OPTIMIZATION_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all"
 LINKER_OPTIMIZATION_POLLY="-fopenmp=libomp"
 
 # Portage folders and config
-BASEDIR="/var/db/repos"
-PKGDIR="${BASEDIR}/packages"
-DISTDIR="/distfiles"
+BASE="/var/db/gentoo"
+BASEDIR="${BASE}/repos"
+PKGDIR="${BASE}/packages"
+DISTDIR="${BASE}/distfiles"
 PORTAGE_TMPDIR="/tmp"
 EMERGE_DEFAULT_OPTS="--ask --autounmask n --buildpkg --jobs=1 --verbose --with-bdeps=y"
 GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
