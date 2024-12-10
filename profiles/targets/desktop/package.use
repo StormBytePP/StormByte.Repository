@@ -33,6 +33,7 @@ sys-block/parted device-mapper
 sys-boot/grub mount
 sys-fs/lvm2 lvm
 sys-libs/zlib minizip
+sys-power/nut monitor
 sys-process/htop delayacct hwloc
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
