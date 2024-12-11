@@ -1,4 +1,5 @@
 *app-admin/pwgen
+*app-admin/sudo
 *app-crypt/sbsigntools
 *app-misc/resolve-march-native
 *app-portage/eix
