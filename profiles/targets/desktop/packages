@@ -1,5 +1,6 @@
 *app-crypt/efitools
 *dev-libs/libisoburn #For virt-manager
 *gui-libs/display-manager-init
+*sys-block/io-scheduler-udev-rules
 *x11-apps/xmodmap # Otherwise X won't start ??
 *x11-base/xorg-server
