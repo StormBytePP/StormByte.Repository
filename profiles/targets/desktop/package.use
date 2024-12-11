@@ -35,6 +35,7 @@ sys-fs/lvm2 lvm
 sys-libs/zlib minizip
 sys-power/nut monitor
 sys-process/htop delayacct hwloc
+virtual/linux-sources firmware
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-libs/xapp introspection
