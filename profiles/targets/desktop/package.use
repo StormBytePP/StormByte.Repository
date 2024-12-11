@@ -25,6 +25,7 @@ net-dns/avahi mdnsresponder-compat
 net-dns/dnsmasq script
 net-libs/gnutls tools
 net-misc/spice-gtk usbredir
+net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
 sys-apps/StormByte-meta stagemanager utils videoconvert
