@@ -25,7 +25,7 @@ KEYWORDS="~amd64"
 
 DEPEND="
 	sys-libs/libcxx
-	sys-devel/clang
+	llvm-core/clang
 "
 RDEPEND=""
 

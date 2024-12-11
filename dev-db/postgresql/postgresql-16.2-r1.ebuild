@@ -37,8 +37,8 @@ icu? ( dev-libs/icu:= )
 kerberos? ( app-crypt/mit-krb5 )
 ldap? ( net-nds/openldap:= )
 llvm? (
-	<sys-devel/llvm-19:=
-	<sys-devel/clang-19:=
+	<llvm-core/llvm-19:=
+	<llvm-core/clang-19:=
 )
 lz4? ( app-arch/lz4 )
 pam? ( sys-libs/pam )
