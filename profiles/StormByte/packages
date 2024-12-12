@@ -5,6 +5,7 @@
 *app-portage/eix
 *app-portage/gentoolkit
 *app-shells/gentoo-bashcomp
+*app-shells/bash-completion
 *dev-vcs/git
 *sys-apps/StormByte-meta
 *sys-block/io-scheduler-udev-rules
