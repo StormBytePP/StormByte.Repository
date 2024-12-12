@@ -1,4 +1,3 @@
 clang
 llvm-libunwind
--unwind
 system-llvm
