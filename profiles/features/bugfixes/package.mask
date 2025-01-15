@@ -1,0 +1,2 @@
+# It makes things fails like lucene++
+>=dev-libs/boost-1.87.0
