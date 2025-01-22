@@ -26,6 +26,7 @@ DOCS=( AUTHORS )
 PATCHES=(
 	"${FILESDIR}/${P}-boost-1.85.patch"
 	"${FILESDIR}/${P}-io_context_migration.patch"
+	"${FILESDIR}/${P}-Fix-operator.patch"
 )
 
 src_configure() {
