@@ -22,6 +22,7 @@ src_configure() {
 		-DCMAKE_BUILD_TYPE=Release
 		-DENABLE_SQLITE="$(usex sqlite ON OFF)"
 		-DWITH_SYSTEM_SQLITE=ON
+		-DENABLE_TEST=OFF
 	)
 	cmake_src_configure
 }
