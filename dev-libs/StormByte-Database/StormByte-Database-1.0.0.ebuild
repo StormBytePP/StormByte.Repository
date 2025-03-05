@@ -9,10 +9,10 @@ SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.g
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="test"
+IUSE="sqlite test"
 
 DEPEND="
-	dev-db/sqlite:3
+	sqlite? ( dev-db/sqlite:3 )
 	dev-libs/StormByte
 "
 RDEPEND="${DEPEND}"
@@ -21,6 +21,7 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_BUILD_TYPE=Release
+		-DENABLE_SQLITE=ON
 		-DWITH_SYSTEM_STORMBYTE=ON
 		-DWITH_SYSTEM_SQLITE=ON
 		-DENABLE_TEST=$(usex test ON OFF)
