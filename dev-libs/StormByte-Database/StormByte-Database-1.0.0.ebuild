@@ -9,7 +9,7 @@ SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.g
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="sqlite test"
+IUSE="+sqlite test"
 
 DEPEND="
 	sqlite? ( dev-db/sqlite:3 )
