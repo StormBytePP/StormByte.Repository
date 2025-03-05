@@ -11,9 +11,7 @@ SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
 
-DEPEND="
-	dev-db/sqlite:3
-"
+DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
 
