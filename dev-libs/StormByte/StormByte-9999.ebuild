@@ -1,10 +1,10 @@
 EAPI=7
 
-inherit cmake
+inherit git-r3 cmake
 
 DESCRIPTION="StormByte C++ Library"
-HOMEPAGE="https://github.com/StormBytePP/StormByte"
-SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+HOMEPAGE="https://dev.stormbyte.org/StormByte"
+EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 
 LICENSE="GPL"
 SLOT="0"
