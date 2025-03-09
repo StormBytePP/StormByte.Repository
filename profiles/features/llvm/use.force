@@ -1,3 +1,4 @@
+# We use clang forcedly but we don't want the ebuilds to force clang version by hand
 clang
 llvm-libunwind
 system-llvm

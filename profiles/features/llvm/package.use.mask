@@ -1,0 +1,5 @@
+# Allow clang use flag for toolchain
+llvm-runtimes/compiler-rt -clang
+llvm-runtimes/compiler-rt-sanitizers -clang
+llvm-runtimes/libcxx -clang
+llvm-runtimes/libcxxabi -clang
