@@ -66,10 +66,6 @@ src_prepare() {
 		# Now rename the desktop file to not collide with 2.6.
 		mv appImage/"${PN}".desktop "${PN}-${SLOT}".desktop || die "Collision rename failed."
 	fi
-
-	# Remove "Build Option" dialog because it doesn't reflect
-	# what the GUI can or has been built with. (Bug #463628)
-	sed -i -e '/Build Option/d' avidemux/common/ADM_commonUI/myOwnMenu.h || die "Couldn't remove \"Build Option\" dialog."
 }
 
 src_configure() {
