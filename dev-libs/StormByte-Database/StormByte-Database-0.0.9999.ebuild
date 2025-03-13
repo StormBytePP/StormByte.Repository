@@ -20,7 +20,6 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 
 src_configure() {
 	local mycmakeargs=(
-		-DCMAKE_BUILD_TYPE=Release
 		-DENABLE_SQLITE=ON
 		-DWITH_SYSTEM_STORMBYTE=ON
 		-DWITH_SYSTEM_SQLITE=ON
