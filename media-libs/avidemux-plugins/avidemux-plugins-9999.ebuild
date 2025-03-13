@@ -79,8 +79,6 @@ RDEPEND="
 	!<media-libs/avidemux-plugins-${PV}
 "
 
-PATCHES=( "${FILESDIR}/${PN}-2.8.1-optional-pulse.patch" )
-
 CMAKE_USE_DIR="${S}/${PN/-/_}"
 
 src_prepare() {

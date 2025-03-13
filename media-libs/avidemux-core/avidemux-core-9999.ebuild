@@ -40,11 +40,6 @@ BDEPEND="
 	!system-ffmpeg? ( dev-lang/yasm[nls=] )
 "
 
-PATCHES=(
-	"${FILESDIR}"/avidemux-core-2.7.6-ffmpeg-flags.patch
-	"${FILESDIR}"/avidemux-core-2.8.1-ffmpeg-2.41.patch
-)
-
 CMAKE_USE_DIR="${S}/${PN/-/_}"
 
 src_unpack() {
@@ -77,8 +72,6 @@ src_prepare() {
 			--ranlib=$(tc-getRANLIB)
 			"--optflags='${CFLAGS}'"
 		)
-
-		sed -i -e "s/@@GENTOO_FFMPEG_FLAGS@@/${ffmpeg_args[*]}/" cmake/ffmpeg_configure.sh.cmake || die
 	fi
 }
 
@@ -92,7 +85,6 @@ src_configure() {
 	use x86 && replace-flags -O0 -O1
 
 	local mycmakeargs=(
-		-DAVIDEMUX_SOURCE_DIR='${S}'
 		-DGETTEXT="$(usex nls)"
 		-DSDL="$(usex sdl)"
 		-DLIBVA="$(usex vaapi)"
