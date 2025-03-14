@@ -15,11 +15,11 @@ DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
 PDEPEND="
-	config? ( dev-libs/StormByte-config )
-	database? ( dev-libs/StormByte-database )
-	logger? ( dev-libs/StormByte-logger )
-	multimedia? ( dev-libs/StormByte-multimedia )
-	system? ( dev-libs/StormByte-system )
+	config? ( dev-libs/StormByte-Config )
+	database? ( dev-libs/StormByte-Database )
+	logger? ( dev-libs/StormByte-Logger )
+	multimedia? ( dev-libs/StormByte-Multimedia )
+	system? ( dev-libs/StormByte-System )
 "
 
 src_configure() {
