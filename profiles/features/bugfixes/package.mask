@@ -1,2 +1,0 @@
-# Causes build errors
->dev-python/zstandard-0.23.0-r1
