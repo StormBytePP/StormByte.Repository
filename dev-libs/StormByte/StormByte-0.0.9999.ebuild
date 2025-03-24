@@ -9,7 +9,7 @@ EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="config database logger multimedia network system test"
+IUSE="config database multimedia network system test"
 
 DEPEND=""
 RDEPEND="${DEPEND}"
@@ -17,7 +17,6 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 PDEPEND="
 	config? ( dev-libs/StormByte-Config )
 	database? ( dev-libs/StormByte-Database )
-	logger? ( dev-libs/StormByte-Logger )
 	multimedia? ( dev-libs/StormByte-Multimedia )
 	network? ( dev-libs/StormByte-Network )
 	system? ( dev-libs/StormByte-System )
