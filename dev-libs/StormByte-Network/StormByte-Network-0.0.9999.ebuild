@@ -13,12 +13,14 @@ IUSE="test"
 
 DEPEND="
 	dev-libs/StormByte
+	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
 
 src_configure() {
 	local mycmakeargs=(
+		-DWITH_SYSTEM_CRYPTOPP=ON
 		-DWITH_SYSTEM_STORMBYTE=ON
 		-DENABLE_TEST=$(usex test ON OFF)
 	)
