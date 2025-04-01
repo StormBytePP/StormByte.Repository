@@ -10,7 +10,7 @@ MULTIMEDIA_SUPPORT="evdev inotify ffmpeg gdk-pixbuf gstreamer nvenc v4l vaapi vd
 NETWORK="gnome-online-accounts http2 libproxy networkmanager zeroconf"
 QT="qml qt qt5 qt6"
 SECURITY="caps gnome-keyring keyring pkcs11"
-SOUND="jack openal pipewire pulseaudio"
+SOUND="jack openal pipewire -pulseaudio"
 VIDEO="gles2 gui opengl vulkan"
 WEB="geoip webkit"
 
