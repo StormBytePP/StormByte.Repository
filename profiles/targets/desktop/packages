@@ -2,5 +2,6 @@
 *dev-libs/libisoburn #For virt-manager
 *gui-libs/display-manager-init
 *sys-firmware/sof-firmware
+*sys-process/rtirq
 *x11-apps/xmodmap # Otherwise X won't start ??
 *x11-base/xorg-server
