@@ -15,7 +15,7 @@ DEPEND="
 	dev-libs/boost
 	dev-db/sqlite:3[static-libs?]
 	dev-libs/libconfig[cxx,static-libs?]
-	media-video/ffmpeg[encode]
+	media-video/ffmpeg
 	x265? (
 		media-video/ffmpeg[x265]
 		media-video/hdr10plus_tool
