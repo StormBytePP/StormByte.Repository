@@ -18,6 +18,8 @@ media-libs/freetype utils
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers
+media-sound/audacious -gtk
+media-plugins/audacious-plugins fluidsynth gme -gtk http scrobbler sid
 media-sound/audacity id3tag
 media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
 media-video/obs-studio browser
