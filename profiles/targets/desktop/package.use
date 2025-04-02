@@ -31,7 +31,6 @@ net-misc/spice-gtk usbredir
 net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
-net-wireless/iwd wired
 sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
 sys-block/parted device-mapper
@@ -45,7 +44,7 @@ virtual/linux-sources firmware
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-libs/xapp introspection
-x11-misc/colord scanner
+x11-misc/colord scanner vala
 x11-misc/xscreensaver fonts gdm gles offensive
 xfce-base/libxfce4ui system-info
 xfce-extra/thunar-vcs-plugin -subversion

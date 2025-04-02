@@ -2,7 +2,7 @@ app-admin/sysklogd logger logrotate
 app-alternatives/bzip2 reference
 app-alternatives/gzip -reference pigz
 app-portage/eix sqlite
-net-misc/networkmanager iwd syslog
+net-misc/networkmanager syslog
 sys-apps/util-linux -logger
 sys-firmware/intel-microcode hostonly initramfs
 sys-kernel/gentoo-kernel experimental
