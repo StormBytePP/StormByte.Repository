@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.9.1
+# Version 2.0.0
 
 function displayError() {
 	echo $1
@@ -87,6 +87,11 @@ function force_lto_vars() {
 
 function force_ld_undefined_version {
 	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
+}
+
+function force_openmp_vars() {
+	CFLAGS="${CFLAGS} -fopenmp"
+	CXXFLAGS="${CXXFLAGS} -fopenmp"
 }
 
 # Useful variables
