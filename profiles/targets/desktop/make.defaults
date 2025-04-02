@@ -1,7 +1,7 @@
 CONNECTIVITY="bluetooth"
 DEVELOPMENT="boost"
 FONTS="corefonts fontconfig fontforge freetype harfbuzz truetype woff2"
-GTK="gtk gtk3 gtk4 introspection"
+GTK="colord gtk gtk3 gtk4 introspection"
 HARDWARE="lm-sensors threads udev"
 I18N="idn"
 MISC="bash-completion openmp"
