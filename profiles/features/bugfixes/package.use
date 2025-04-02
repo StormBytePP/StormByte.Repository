@@ -1,4 +1,2 @@
-# Causes undefined-version-references
-
-media-libs/libraw -openmp
-media-libs/libsoundtouch -openmp
+# See bug #952011
+dev-libs/gobject-introspection test
