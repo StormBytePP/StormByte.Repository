@@ -1,5 +1,5 @@
 # Use defaults
-BASE="branding cjk -debug unicode pic icu -bindist python"
+BASE="branding cjk -debug unicode pic icu -bindist python numa"
 COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 DOCS="-doc -gtk-doc"
 SECURITY="caps filecaps modules-sign modules-compress secureboot -strip verify-sig"
