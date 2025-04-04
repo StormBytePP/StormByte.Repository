@@ -7,3 +7,4 @@ llvm-core/clang-runtime compiler-rt default-compiler-rt default-libcxx default-l
 llvm-runtimes/compiler-rt atomic-builtins
 llvm-runtimes/libcxx static-libs
 llvm-runtimes/libcxxabi static-libs
+llvm-runtimes/offload ompt
