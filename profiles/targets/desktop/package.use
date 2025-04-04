@@ -21,7 +21,7 @@ media-libs/vulkan-loader layers
 media-sound/audacious -gtk
 media-plugins/audacious-plugins fluidsynth gme -gtk http scrobbler sid
 media-sound/audacity id3tag
-media-video/ffmpeg libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
+media-video/ffmpeg lame libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 net-dns/avahi mdnsresponder-compat
