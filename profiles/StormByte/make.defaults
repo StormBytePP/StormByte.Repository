@@ -1,10 +1,11 @@
 # Use defaults
 BASE="branding cjk -debug unicode pic icu -bindist python numa"
+CODECS="lame"
 COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 DOCS="-doc -gtk-doc"
 SECURITY="caps filecaps modules-sign modules-compress secureboot -strip verify-sig"
 SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
-USE="${BASE} ${COMPRESSION} ${DOCS} ${SECURITY} ${SYSTEM}"
+USE="${BASE} ${CODECS} ${COMPRESSION} ${DOCS} ${SECURITY} ${SYSTEM}"
 
 # Language
 L10N="es es-ES"
