@@ -8,6 +8,8 @@ amd64				StormByte/desktop/plasma										stable
 amd64				StormByte/desktop/plasma/llvm			            			stable
 amd64				StormByte/no-multilib											stable
 amd64				StormByte/no-multilib/llvm							            stable
+amd64				StormByte/no-multilib/musl							            stable
+amd64				StormByte/no-multilib/musl/llvm							        stable
 amd64				StormByte/no-multilib/desktop									stable
 amd64				StormByte/no-multilib/desktop/llvm					            stable
 amd64               StormByte/no-multilib/desktop/musl                              exp
