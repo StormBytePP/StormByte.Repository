@@ -1,3 +1,6 @@
+# Block offload as it does not compile correctly
+llvm-core/clang-runtime offload
+
 # Allow clang use flag for toolchain
 llvm-runtimes/compiler-rt -clang
 llvm-runtimes/compiler-rt-sanitizers -clang
