@@ -22,7 +22,7 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 src_configure() {
 	local mycmakeargs=(
 		-DWITH_SYSTEM_STORMBYTE=ON
-		-DWITH_SYSTEM_CRYPTO=ON
+		-DWITH_SYSTEM_CRYPTOPP=ON
 		-DWITH_SYSTEM_BZIP2=ON
 		-DENABLE_TEST=$(usex test ON OFF)
 	)
