@@ -23,10 +23,7 @@ IUSE=""
 KEYWORDS="~amd64"
 
 
-DEPEND="
-	sys-libs/libcxx
-	llvm-core/clang
-"
+DEPEND=""
 RDEPEND=""
 
 src_install() {
