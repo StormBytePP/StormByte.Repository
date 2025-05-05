@@ -11,7 +11,7 @@ NETWORK="gnome-online-accounts http2 libproxy networkmanager zeroconf"
 QT="qml qt qt5 qt6"
 SECURITY="caps gnome-keyring keyring pkcs11 tpm"
 SOUND="jack openal pipewire pulseaudio"
-VIDEO="hwaccel gles2 gui opengl vulkan"
+VIDEO="gles2 gui opengl vulkan"
 WEB="geoip webkit"
 
 USE="${CONNECTIVITY} ${DEVELOPMENT} ${FONTS} ${GTK} ${HARDWARE} ${I18N} ${MISC} ${MULTIMEDIA_CODECS} ${MULTIMEDIA_SUPPORT} ${NETWORK} ${QT} ${SECURITY} ${SOUND} ${VIDEO} ${WEB}"
