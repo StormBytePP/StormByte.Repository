@@ -27,6 +27,7 @@ media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-se
 net-dns/avahi mdnsresponder-compat
 net-dns/dnsmasq script
 net-libs/gnutls tools
+net-libs/nodejs npm
 net-misc/spice-gtk usbredir
 net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
