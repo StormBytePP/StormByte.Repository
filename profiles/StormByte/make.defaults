@@ -55,7 +55,7 @@ INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE = "0770"
 
 # Features
-FEATURES="buildpkg metadata-transfer userfetch"
+FEATURES="buildpkg metadata-transfer userfetch nostrip -strip"
 
 ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
