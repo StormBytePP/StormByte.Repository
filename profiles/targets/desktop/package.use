@@ -1,6 +1,7 @@
 app-emulation/libvirt fuse nfs numa parted pcap virtiofsd -virtualbox wireshark-plugins
 app-emulation/qemu fuse nfs numa plugins spice usbredir virgl virtfs
 app-office/libreoffice base gtk java pdfimport
+app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
 dev-db/postgresql llvm uuid
 dev-libs/appstream-glib fonts
@@ -32,10 +33,13 @@ net-misc/spice-gtk usbredir
 net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
+sys-auth/elogind cgroup-hybrid
+sys-apps/lm-sensors sensord
 sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
 sys-block/parted device-mapper
 sys-boot/grub mount
+sys-firmware/ipxe uefi
 sys-fs/lvm2 lvm
 sys-libs/zlib minizip
 sys-power/nut monitor
