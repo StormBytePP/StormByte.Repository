@@ -34,7 +34,7 @@ PKGDIR="${BASE}/packages"
 DISTDIR="${BASE}/distfiles"
 PORTAGE_TMPDIR="/tmp"
 EMERGE_DEFAULT_OPTS="--ask --autounmask n --buildpkg --jobs=1 --verbose --with-bdeps=y --exclude StormByte-VideoConvert"
-GENTOO_MIRRORS=" https://ftp.rnl.tecnico.ulisboa.pt/pub/gentoo/gentoo-distfiles https://repo.ifca.es/gentoo-distfiles "
+GENTOO_MIRRORS=" https://repo.ifca.es/gentoo-distfiles "
 PORTAGE_SYNC_STALE=5
 BINPKG_COMPRESS="zstd"
 
