@@ -40,7 +40,7 @@ sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
 sys-block/parted device-mapper
 sys-boot/grub mount
-sys-firmware/ipxe uefi
+sys-firmware/ipxe uefi64
 sys-fs/lvm2 lvm
 sys-libs/zlib minizip
 sys-power/nut monitor
