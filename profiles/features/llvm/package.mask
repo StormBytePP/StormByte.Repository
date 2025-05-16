@@ -1,0 +1,2 @@
+# Mask llvm inferior to 19 to force 20 usage
+<llvm-core/llvm-20.0.0
