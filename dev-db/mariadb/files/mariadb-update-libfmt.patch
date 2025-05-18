@@ -26,7 +26,7 @@ index a9dc6937..98b20065 100644
         int answer= 4321;
         arg_store.push_back(answer);
 -       return fmt::vformat(\"{:L}\", arg_store).compare(\"4,321\");
-+       return fmt::vformat(std::locale(\"en_US.utf8\"), \"{:L}\", arg_store).compare(\"4,321\");
++       return fmt::vformat(std::locale(\"en_US.UTF-8\"), \"{:L}\", arg_store).compare(\"4,321\");
       }" HAVE_SYSTEM_LIBFMT)
      SET(CMAKE_REQUIRED_INCLUDES)
    ENDIF()

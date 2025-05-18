@@ -13,8 +13,9 @@ DESCRIPTION="An enhanced, drop-in replacement for MySQL"
 HOMEPAGE="https://mariadb.org/"
 SRC_URI="
 	mirror://mariadb/${P}/source/${P}.tar.gz
-	https://dev.gentoo.org/~arkamar/distfiles/${P}-patches-01.tar.xz
 "
+	# https://dev.gentoo.org/~arkamar/distfiles/${P}-patches-01.tar.xz
+#"
 # Shorten the path because the socket path length must be shorter than 107 chars
 # and we will run a mysql server during test phase
 S="${WORKDIR}/mysql"
@@ -213,7 +214,7 @@ src_unpack() {
 }
 
 src_prepare() {
-	eapply "${WORKDIR}"/mariadb-patches
+	#eapply "${WORKDIR}"/mariadb-patches
 	eapply "${FILESDIR}"/${PN}-10.6.11-gssapi.patch
 	eapply "${FILESDIR}"/${PN}-10.6.12-gcc-13.patch
 	eapply "${FILESDIR}"/${PN}-update-libfmt.patch
