@@ -1,6 +1,6 @@
 source /lib/StormByte/functions.sh
 
-local FORCE_BINUTIL_VARS="app-crypt/efitools"
+local FORCE_BINUTIL_VARS="app-crypt/efitools dev-libs/jansson"
 local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk dev-libs/totem-pl-parser media-libs/alsa-lib media-libs/libva media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct net-fs/samba net-libs/gtk-vnc net-misc/spice-gtk net-wireless/bluez x11-libs/wxGTK sys-libs/ldb sys-libs/libblockdev sys-libs/slang sys-libs/talloc sys-libs/tevent sys-libs/tdb sys-apps/util-linux"
 local FORCE_GCC_VARS=""
 local FORCE_PIC_VARS="llvm-runtimes/libcxx llvm-runtimes/libcxxabi"
