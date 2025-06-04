@@ -1,15 +1,13 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-DISTUTILS_OPTIONAL=yes
-DISTUTILS_SINGLE_IMPL=yes
 GENTOO_DEPEND_ON_PERL=no
-PYTHON_COMPAT=( python3_{10..12} )
+PYTHON_COMPAT=( python3_{10..13} )
 WANT_AUTOMAKE=none
 
-inherit autotools distutils-r1 libtool perl-module systemd
+inherit autotools python-single-r1 libtool perl-module systemd
 
 DESCRIPTION="Software for generating and retrieving SNMP data"
 HOMEPAGE="https://www.net-snmp.org/"
@@ -20,7 +18,7 @@ else
 	# https://github.com/net-snmp/net-snmp/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
 	SRC_URI="https://downloads.sourceforge.net/${PN}/${PN}/${PV}/${P}.tar.gz"
 
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~s390 sparc x86"
 fi
 
 SRC_URI+=" https://dev.gentoo.org/~jsmolic/distfiles/${PN}-5.7.3-patches-3.tar.xz"
@@ -36,7 +34,6 @@ REQUIRED_USE="
 	python? ( ${PYTHON_REQUIRED_USE} )
 	rpm? ( bzip2 zlib )
 "
-RESTRICT="test"
 
 COMMON_DEPEND="
 	virtual/libcrypt:=
@@ -119,6 +116,9 @@ src_prepare() {
 	mv "${WORKDIR}"/patches/0005-Respect-LDFLAGS-properly.patch{,.disabled} || die
 	eapply "${WORKDIR}"/patches/*.patch
 
+	# Fails because of our eautoconf call
+	rm testing/fulltests/default/T000configure_simple || die
+
 	default
 
 	eautoconf
@@ -175,6 +175,10 @@ src_compile() {
 	done
 
 	use doc && emake docsdox
+}
+
+src_test() {
+	emake -Onone test
 }
 
 src_install() {
