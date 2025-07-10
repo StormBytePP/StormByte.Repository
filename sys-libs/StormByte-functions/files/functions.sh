@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 2.0.0
+# Version 2.0.1
 
 function displayError() {
 	echo $1
@@ -92,6 +92,10 @@ function force_ld_undefined_version {
 function force_openmp_vars() {
 	CFLAGS="${CFLAGS} -fopenmp"
 	CXXFLAGS="${CXXFLAGS} -fopenmp"
+}
+
+function force_reduce_parallel() {
+	MAKEFLAGS="-j8"
 }
 
 # Useful variables
