@@ -65,8 +65,10 @@ LICENSE="MPL-2.0"
 SLOT="$(ver_cut 1)"
 IUSE="clang cpu_flags_arm_neon debug +jit test"
 
-#RESTRICT="test"
-RESTRICT="!test? ( test )"
+# Tests are restricted as they haven't been ported to python-3.13, but there doesn't seem to be
+# runtime issues. Bug #952299
+RESTRICT="test"
+#RESTRICT="!test? ( test )"
 
 BDEPEND="${PYTHON_DEPS}
 	$(llvm_gen_dep '
