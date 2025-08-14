@@ -11,3 +11,4 @@ sys-kernel/installkernel dracut grub
 sys-kernel/linux-firmware compress-zstd -savedconfig
 sys-apps/kmod pkcs7 zstd
 virtual/linux-sources firmware
+x11-drivers/nvidia-drivers -tools -X # For base system it should not bring X in
