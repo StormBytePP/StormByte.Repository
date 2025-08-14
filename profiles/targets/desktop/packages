@@ -5,3 +5,4 @@
 *sys-process/rtirq
 *x11-apps/xmodmap # Otherwise X won't start ??
 *x11-base/xorg-server
+*sys-power/acpid
