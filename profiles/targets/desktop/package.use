@@ -4,6 +4,7 @@ app-office/libreoffice base gtk java pdfimport
 app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
 dev-db/postgresql llvm uuid
+dev-lang/rust rustfmt # Needed for firefox
 dev-libs/appstream-glib fonts
 dev-qt/qtbase mysql postgres
 dev-qt/qtscript scripttools
