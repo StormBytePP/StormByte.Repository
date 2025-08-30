@@ -3,6 +3,7 @@ app-emulation/qemu fuse nfs numa plugins spice usbredir virgl virtfs
 app-office/libreoffice base gtk java pdfimport
 app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
+app-text/texlive-core xetex
 dev-db/postgresql llvm uuid
 dev-lang/rust rustfmt # Needed for firefox
 dev-libs/appstream-glib fonts
