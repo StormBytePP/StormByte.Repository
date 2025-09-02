@@ -1,6 +1,10 @@
 *app-crypt/efitools
+*app-text/pandoc
 *dev-libs/libisoburn #For virt-manager
+*dev-python/weasyprint
+*dev-texlive/texlive-xetex
 *gui-libs/display-manager-init
+*net-misc/ntp
 *sys-firmware/sof-firmware
 *sys-process/rtirq
 *x11-apps/xmodmap # Otherwise X won't start ??
