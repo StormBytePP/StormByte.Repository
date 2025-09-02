@@ -7,6 +7,7 @@ app-text/texlive-core xetex
 dev-db/postgresql llvm uuid
 dev-lang/rust rustfmt # Needed for firefox
 dev-libs/appstream-glib fonts
+dev-python/pillow jpeg2k
 dev-qt/qtbase mysql postgres
 dev-qt/qtscript scripttools
 dev-qt/qttools designer
