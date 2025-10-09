@@ -1,4 +1,4 @@
-app-emulation/libvirt fuse nfs numa parted pcap virtiofsd -virtualbox wireshark-plugins
+app-emulation/libvirt fuse nfs numa parted pcap virtiofsd -virtualbox
 app-emulation/qemu fuse nfs numa plugins spice usbredir virgl virtfs
 app-office/libreoffice base gtk java pdfimport
 app-office/libreoffice-l10n offlinehelp

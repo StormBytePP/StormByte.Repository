@@ -1,2 +1,4 @@
 # See bug #952011
 dev-libs/gobject-introspection test
+# See bug #963985
+app-emulation/libvirt -wireshark-plugins
