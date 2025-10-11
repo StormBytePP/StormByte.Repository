@@ -30,7 +30,7 @@ media-video/ffmpeg lame libaom libass libdrm libilbc libplacebo libsoxr libv4l l
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 net-dns/avahi mdnsresponder-compat
-net-dns/dnsmasq script
+net-dns/dnsmasq script ipv6 # Ipv6 needed for libvirt dep
 net-libs/gnutls tools
 net-libs/nodejs npm
 net-misc/spice-gtk usbredir
