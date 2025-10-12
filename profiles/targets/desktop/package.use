@@ -38,6 +38,7 @@ net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
 sys-auth/elogind cgroup-hybrid
+sys-apps/coolercontrold liquidctl
 sys-apps/lm-sensors sensord
 sys-apps/StormByte-meta stagemanager utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
