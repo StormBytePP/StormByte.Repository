@@ -19,6 +19,7 @@ media-fonts/corefonts tahoma
 media-fonts/fonts-meta ms
 media-gfx/xsane gimp
 media-libs/freetype utils
+media-libs/libheif gui tools
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers
