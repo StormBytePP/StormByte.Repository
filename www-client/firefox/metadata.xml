@@ -12,6 +12,7 @@
 		downloaded and kept up-to-date in user profiles</flag>
 	<flag name="gnome-shell">Integrate with gnome-base/gnome-shell search</flag>
 	<flag name="hwaccel">Force-enable hardware-accelerated rendering (Mozilla bug 594876)</flag>
+	<flag name="jpegxl">Add JPEG XL image support (EXPERIMENTAL, no official upstream support)</flag>
 	<flag name="jumbo-build">Enable unified build - combines source files to speed up build process, but requires more memory</flag>
 	<flag name="libproxy">Enable libproxy support</flag>
 	<flag name="openh264">Use <pkg>media-libs/openh264</pkg> for H264 support
@@ -33,6 +34,7 @@
 		instead of bundled</flag>
 	<flag name="system-libvpx">Use the system-wide <pkg>media-libs/libvpx</pkg>
 		instead of bundled</flag>
+	<flag name="system-pipewire">Use system <pkg>media-video/pipewire</pkg> for WebRTC and screencast instead of bundled one</flag>
 	<flag name="system-png">Use the system-wide <pkg>media-libs/libpng</pkg>
 		instead of bundled (requires APNG patches)</flag>
 	<flag name="system-webp">Use the system-wide <pkg>media-libs/libwebp</pkg>
