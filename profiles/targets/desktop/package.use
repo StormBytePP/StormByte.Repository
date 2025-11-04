@@ -52,6 +52,7 @@ sys-power/nut monitor
 sys-process/htop delayacct hwloc
 sys-process/procps modern-top
 virtual/linux-sources firmware
+virtual/zlib minizip
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-drivers/nvidia-drivers tools
