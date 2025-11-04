@@ -39,9 +39,9 @@ PORTAGE_SYNC_STALE=5
 BINPKG_COMPRESS="zstd"
 
 # Versioning
-PYTHON_TARGETS="-* python3_12" # Check from time to time if system is prepared to remove python 3.12
-PYTHON_SINGLE_TARGET="-* python3_12"
-POSTGRES_TARGETS="-* postgres17"
+PYTHON_TARGETS="-* python3_13" # Check from time to time if system is prepared to update python
+PYTHON_SINGLE_TARGET="-* python3_13"
+POSTGRES_TARGETS="-* postgres18"
 PERL_FEATURES="ithreads"
 
 # Licenses
@@ -49,7 +49,7 @@ ACCEPT_LICENSE="*"
 
 # Environment
 GRUB_PLATFORMS="-* efi-64"
-RUBY_TARGETS="-* ruby33"
+RUBY_TARGETS="-* ruby34"
 VIDEO_CARDS="-*"
 INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE = "0770"

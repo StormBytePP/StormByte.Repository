@@ -1,4 +1,4 @@
 # Disable latest python
->dev-lang/python-3.12.9999
+>dev-lang/python-3.13.9999
 # Causes problems
 =sys-devel/gettext-0.23
