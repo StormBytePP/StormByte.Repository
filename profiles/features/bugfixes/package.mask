@@ -1,8 +1,5 @@
 # It does not compile
 =app-text/doxygen-1.13.2
 
-# It fails to compile
->=sys-boot/grub-2.14_rc1
-
 # It includes a chroot check that is unwanted
 >sys-kernel/installkernel-63
