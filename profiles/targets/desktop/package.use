@@ -13,6 +13,7 @@ dev-qt/qtscript scripttools
 dev-qt/qttools designer
 dev-qt/qtwayland compositor
 gnome-base/gdm plymouth
+gnome-base/gnome-keyring ssh-agent
 gnome-base/gvfs google nfs
 kde-frameworks/sonnet designer
 media-fonts/corefonts tahoma
