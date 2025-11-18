@@ -7,6 +7,7 @@
 *app-shells/gentoo-bashcomp
 *app-shells/bash-completion
 *dev-vcs/git
+*sec-keys/openpgp-keys-gentoo-developers
 *sys-apps/StormByte-meta
 *sys-block/io-scheduler-udev-rules
 *sys-boot/mokutil
