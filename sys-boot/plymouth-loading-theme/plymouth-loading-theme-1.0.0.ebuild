@@ -7,7 +7,7 @@ DESCRIPTION="Plymouth loading theme"
 
 HOMEPAGE="https://store.kde.org/p/1184062/"
 
-SRC_URI="https://drive.google.com/uc?export=download&id=1NCHtIVH9jkx1ojy0e0cmOzFYG2rDCWKe -> ${P}.tbz2"
+SRC_URI="https://drive.google.com/uc?export=download&id=1WIGlGhr93xHMB4ZeWwgnOGYPY-YCVfco -> ${P}.tbz2"
 
 LICENSE=""
 
