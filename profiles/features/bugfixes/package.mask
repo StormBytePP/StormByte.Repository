@@ -3,3 +3,6 @@
 
 # It includes a chroot check that is unwanted
 >sys-kernel/installkernel-63
+
+# Does not compile with lld linker #965424
+>=sys-boot/grub-2.13
