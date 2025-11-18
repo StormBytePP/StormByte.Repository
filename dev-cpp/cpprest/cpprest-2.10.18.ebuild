@@ -21,7 +21,7 @@ RDEPEND="
 		>=dev-libs/boost-1.77.0[nls]
 	)
 	dev-libs/openssl
-	sys-libs/zlib
+	virtual/zlib
 	brotli? ( app-arch/brotli )
 	websockets? ( dev-cpp/websocketpp )
 "

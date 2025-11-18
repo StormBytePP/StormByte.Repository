@@ -173,7 +173,7 @@ COMMON_DEPEND="${PYTHON_DEPS}
 	media-libs/zxing-cpp:=
 	net-misc/curl
 	sci-mathematics/lpsolve:=
-	sys-libs/zlib
+	virtual/zlib
 	virtual/opengl
 	x11-libs/cairo[X]
 	x11-libs/libXinerama

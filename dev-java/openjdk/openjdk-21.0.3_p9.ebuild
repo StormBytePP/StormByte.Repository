@@ -62,7 +62,7 @@ COMMON_DEPEND="
 	media-libs/harfbuzz:=
 	media-libs/libpng:0=
 	media-libs/lcms:2=
-	sys-libs/zlib
+	virtual/zlib
 	media-libs/libjpeg-turbo:0=
 	systemtap? ( dev-debug/systemtap )
 "

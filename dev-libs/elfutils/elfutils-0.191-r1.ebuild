@@ -19,7 +19,7 @@ RESTRICT="!test? ( test )"
 
 RDEPEND="
 	!dev-libs/libelf
-	>=sys-libs/zlib-1.2.8-r1[static-libs?,${MULTILIB_USEDEP}]
+	>=virtual/zlib-1.2.8-r1[static-libs?,${MULTILIB_USEDEP}]
 	bzip2? ( >=app-arch/bzip2-1.0.6-r4[static-libs?,${MULTILIB_USEDEP}] )
 	debuginfod? (
 		app-arch/libarchive:=

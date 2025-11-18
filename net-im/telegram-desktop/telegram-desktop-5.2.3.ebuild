@@ -44,7 +44,7 @@ CDEPEND="
 	media-libs/rnnoise
 	~media-libs/tg_owt-0_pre20230921:=[screencast=,X=]
 	media-video/ffmpeg:=[opus,vpx]
-	sys-libs/zlib:=[minizip]
+	virtual/zlib:=[minizip]
 	!enchant? ( >=app-text/hunspell-1.7:= )
 	enchant? ( app-text/enchant:= )
 	jemalloc? ( dev-libs/jemalloc:= )
