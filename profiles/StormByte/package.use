@@ -4,13 +4,13 @@ app-alternatives/gzip -reference pigz
 app-crypt/gnupg wks-server
 app-portage/eix sqlite
 net-misc/networkmanager syslog
+sys-apps/kmod pkcs7 zstd
 sys-apps/util-linux -logger
 sys-firmware/intel-microcode hostonly initramfs
 sys-kernel/gentoo-kernel experimental
 sys-kernel/gentoo-sources experimental
 sys-kernel/installkernel dracut grub
 sys-kernel/linux-firmware compress-zstd savedconfig
-sys-apps/kmod pkcs7 zstd
 sys-libs/zlib-ng compat
 sys-libs/minizip-ng compat
 virtual/linux-sources firmware
