@@ -48,7 +48,6 @@ sys-block/parted device-mapper
 sys-boot/grub mount
 sys-firmware/ipxe uefi64
 sys-fs/lvm2 lvm
-sys-libs/zlib minizip
 sys-power/nut monitor
 sys-process/htop delayacct hwloc
 sys-process/procps modern-top
