@@ -1,0 +1,3 @@
+# Force custom cflags for glibc and gcc
+sys-devel/gcc custom-cflags
+sys-libs/glibc custom-cflags

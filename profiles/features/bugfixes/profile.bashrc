@@ -16,18 +16,3 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	list_contains "${FORCE_REDUCE_PARALLEL}" "${CATEGORY}/${PN}" && force_reduce_parallel
 fi
 
-# Glibc special options for valgrind
-if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
-	force_gcc_vars
-	CFLAGS="${CFLAGS} -fno-builtin-strlen"
-	CXXFLAGS="${CXXFLAGS} -fno-builtin-strlen"
-fi
-
-if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
-	force_gcc_vars
-	if [[ -n "$INTEL_BIG_LITTLE" ]]; then
-		CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
-		CXXFLAGS="${CFLAGS}"
-	fi
-    LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
-fi
