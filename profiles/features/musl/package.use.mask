@@ -4,6 +4,3 @@
 # Georgy Yakovlev <gyakovlev@gentoo.org> (2020-01-28)
 # upstream does not provide docs in musl tarball
 dev-lang/rust-bin doc
-
-# Without gcc this use does not compile
-llvm-runtimes/compiler-rt-sanitizers gwp-asan
