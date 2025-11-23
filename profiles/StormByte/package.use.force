@@ -1,2 +1,4 @@
+app-portage/eix sqlite
+dev-lang/python sqlite
 sys-devel/gcc default-stack-clash-protection graphite vtv
 sys-devel/binutils gold
