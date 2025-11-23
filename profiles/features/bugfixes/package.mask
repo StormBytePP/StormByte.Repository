@@ -1,8 +1,2 @@
-# It does not compile
-=app-text/doxygen-1.13.2
-
 # It includes a chroot check that is unwanted
 >sys-kernel/installkernel-63
-
-# Causes problems
-=sys-devel/gettext-0.23
