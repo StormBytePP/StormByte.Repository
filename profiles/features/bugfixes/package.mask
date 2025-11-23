@@ -6,3 +6,6 @@
 
 # Does not compile with lld linker #965424
 >=sys-boot/grub-2.13
+
+# Causes problems
+=sys-devel/gettext-0.23

@@ -1,14 +1,3 @@
 amd64				StormByte														stable
-amd64				StormByte/clang                                                 stable
 amd64				StormByte/desktop												stable
-amd64				StormByte/desktop/llvm                                          stable
-amd64				StormByte/no-multilib                                           stable
-amd64				StormByte/no-multilib/llvm                                      stable
-amd64				StormByte/no-multilib/musl                                      stable
-amd64				StormByte/no-multilib/musl/llvm                                 stable
-amd64				StormByte/no-multilib/desktop									stable
-amd64				StormByte/no-multilib/desktop/llvm                              stable
-amd64				StormByte/no-multilib/hardened									stable
-amd64				StormByte/no-multilib/hardened/llvm                             stable
-amd64				StormByte/no-multilib/hardened/musl								stable
-amd64				StormByte/no-multilib/hardened/musl/llvm                        stable
+amd64				StormByte/musl                                          		stable

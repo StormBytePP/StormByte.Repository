@@ -1,3 +1,28 @@
-FEATURES="-ebuild-locks -merge-wait parallel-fetch"
+FEATURES="parallel-fetch"
 
-USE="custom-cflags dist-kernel kernel-install pgo lto savedconfig"
+USE="custom-cflags pgo lto savedconfig"
+
+# Compiler custom optimizations
+COMPILER_OPTIMIZATION_BASE="-O2 -pipe"
+COMPILER_OPTIMIZATION_CLANG="" # -Wno-unused-command-line-argument"
+COMPILER_OPTIMIZATION_CPU="-march=native"
+COMPILER_OPTIMIZATION_DEBUG="-g -ggdb3"
+COMPILER_OPTIMIZATION_GCC=""
+COMPILER_OPTIMIZATION_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
+COMPILER_OPTIMIZATION_LTO="-flto=thin"
+COMPILER_OPTIMIZATION_POLLY="-O3 -fplugin-arg-polly-polly -fplugin-arg-polly-polly-parallel -fplugin-arg-polly-polly-vectorizer=stripmine -fplugin-arg-polly-polly-run-dce -fplugin-arg-polly-polly-scheduling-chunksize=1 -fplugin-arg-polly-polly-scheduling=dynamic -fplugin-arg-polly-polly-num-threads=32 -fplugin-arg-polly-polly-omp-backend=LLVM -fplugin-arg-polly-polly-invariant-load-hoisting -fopenmp=libomp"
+
+# Linker optimizations
+LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,-z,relro -Wl,-z,now -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,-z,separate-code -Wl,-z,noexecstack"
+LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
+LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
+LINKER_OPTIMIZATION_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--build-id=uuid"
+LINKER_OPTIMIZATION_POLLY="-fopenmp=libomp"
+
+# Compiling optimizations
+CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_GRAPHITE}"
+CXXFLAGS="${CFLAGS}"
+FCFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
+FFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU}"
+LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Clink-arg=-Wl,-z,pack-relative-relocs -Clink-arg=-Wl,-z,relro -Clink-arg=-Wl,--as-needed -Clink-arg=-Wl,-O2"

@@ -25,7 +25,9 @@ fi
 
 if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 	force_gcc_vars
-	CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
-	CXXFLAGS="${CFLAGS}"
+	if [[ -n "$INTEL_BIG_LITTLE" ]]; then
+		CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
+		CXXFLAGS="${CFLAGS}"
+	fi
     LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
 fi
