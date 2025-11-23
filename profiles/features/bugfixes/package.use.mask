@@ -1,2 +1,0 @@
-# Does not compile with qt6, bug #966408
-x11-themes/qtcurve qt6
