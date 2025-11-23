@@ -1,2 +1,0 @@
-#For the moment musl is disabled as I want to compile kernel with gcc for hardening
-#StormByte:features/musl
