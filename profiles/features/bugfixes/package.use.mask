@@ -1,2 +1,5 @@
 sys-boot/gnu-efi custom-cflags
 net-libs/webkit-gtk gstreamer
+
+# Does not compile with qt6
+x11-themes/qtcurve qt6
