@@ -1,6 +1,5 @@
 cet
 hardened
 modules-sign
-modules-compress
 secureboot
 verify-sig
