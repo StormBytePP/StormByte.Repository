@@ -2,7 +2,7 @@ source /lib/StormByte/functions.sh
 
 local FORCE_BINUTIL_VARS="app-crypt/efitools dev-libs/jansson"
 local FORCE_LD_UNDEFINED_VERSION="media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct"
-local FORCE_GCC_VARS=""
+local FORCE_GCC_VARS="sys-apps/apparmor"
 local FORCE_PIC_VARS="llvm-runtimes/libcxx llvm-runtimes/libcxxabi"
 local FORCE_OPENMP_VARS="media-sound/fluidsynth"
 local FORCE_REDUCE_PARALLEL="net-im/telegram-desktop"
