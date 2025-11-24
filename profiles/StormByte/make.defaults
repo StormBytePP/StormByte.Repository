@@ -4,7 +4,7 @@ CODECS="lame"
 COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 DOCS="-doc -gtk-doc"
 KERNEL="dist-kernel kernel-install"
-SECURITY="caps filecaps -strip"
+SECURITY="caps filecaps"
 SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
 USE="${BASE} ${CODECS} ${COMPRESSION} ${DOCS} ${KERNEL} ${SECURITY} ${SYSTEM}"
 
