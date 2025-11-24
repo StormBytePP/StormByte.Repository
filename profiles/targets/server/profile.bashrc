@@ -1,5 +1,8 @@
 source /lib/StormByte/functions.sh
 
 if [ "${CATEGORY}/${PN}" == "sys-kernel/gentoo-kernel" ]; then
-	force_gcc_vars
+	export CC=gcc
+    export CXX=g++
+    export LD=bfd
+	export LLVM=0
 fi
