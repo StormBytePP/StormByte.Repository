@@ -22,7 +22,7 @@ S="${WORKDIR}/${PN}_${MY_PV}"
 
 LICENSE="Boost-1.0"
 SLOT="0/${PV}"
-#KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~ppc-macos ~x64-macos ~x64-solaris"
 IUSE="bzip2 +context debug doc icu lzma +nls mpi numpy python +stacktrace test test-full tools zlib zstd"
 REQUIRED_USE="
 	python? ( ${PYTHON_REQUIRED_USE} )
@@ -50,11 +50,14 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.88.0-build-auto_index-tool.patch
 	"${FILESDIR}"/${PN}-1.88.0-algorithm-reverse_copy.patch
 	"${FILESDIR}"/${PN}-1.88.0-beast-network-sandbox.patch
+	"${FILESDIR}"/${PN}-1.88.0-bind-no-Werror.patch
 	"${FILESDIR}"/${PN}-1.88.0-py3.11-test-traceback.patch
 	"${FILESDIR}"/${PN}-1.88.0-range-any_iterator.patch
 	"${FILESDIR}"/${PN}-1.88.0-system-crashing-test.patch
 	"${FILESDIR}"/${PN}-1.88.0-yap-cstdint.patch
 	"${FILESDIR}"/${PN}-1.89.0-graph-remove-system-dependency.patch
+	"${FILESDIR}"/${PN}-1.89.0-predef-include-path.patch
+	"${FILESDIR}"/${PN}-1.89.0-unordered-no-tbb.patch
 )
 
 create_user-config.jam() {
