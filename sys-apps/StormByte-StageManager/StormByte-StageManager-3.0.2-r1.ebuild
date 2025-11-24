@@ -11,7 +11,7 @@ SRC_URI="https://github.com/StormBytePP/StormByte-StageManager/archive/${PV}.tar
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="+pbzip2 +pigz +pxz"
+IUSE="+pbzip2 +pigz +pxz +zram"
 
 RDEPEND="
 	app-alternatives/bzip2[pbzip2=]
@@ -29,8 +29,13 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 pkg_pretend() {
-	CONFIG_CHECK="BTRFS_FS"
+	# Error messages for missing kernel options
 	ERROR_BTRFS_FS="BTRFS MUST be enabled on kernel for this to work"
+	ERROR_ZRAM="ZRAM MUST be enabled on kernel for this to work"
+
+	# Kernel config checks
+	CONFIG_CHECK="BTRFS_FS"
+	use zram && CONFIG_CHECK="${CONFIG_CHECK} ZRAM"
 	check_extra_config
 }
 
