@@ -6,6 +6,7 @@ app-portage/eix sqlite
 net-misc/networkmanager syslog
 sys-apps/kmod pkcs7 zstd
 sys-apps/util-linux -logger
+sys-apps/StormByte-meta stagemanager
 sys-firmware/intel-microcode hostonly initramfs
 sys-kernel/gentoo-kernel experimental
 sys-kernel/gentoo-sources experimental
