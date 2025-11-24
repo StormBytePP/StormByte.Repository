@@ -4,7 +4,7 @@ inherit cmake
 
 DESCRIPTION="StormByte Video Converter"
 HOMEPAGE="https://github.com/StormBytePP/StormByte-videoconvert"
-SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/StormBytePP/Alchemist/archive/${PV}.tar.gz -> Alchemist-${P}.tar.gz"
 
 LICENSE="GPL"
 SLOT="0"
