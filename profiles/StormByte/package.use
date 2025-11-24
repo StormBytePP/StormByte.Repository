@@ -10,7 +10,7 @@ sys-firmware/intel-microcode hostonly initramfs
 sys-kernel/gentoo-kernel experimental
 sys-kernel/gentoo-sources experimental
 sys-kernel/installkernel dracut grub
-sys-kernel/linux-firmware compress-zstd savedconfig
+sys-kernel/linux-firmware compress-zstd
 sys-libs/zlib-ng compat
 sys-libs/minizip-ng compat
 virtual/linux-sources firmware
