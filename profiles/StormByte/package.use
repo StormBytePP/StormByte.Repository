@@ -1,6 +1,4 @@
 app-admin/sysklogd logger logrotate
-app-alternatives/bzip2 -reference lbzip2
-app-alternatives/gzip -reference pigz
 app-crypt/gnupg wks-server
 app-portage/eix sqlite
 net-misc/networkmanager syslog

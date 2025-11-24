@@ -1,2 +1,0 @@
-# does not compile with llvm19
-pbzip2
