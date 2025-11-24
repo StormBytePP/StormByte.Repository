@@ -1,1 +1,1 @@
-USE="-ipv6"
+USE="-ipv6 -X"
