@@ -17,6 +17,7 @@ IUSE="+x265 +fdk +opus -static-libs"
 DEPEND="
     dev-libs/boost
     dev-db/sqlite:3[static-libs?]
+	dev-libs/boost:0=
     dev-libs/libconfig[cxx,static-libs?]
     media-video/ffmpeg
     x265? (
