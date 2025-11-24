@@ -6,6 +6,7 @@
 *app-portage/gentoolkit
 *app-shells/gentoo-bashcomp
 *app-shells/bash-completion
+*dev-util/pahole
 *dev-vcs/git
 *sec-keys/openpgp-keys-gentoo-developers
 *sys-apps/StormByte-meta
