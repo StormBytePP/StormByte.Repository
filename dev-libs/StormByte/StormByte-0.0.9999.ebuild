@@ -9,18 +9,20 @@ EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="config crypto database multimedia network system test"
+IUSE="buffer config crypto database multimedia network system test"
+RESTRICT="!test? ( test )"
 
 DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
 PDEPEND="
-	config? ( dev-libs/StormByte-Config )
-	crypto? ( dev-libs/StormByte-Crypto )
-	database? ( dev-libs/StormByte-Database )
-	multimedia? ( dev-libs/StormByte-Multimedia )
-	network? ( dev-libs/StormByte-Network )
-	system? ( dev-libs/StormByte-System )
+	buffer? ( dev-libs/StormByte-Buffer[test?] )
+	config? ( dev-libs/StormByte-Config[test?] )
+	crypto? ( dev-libs/StormByte-Crypto[test?] )
+	database? ( dev-libs/StormByte-Database[test?] )
+	multimedia? ( dev-libs/StormByte-Multimedia[test?] )
+	network? ( dev-libs/StormByte-Network[test?] )
+	system? ( dev-libs/StormByte-System[test?] )
 "
 
 src_configure() {

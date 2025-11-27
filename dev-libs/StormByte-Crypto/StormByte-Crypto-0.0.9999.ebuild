@@ -10,11 +10,13 @@ LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
+RESTRICT="!test? ( test )"
 
 DEPEND="
 	app-arch/bzip2
 	dev-libs/crypto++
-	dev-libs/StormByte
+	dev-libs/StormByte[test?]
+	dev-libs/StormByte-Buffer[test?]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"

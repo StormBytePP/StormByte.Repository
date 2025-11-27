@@ -10,9 +10,11 @@ LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
+RESTRICT="!test? ( test )"
 
 DEPEND="
-	dev-libs/StormByte
+	dev-libs/StormByte[test?]
+	dev-libs/StormByte-Buffer[test?]
 	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"

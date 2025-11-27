@@ -10,10 +10,11 @@ LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="+sqlite test"
+RESTRICT="!test? ( test )"
 
 DEPEND="
 	sqlite? ( dev-db/sqlite:3 )
-	dev-libs/StormByte
+	dev-libs/StormByte[test?]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"

@@ -10,9 +10,10 @@ LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
+RESTRICT="!test? ( test )"
 
 DEPEND="
-	dev-libs/StormByte
+	dev-libs/StormByte[test?]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
