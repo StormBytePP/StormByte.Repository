@@ -9,7 +9,7 @@ EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="buffer config crypto database multimedia network system test"
+IUSE="buffer config crypto database logger multimedia network system test"
 RESTRICT="!test? ( test )"
 
 DEPEND=""
@@ -20,6 +20,7 @@ PDEPEND="
 	config? ( dev-libs/StormByte-Config[test?] )
 	crypto? ( dev-libs/StormByte-Crypto[test?] )
 	database? ( dev-libs/StormByte-Database[test?] )
+	logger? ( dev-libs/StormByte-Logger[test?] )
 	multimedia? ( dev-libs/StormByte-Multimedia[test?] )
 	network? ( dev-libs/StormByte-Network[test?] )
 	system? ( dev-libs/StormByte-System[test?] )

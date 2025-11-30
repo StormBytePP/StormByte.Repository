@@ -15,6 +15,7 @@ RESTRICT="!test? ( test )"
 DEPEND="
 	dev-libs/StormByte[test?]
 	dev-libs/StormByte-Buffer[test?]
+	dev-libs/StormByte-Logger[test?]
 	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"

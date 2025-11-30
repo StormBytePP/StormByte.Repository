@@ -3,7 +3,7 @@ EAPI=8
 inherit git-r3 cmake
 
 DESCRIPTION="StormByte C++ Library"
-HOMEPAGE="https://dev.stormbyte.org/StormByteConfig"
+HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
 EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 
 LICENSE="GPL"
@@ -13,11 +13,7 @@ IUSE="test"
 RESTRICT="!test? ( test )"
 
 DEPEND="
-	app-arch/bzip2
-	dev-libs/crypto++
 	dev-libs/StormByte[test?]
-	dev-libs/StormByte-Buffer[test?]
-	dev-libs/StormByte-Logger[test?]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -25,8 +21,6 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 src_configure() {
 	local mycmakeargs=(
 		-DWITH_SYSTEM_STORMBYTE=ON
-		-DWITH_SYSTEM_CRYPTOPP=ON
-		-DWITH_SYSTEM_BZIP2=ON
 		-DENABLE_TEST=$(usex test ON OFF)
 	)
 	cmake_src_configure

@@ -14,6 +14,7 @@ RESTRICT="!test? ( test )"
 
 DEPEND="
 	dev-libs/StormByte[test?]
+	dev-libs/StormByte-Logger[test?]
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
