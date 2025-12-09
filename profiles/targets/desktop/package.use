@@ -1,5 +1,5 @@
 app-emulation/libvirt fuse nfs numa parted pcap virtiofsd -virtualbox
-app-emulation/qemu fuse nfs numa plugins spice usbredir virgl virtfs
+app-emulation/qemu fuse io_uring nfs numa passt plugins spice usbredir virgl virtfs
 app-office/libreoffice base gtk java pdfimport
 app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
@@ -11,55 +11,66 @@ dev-python/pillow jpeg2k
 dev-qt/qtbase mysql postgres
 dev-qt/qtscript scripttools
 dev-qt/qttools designer
-dev-qt/qtwayland compositor
+dev-qt/qtwayland compositor gnome
 gnome-base/gdm plymouth
 gnome-base/gnome-keyring ssh-agent
-gnome-base/gvfs google nfs
+gnome-base/gvfs fuse mtp google nfs
 kde-frameworks/sonnet designer
 media-fonts/corefonts tahoma
 media-fonts/fonts-meta ms
 media-gfx/xsane gimp
 media-libs/freetype utils
+media-libs/libcanberra-gtk3 gnome
+media-libs/libde265 dec265 enc265 tools
 media-libs/libheif gui tools
 media-libs/libvpx postproc
 media-libs/opus custom-modes
 media-libs/vulkan-loader layers
 # Audacious works better in Qt
 media-sound/audacious -gtk
-media-plugins/audacious-plugins fluidsynth gme -gtk http scrobbler sid
+media-sound/fluid-soundfont timidity
 media-sound/audacity id3tag
+media-plugins/audacious-plugins fluidsynth gme -gtk http scrobbler sid qtmedia
+media-plugins/gst-plugins-meta libass taglib
 media-video/ffmpeg lame libaom libass libdrm libilbc libplacebo libsoxr libv4l libxml2 rubberband shaderc vidstab zeromq zimg
 media-video/obs-studio browser
 media-video/pipewire echo-cancel extra gsettings jack-sdk pipewire-alsa sound-server
 net-dns/avahi mdnsresponder-compat
 net-dns/dnsmasq script
 net-libs/gnutls tools
+net-libs/libsrtp openssl
 net-libs/nodejs npm
+net-misc/networkmanager dhcpcd iptables nftables
 net-misc/spice-gtk usbredir
 net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
 net-print/hplip hpijs scanner
 sys-auth/elogind cgroup-hybrid
-sys-apps/coolercontrol liquidctl
+sys-apps/coolercontrold liquidctl
 sys-apps/lm-sensors sensord
 sys-apps/StormByte-meta utils videoconvert
 sys-apps/xdg-desktop-portal geolocation
 sys-block/parted device-mapper
 sys-boot/grub mount
-sys-firmware/ipxe uefi64
+sys-firmware/ipxe iso uefi64
 sys-fs/lvm2 lvm
+sys-fs/udisks smart
+sys-libs/libblockdev smart
 sys-libs/minizip-ng compat
 sys-libs/zlib minizip
 sys-power/nut monitor
 sys-process/htop delayacct hwloc
 sys-process/procps modern-top
+virtual/notification-daemon gnome
 virtual/linux-sources firmware
 x11-base/xorg-server xvfb
 x11-base/xwayland libei
 x11-drivers/nvidia-drivers kernel-open tools
 x11-libs/xapp introspection
 x11-misc/colord scanner vala
+x11-misc/xdg-utils gnome
 x11-misc/xscreensaver fonts gdm -gles glx offensive
+x11-themes/zuki-themes gtk2
 xfce-base/libxfce4ui system-info
 xfce-extra/thunar-vcs-plugin -subversion
 xfce-extra/xfce4-sensors-plugin hddtemp
