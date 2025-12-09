@@ -2,4 +2,5 @@ cet
 hardened
 modules-sign
 secureboot
+verify-provenance
 verify-sig
