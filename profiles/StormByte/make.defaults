@@ -4,8 +4,9 @@ CODECS="lame"
 COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 DOCS="-doc -gtk-doc"
 KERNEL="dist-kernel kernel-install"
+NETWORK="ipv6"
 SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
-USE="${BASE} ${CODECS} ${COMPRESSION} ${DOCS} ${KERNEL} ${SYSTEM}"
+USE="${BASE} ${CODECS} ${COMPRESSION} ${DOCS} ${KERNEL} ${NETWORK} ${SYSTEM}"
 
 # Language
 L10N="es es-ES"

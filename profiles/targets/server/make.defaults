@@ -1,1 +1,1 @@
-USE="-gui -ipv6 -X"
+USE="-gui -X"
