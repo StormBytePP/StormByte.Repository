@@ -14,4 +14,4 @@ sys-kernel/linux-firmware compress-zstd deduplicate
 sys-libs/zlib-ng compat
 sys-libs/minizip-ng compat
 virtual/linux-sources firmware
-x11-drivers/nvidia-drivers -tools -X # For base system it should not bring X in
+x11-drivers/nvidia-drivers -tools # For base system it should not bring X in

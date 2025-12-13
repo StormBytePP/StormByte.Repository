@@ -1,5 +1,6 @@
 *app-admin/pwgen
 *app-admin/sudo
+*app-crypt/gnupg
 *app-crypt/sbsigntools
 *app-misc/resolve-march-native
 *app-portage/eix
@@ -11,6 +12,7 @@
 *sec-keys/openpgp-keys-gentoo-developers
 *sys-apps/StormByte-meta
 *sys-block/io-scheduler-udev-rules
+*sys-boot/grub
 *sys-boot/mokutil
 *sys-boot/shim
 *sys-devel/binutils
