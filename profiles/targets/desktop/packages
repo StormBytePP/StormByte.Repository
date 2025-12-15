@@ -1,5 +1,6 @@
 *app-crypt/efitools
 *app-text/pandoc
+*dev-debug/strace
 *dev-libs/libisoburn #For virt-manager
 *dev-python/weasyprint
 *dev-texlive/texlive-xetex
