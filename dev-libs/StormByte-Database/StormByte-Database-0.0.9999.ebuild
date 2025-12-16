@@ -9,11 +9,14 @@ EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="pgo +sqlite"
+IUSE="+mariadb pgo +postgres +sqlite"
 
 DEPEND="
+	mariadb? ( dev-db/mariadb-connector-c )
+	postgres? ( dev-db/postgresql )
 	sqlite? ( dev-db/sqlite:3 )
 	dev-libs/StormByte
+	dev-libs/StormByte-Logger
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -29,9 +32,10 @@ src_configure() {
 		fi
 	fi
 	local mycmakeargs=(
-		-DENABLE_SQLITE=ON
 		-DWITH_SYSTEM_STORMBYTE=ON
-		-DWITH_SYSTEM_SQLITE=ON
+		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
+		-DWITH_MARIADB=$(usex mariadb SYSTEM OFF)
+		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
 		-DENABLE_TEST=${enable_tests}
 	)
 	cmake_src_configure
