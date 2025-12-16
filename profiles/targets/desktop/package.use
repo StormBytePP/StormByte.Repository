@@ -40,7 +40,7 @@ net-dns/dnsmasq script
 net-libs/gnutls tools
 net-libs/libsrtp openssl
 net-libs/nodejs npm
-net-misc/networkmanager dhcpcd iptables nftables
+net-misc/networkmanager iptables nftables
 net-misc/spice-gtk usbredir
 net-p2p/amule remote stats
 net-p2p/transmission-remote-gtk geoip
