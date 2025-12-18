@@ -2,3 +2,5 @@
 dev-libs/gobject-introspection test
 # See bug #963985
 app-emulation/libvirt -wireshark-plugins
+# Missing symbols to caps
+sys-apps/iproute2 -caps
