@@ -19,8 +19,7 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 
 src_configure() {
 	local mycmakeargs=(
-		-DWITH_SYSTEM_STORMBYTE=ON
-		-DENABLE_TEST=${enable_tests}
+		-DWITH_STORMBYTE=SYSTEM
 	)
 	cmake_src_configure
 }
