@@ -4,6 +4,7 @@
 *dev-libs/libisoburn #For virt-manager
 *dev-python/weasyprint
 *dev-texlive/texlive-xetex
+*dev-util/ccache
 *gui-libs/display-manager-init
 *media-sound/easyeffects
 *net-misc/ntp
