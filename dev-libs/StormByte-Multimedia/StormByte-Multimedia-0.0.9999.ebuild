@@ -9,7 +9,7 @@ EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
 LICENSE="GPL"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE=""
+IUSE="advanced"
 
 DEPEND="
 	dev-libs/StormByte
@@ -21,6 +21,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DWITH_STORMBYTE=SYSTEM
 		-DWITH_FFMPEG=SYSTEM
+		-DENABLE_ADVANCED_INSTALL=$(usex advanced ON OFF)
 	)
 	cmake_src_configure
 }
