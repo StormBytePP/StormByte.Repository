@@ -20,6 +20,7 @@ BDEPEND=">=dev-build/cmake-3.12.0"
 src_configure() {
 	local mycmakeargs=(
 		-DWITH_STORMBYTE=SYSTEM
+		-DWITH_FFMPEG=SYSTEM
 	)
 	cmake_src_configure
 }
