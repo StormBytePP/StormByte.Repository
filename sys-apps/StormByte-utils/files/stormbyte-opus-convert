@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 1.1
+# Version 2.0
 
 if [[ $# -ne 2 ]]; then
 	echo "This script will convert all audio files to opus specified in parameter 1 (source folder) and will store them into specified parameter 2 destination folder maintaining folder structure."
@@ -13,8 +13,8 @@ destination_folder=`realpath "$2"`
 while true; do
     read -p "Do you wish to delete source files? [Y/N] " yn
     case $yn in
-        [Yy]* ) delete_code=" && rm -f {}"; break;;
-        [Nn]* ) delete_code=""; break;;
+        [Yy]* ) delete_code="rm -f {}"; break;;
+        [Nn]* ) delete_code=":"; break;;
         * ) echo "Please answer yes or no.";;
     esac
 done
@@ -28,7 +28,7 @@ folder_count=`find . -type d | wc -l`
 find . -type d | parallel --bar "mkdir -p \"$destination_folder\"/{}"
 echo -e "\033[2A \033[2K\rCreating folders... OK"
 echo -e "\033[2K\rReencoding..."
-find . -type f -regextype posix-extended -regex '.*\.(aac|ape|flac|m4a|mkv|mp2|mp3|mp4|mpeg|ogg|opus|wav|wma)$' | parallel --bar "ffmpeg -y -i {} -vn -c:a libopus -vbr on \"$destination_folder\"/{.}.opus &> /dev/null $delete_code"
+find . -type f -regextype posix-extended -regex '.*\.(aac|ape|flac|m4a|mkv|mp2|mp3|mp4|mpeg|ogg|opus|wav|wma)$' | parallel --bar "ffmpeg -y -i {} -vn -c:a libopus -vbr on \"$destination_folder\"/{.}.opus &> /dev/null; if [ \$? -eq 0 ]; then $delete_code; fi"
 echo -e "\033[2A \033[2K\rReencoding... OK"
 
 cd "$current_folder"
