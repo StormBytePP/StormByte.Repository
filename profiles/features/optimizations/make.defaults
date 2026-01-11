@@ -16,7 +16,7 @@ COMPILER_OPTIMIZATION_POLLY="-O3 -fplugin-arg-polly-polly -fplugin-arg-polly-pol
 LINKER_OPTIMIZATION_BASE="-Wl,-z,pack-relative-relocs -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,-z,separate-code -Wl,-z,noexecstack"
 LINKER_OPTIMIZATION_BFD="-fuse-ld=bfd"
 LINKER_OPTIMIZATION_GOLD="-fuse-ld=gold"
-LINKER_OPTIMIZATION_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--threads=all -Wl,--build-id=uuid"
+LINKER_OPTIMIZATION_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--threads=16 -Wl,--build-id=uuid"
 LINKER_OPTIMIZATION_POLLY="-fopenmp=libomp"
 
 # Compiling optimizations
