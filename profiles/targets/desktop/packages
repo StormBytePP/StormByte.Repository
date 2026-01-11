@@ -11,6 +11,7 @@
 *x11-base/xorg-server
 *sys-boot/plymouth-dotlock-theme
 *sys-boot/plymouth-loading-theme
+*sys-boot/plymouth-unwrap-theme
 *sys-kernel/scx-loader
 *sys-power/acpid
 *sys-power/nut
