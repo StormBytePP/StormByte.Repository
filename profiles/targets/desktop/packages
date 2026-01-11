@@ -1,9 +1,6 @@
 *app-crypt/efitools
-*app-text/pandoc
 *dev-debug/strace
 *dev-libs/libisoburn #For virt-manager
-*dev-python/weasyprint
-*dev-texlive/texlive-xetex
 *gui-libs/display-manager-init
 *media-sound/easyeffects
 *net-misc/ntp
