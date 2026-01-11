@@ -1,14 +1,14 @@
 # Use defaults
 BASE="branding cjk -debug unicode pic icu -bindist python numa"
-CODECS="lame"
-COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
-DEBUG="strip"
-DOCS="-doc -gtk-doc"
-GRAPHICS="-X -gtk -gtk3 -gtk4 -gui -qt -qt5 -qt6"
-KERNEL="dist-kernel kernel-install"
-NETWORK="ipv6"
-SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
-USE="${BASE} ${CODECS} ${COMPRESSION} ${DEBUG} ${DOCS} ${GRAPHICS} ${KERNEL} ${NETWORK} ${SYSTEM}"
+BASE_CODECS="lame"
+BASE_COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
+BASE_DEBUG="strip" # If it is named 'DEBUG' it causes problems on some ebuilds
+BASE_DOCS="-doc -gtk-doc"
+BASE_GRAPHICS="-X -gtk -gtk3 -gtk4 -gui -qt -qt5 -qt6"
+BASE_KERNEL="dist-kernel kernel-install"
+BASE_NETWORK="ipv6"
+BASE_SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
+USE="${BASE} ${BASE_CODECS} ${BASE_COMPRESSION} ${BASE_DEBUG} ${BASE_DOCS} ${BASE_GRAPHICS} ${BASE_KERNEL} ${BASE_NETWORK} ${BASE_SYSTEM}"
 
 # Language
 L10N="es es-ES"
