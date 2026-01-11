@@ -48,3 +48,6 @@ ABI_X86="64"
 
 # Use latest packages
 ACCEPT_KEYWORDS="~amd64"
+
+# Output
+NINJA_STATUS="\033[1m[%f/%t \033[38;2;42;181;0m(%p)\033[0m\033[1m]\033[0m "
