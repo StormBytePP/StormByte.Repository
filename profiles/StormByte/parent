@@ -1,4 +1,5 @@
 gentoo:default/linux/amd64/23.0/no-multilib
+StormByte:features/debug
 StormByte:features/security
 StormByte:features/optimizations
 StormByte:features/silent

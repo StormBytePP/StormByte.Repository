@@ -1,0 +1,4 @@
+*dev-debug/ddd
+*dev-debug/gdb
+*dev-debug/strace
+*dev-debug/valgrind

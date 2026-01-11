@@ -5,13 +5,6 @@ local LTO_FORCED_PACKAGES="app-office/libreoffice dev-lang/erlang dev-lang/nasm 
 
 list_contains "${LTO_FORCED_PACKAGES}" "${CATEGORY}/${PN}" && force_lto_vars
 
-# Glibc special options for valgrind
-if [ "${CATEGORY}/${PN}" == "sys-libs/glibc" ]; then
-	force_gcc_vars
-	CFLAGS="${CFLAGS} -fno-builtin-strlen"
-	CXXFLAGS="${CXXFLAGS} -fno-builtin-strlen"
-fi
-
 # Gcc needs it for Intel's big little arch
 if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 	force_gcc_vars
