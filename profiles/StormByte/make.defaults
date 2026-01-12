@@ -6,7 +6,6 @@ RUSTC_WRAPPER=/usr/bin/sccache
 SCCACHE_DIR=/var/cache/sccache
 SCCACHE_MAX_FRAME_LENGTH=104857600
 SCCACHE_SIZE="20G"
-RUSTC=/usr/lib/sccache/bin/rustc
 
 # Use defaults
 BASE="branding cjk -debug unicode pic icu -bindist python numa"
