@@ -38,7 +38,7 @@ GRUB_PLATFORMS="-* efi-64"
 RUBY_TARGETS="-* ruby34"
 VIDEO_CARDS="-*"
 INPUT_DEVICES="-* libinput"
-PORTAGE_WORKDIR_MODE = "0770"
+PORTAGE_WORKDIR_MODE="0770"
 
 # Features
 FEATURES="buildpkg metadata-transfer userfetch"
@@ -50,4 +50,4 @@ ABI_X86="64"
 ACCEPT_KEYWORDS="~amd64"
 
 # Output
-NINJA_STATUS="\033[1m[%f/%t \033[38;2;42;181;0m(%p)\033[0m\033[1m]\033[0m "
+NINJA_STATUS="[1m[%f/%t [38;2;42;181;0m(%p)[0m[1m][0m "
