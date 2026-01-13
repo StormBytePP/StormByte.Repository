@@ -121,7 +121,7 @@ IUSE="+strip"
 # @ECLASS_VARIABLE: KERNEL_VERBOSE
 # @USER_VARIABLE
 # @DESCRIPTION:
-# Set to OFF to disable verbose messages during compilation
+# Controls kernel output verbosity. Default value is ON, set to OFF to disable verbose messages
 : "${KERNEL_VERBOSE:=ON}"
 
 if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then

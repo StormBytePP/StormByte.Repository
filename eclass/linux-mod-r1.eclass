@@ -104,7 +104,7 @@
 # @ECLASS_VARIABLE: KERNEL_VERBOSE
 # @USER_VARIABLE
 # @DESCRIPTION:
-# Set to OFF to disable verbose messages during compilation
+# Controls kernel output verbosity. Default value is ON, set to OFF to disable verbose messages
 : "${KERNEL_VERBOSE:=ON}"
 
 case ${EAPI} in
@@ -1290,17 +1290,17 @@ _modules_sanity_modversion() {
 # @DESCRIPTION:
 # Sets the MODULES_MAKEARGS global array.
 _modules_set_makeargs() {
-		local v
-		case "${KERNEL_VERBOSE}" in
-			OFF) v=0;;
-			*) v=1
-		esac
-		MODULES_MAKEARGS=(
-			ARCH="$(tc-arch-kernel)"
+	local v
+	case "${KERNEL_VERBOSE}" in
+		OFF) v=0;;
+		*) v=1
+	esac
+	MODULES_MAKEARGS=(
+		ARCH="$(tc-arch-kernel)"
 
-			V="${v}"
-			# normally redundant with V, but some custom Makefiles override it
-			KBUILD_VERBOSE="${v}"
+		V="${v}"
+		# normally redundant with V, but some custom Makefiles override it
+		KBUILD_VERBOSE="${v}"
 
 		# unrealistic when building modules that often have slow releases,
 		# but note that the kernel will still pass some -Werror=bad-thing
