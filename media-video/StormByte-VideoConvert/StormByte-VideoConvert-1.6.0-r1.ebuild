@@ -30,8 +30,8 @@ DEPEND="
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.30.0"
 
-# El tarball se descomprime en Alchemist-${PV}
-S="${WORKDIR}/Alchemist-${PV}"
+# El tarball se descomprime en VideoConvert-${PV}
+S="${WORKDIR}/VideoConvert-${PV}"
 
 src_configure() {
     local mycmakeargs=(
