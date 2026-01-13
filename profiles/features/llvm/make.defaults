@@ -1,5 +1,5 @@
-CC="/usr/lib/ccache/bin/clang"
-CXX="/usr/lib/ccache/bin/clang++"
+CC=clang-21
+CXX=clang++-21
 CPP="clang-cpp"
 ADDR2LINE="llvm-addr2line"
 AS="llvm-as"
