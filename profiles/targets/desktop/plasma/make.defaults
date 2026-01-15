@@ -1,0 +1,2 @@
+# Disable gnome as much as possible
+USE="-gnome"
