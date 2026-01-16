@@ -1,2 +1,1 @@
-# Disable gnome as much as possible
-USE="-gnome"
+USE="-gnome -handbook webengine"

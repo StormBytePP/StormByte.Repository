@@ -1,0 +1,13 @@
+dev-python/pyside positioning uitools webengine quick
+dev-qt/qtpositioning geoclue
+gui-apps/sddm-gentoo-config kwin
+kde-apps/kde-apps-meta -education -games pim
+kde-apps/kdegraphics-meta color-management scanner
+kde-apps/kdepim-addons importwizard markdown
+kde-apps/kdepim-meta spamassassin
+kde-apps/kdeutils-meta gpg rar
+kde-apps/kleopatra pim
+kde-apps/gwenview share
+kde-plasma/kdeplasma-addons share
+kde-plasma/plasma-login-sessions -X
+kde-plasma/plasma-meta -X grub plymouth oxygen-theme -qt5
