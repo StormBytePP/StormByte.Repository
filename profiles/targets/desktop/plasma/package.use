@@ -1,4 +1,4 @@
-dev-python/pyside positioning uitools webengine quick
+dev-python/pyside positioning uitools webengine quick charts location multimedia numpy pdfium sensors
 dev-qt/qtpositioning geoclue
 gui-apps/sddm-gentoo-config kwin
 kde-apps/kde-apps-meta -education -games pim
