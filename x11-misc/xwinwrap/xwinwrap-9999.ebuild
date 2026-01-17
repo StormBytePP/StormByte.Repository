@@ -8,6 +8,7 @@ inherit git-r3
 DESCRIPTION="Utility to replace a desktop background with a movie, screensaver, etc"
 HOMEPAGE="https://github.com/mmhobi7/xwinwrap"
 EGIT_REPO_URI="${HOMEPAGE}"
+KEYWORDS="~amd64 ~x86"
 
 LICENSE="HPND"
 SLOT="0"
