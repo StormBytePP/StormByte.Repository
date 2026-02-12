@@ -5,7 +5,7 @@ local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk media-libs/tremor net-analyze
 local FORCE_GCC_VARS="sys-power/iasl sys-apps/apparmor"
 local FORCE_PIC_VARS="llvm-runtimes/libcxx llvm-runtimes/libcxxabi"
 local FORCE_OPENMP_VARS="media-sound/fluidsynth"
-local FORCE_REDUCE_PARALLEL="net-im/telegram-desktop"
+local FORCE_REDUCE_PARALLEL=""
 
 if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	list_contains "${FORCE_BINUTIL_VARS}" "${CATEGORY}/${PN}" && force_binutils_vars
