@@ -1,6 +1,6 @@
 app-emulation/libvirt fuse nfs numa parted pcap virtiofsd -virtualbox
 app-emulation/qemu fuse io_uring nfs numa passt plugins spice usbredir virgl virtfs
-app-office/libreoffice base gtk java pdfimport
+app-office/libreoffice base -gtk3 java pdfimport -qt6
 app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
 app-text/texlive-core xetex

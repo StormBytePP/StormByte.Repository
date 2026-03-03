@@ -1,2 +1,4 @@
 >=media-video/ffmpeg-7.0
 ~x11-drivers/nvidia-drivers-580.76.05
+=dev-util/mdds-3.0.0
+=dev-libs/libixion-0.20.0
