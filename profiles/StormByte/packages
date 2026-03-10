@@ -10,6 +10,7 @@
 *dev-util/pahole
 *dev-vcs/git
 *sec-keys/openpgp-keys-gentoo-developers
+*sys-apps/dmidecode
 *sys-apps/StormByte-meta
 *sys-block/io-scheduler-udev-rules
 *sys-boot/grub
