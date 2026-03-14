@@ -7,7 +7,7 @@ BASE_DOCS="-doc -gtk-doc"
 BASE_GRAPHICS="-X -gtk -gtk3 -gtk4 -gui -qt -qt5 -qt6"
 BASE_KERNEL="dist-kernel kernel-install"
 BASE_NETWORK="ipv6"
-BASE_SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-png system-python-libs system-webp system-zlib udev zeroconf"
+BASE_SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-pipewire system-png system-python-libs system-webp system-zlib udev zeroconf"
 USE="${BASE} ${BASE_CODECS} ${BASE_COMPRESSION} ${BASE_DEBUG} ${BASE_DOCS} ${BASE_GRAPHICS} ${BASE_KERNEL} ${BASE_NETWORK} ${BASE_SYSTEM}"
 
 # Language
