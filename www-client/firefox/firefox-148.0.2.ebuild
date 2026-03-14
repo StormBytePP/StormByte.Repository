@@ -1,17 +1,17 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-145-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-148-patches-02.tar.xz"
 
-LLVM_COMPAT=( 19 20 21 )
+LLVM_COMPAT=( 20 21 22 )
 
 # This will also filter rust versions that don't match LLVM_COMPAT in the non-clang path; this is fine.
 RUST_NEEDS_LLVM=1
 
 # If not building with clang we need at least rust 1.76
-RUST_MIN_VER=1.82.0
+RUST_MIN_VER=1.87.0
 
 PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
@@ -20,7 +20,7 @@ VIRTUALX_REQUIRED="manual"
 
 # Information about the bundled wasi toolchain from
 # https://github.com/WebAssembly/wasi-sdk/
-WASI_SDK_VER=29.0
+WASI_SDK_VER=30.0
 WASI_SDK_LLVM_VER=21
 
 MOZ_ESR=
@@ -107,7 +107,7 @@ BDEPEND="${PYTHON_DEPS}
 	app-alternatives/awk
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.27.0
+	>=dev-util/cbindgen-0.29.1
 	net-libs/nodejs
 	virtual/pkgconfig
 	amd64? ( >=dev-lang/nasm-2.14 )
@@ -125,11 +125,10 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 COMMON_DEPEND="${FF_ONLY_DEPEND}
 	>=app-accessibility/at-spi2-core-2.46.0:2
-	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.117
-	>=dev-libs/nspr-4.35
+	>=dev-libs/nss-3.120.1
+	>=dev-libs/nspr-4.38
 	media-libs/alsa-lib
 	media-libs/fontconfig
 	media-libs/freetype
@@ -163,7 +162,7 @@ COMMON_DEPEND="${FF_ONLY_DEPEND}
 		>=media-libs/harfbuzz-2.8.1:0=
 		!wasm-sandbox? ( >=media-gfx/graphite2-1.3.13 )
 	)
-	system-icu? ( >=dev-libs/icu-76.1:= )
+	system-icu? ( >=dev-libs/icu-78.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1:= )
 	system-libevent? ( >=dev-libs/libevent-2.1.12:0=[threads(+)] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -651,6 +650,7 @@ src_prepare() {
 	if use elibc_glibc ; then
 		rm -v "${WORKDIR}"/firefox-patches/*bgo-748849-RUST_TARGET_override.patch || die
 		rm -v "${WORKDIR}"/firefox-patches/*bmo-1988166-musl-remove-nonexisting-system-header-req.patch || die
+		rm -v "${WORKDIR}"/firefox-patches/*bgo-967694-musl-prctrl-exception-on-musl.patch || die
 	fi
 
 	eapply "${WORKDIR}/firefox-patches"
@@ -729,6 +729,8 @@ src_prepare() {
 
 	# Clear checksums from cargo crates we've manually patched.
 	# moz_clear_vendor_checksums xyz
+	# glslopt: bgo#969412
+	moz_clear_vendor_checksums glslopt
 
 	# Respect choice for "jumbo-build"
 	# Changing the value for FILES_PER_UNIFIED_FILE may not work, see #905431
@@ -1045,6 +1047,9 @@ src_configure() {
 		if use clang ; then
 			# Used in build/pgo/profileserver.py
 			export LLVM_PROFDATA="llvm-profdata"
+		else
+			# Attempt to fix pgo hanging with gcc, bgo#966309.
+			export MOZ_REMOTE_SETTINGS_DEVTOOLS=1
 		fi
 	fi
 

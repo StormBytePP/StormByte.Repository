@@ -1,16 +1,16 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-FIREFOX_PATCHSET="firefox-145-patches-01.tar.xz"
+FIREFOX_PATCHSET="firefox-148-patches-01t.tar.xz"
 
-LLVM_COMPAT=( 19 20 21 )
+LLVM_COMPAT=( 20 21 22 )
 
 PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="ncurses,sqlite,ssl"
 
-RUST_MIN_VER="1.82.0"
+RUST_MIN_VER="1.87.0"
 RUST_NEEDS_LLVM=1
 
 WANT_AUTOCONF="2.1"
@@ -77,7 +77,9 @@ IUSE+=" system-pipewire system-png +system-webp wayland wifi +X"
 # Thunderbird-only USE flags.
 IUSE+=" +system-librnp"
 
+# "-system-librnp" requires clang, bmo#2006910
 REQUIRED_USE="|| ( X wayland )
+	!system-librnp? ( clang )
 	debug? ( !system-av1 )"
 
 TB_ONLY_DEPEND="selinux? ( sec-policy/selinux-thunderbird )
@@ -95,7 +97,7 @@ BDEPEND="${PYTHON_DEPS}
 	app-alternatives/awk
 	app-arch/unzip
 	app-arch/zip
-	>=dev-util/cbindgen-0.27.0
+	>=dev-util/cbindgen-0.29.1
 	net-libs/nodejs
 	virtual/pkgconfig
 	amd64? ( >=dev-lang/nasm-2.14 )
@@ -113,11 +115,10 @@ BDEPEND="${PYTHON_DEPS}
 	)"
 COMMON_DEPEND="${TB_ONLY_DEPEND}
 	>=app-accessibility/at-spi2-core-2.46.0:2
-	dev-libs/expat
 	dev-libs/glib:2
 	dev-libs/libffi:=
-	>=dev-libs/nss-3.117
-	>=dev-libs/nspr-4.35
+	>=dev-libs/nss-3.120.1
+	>=dev-libs/nspr-4.38
 	media-libs/alsa-lib
 	media-libs/fontconfig
 	media-libs/freetype
@@ -149,7 +150,7 @@ COMMON_DEPEND="${TB_ONLY_DEPEND}
 		>=media-gfx/graphite2-1.3.13
 		>=media-libs/harfbuzz-2.8.1:0=
 	)
-	system-icu? ( >=dev-libs/icu-76.1:= )
+	system-icu? ( >=dev-libs/icu-78.1:= )
 	system-jpeg? ( >=media-libs/libjpeg-turbo-1.2.1:= )
 	system-libevent? ( >=dev-libs/libevent-2.1.12:0=[threads(+)] )
 	system-libvpx? ( >=media-libs/libvpx-1.8.2:0=[postproc] )
@@ -572,6 +573,12 @@ src_prepare() {
 
 	# Clear checksums from cargo crates we've manually patched.
 	# moz_clear_vendor_checksums xyz
+	# glslopt: bgo#969412, bgo#969871
+	moz_clear_vendor_checksums glslopt
+	# TB-specific
+	sed -i \
+		-e 's/\("files":{\)[^}]*/\1/' \
+		"${S}"/comm/third_party/rust/glslopt/.cargo-checksum.json || die
 
 	# Create build dir
 	BUILD_DIR="${WORKDIR}/${PN}_build"
