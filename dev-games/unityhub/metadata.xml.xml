@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>stefan.cristian+git@rogentos.ro</email>
+		<name>Stefan Cristian B.</name>
+	</maintainer>
+	<upstream>
+		<changelog>https://unity.com/unity-hub/release-notes</changelog>
+	</upstream>
+</pkgmetadata>
