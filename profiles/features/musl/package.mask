@@ -13,7 +13,3 @@ dev-java/openjdk-bin:8
 # Sebastian Parborg <darkdefende@gmail.com> (2025-01-21)
 # blender-bin is only compatible with glibc
 media-gfx/blender-bin
-
-# Sam James <sam@gentoo.org> (2025-11-05)
-# rust-bin is available on amd64 musl
--dev-lang/rust-bin
