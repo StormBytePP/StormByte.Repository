@@ -1,4 +1,5 @@
 # Mask llvm to force usage
+>llvm-core/lld-21.9.9999
 >llvm-core/llvm-21.9.9999
 >llvm-core/llvmgold-21
 >llvm-core/clang-21.9.9999
