@@ -1,2 +1,11 @@
-# Mask llvm to force 21 usage
-<llvm-core/llvm-21.0.0
+# Mask llvm to force usage
+>llvm-core/llvm-21.9.9999
+>llvm-core/llvmgold-21
+>llvm-core/clang-21.9.9999
+>llvm-core/clang-common-21.1.9999
+>llvm-runtimes/openmp-21.9.9999
+>llvm-runtimes/libunwind-21.9.9999
+>llvm-runtimes/libcxx-21.9.9999
+>llvm-runtimes/libcxxabi-21.9.9999
+>llvm-runtimes/compiler-rt-21.1.9999
+>llvm-runtimes/compiler-rt-sanitizers-21.1.9999
