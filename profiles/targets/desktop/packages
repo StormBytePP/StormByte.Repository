@@ -5,7 +5,7 @@
 *games-util/game-device-udev-rules
 *gui-libs/display-manager-init
 *media-sound/easyeffects
-*net-misc/ntp
+*net-misc/chrony
 *sys-apps/coolercontrol
 *sys-firmware/sof-firmware
 *sys-process/rtirq
