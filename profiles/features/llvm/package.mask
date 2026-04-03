@@ -10,3 +10,4 @@
 >llvm-runtimes/libcxxabi-21.9.9999
 >llvm-runtimes/compiler-rt-21.1.9999
 >llvm-runtimes/compiler-rt-sanitizers-21.1.9999
+>llvm-core/polly-21.1.9999
