@@ -5,6 +5,7 @@
 >llvm-core/clang-21.9.9999
 >llvm-core/clang-common-21.1.9999
 >llvm-runtimes/openmp-21.9.9999
+>llvm-runtimes/clang-runtime-21.9.9999
 >llvm-runtimes/libunwind-21.9.9999
 >llvm-runtimes/libcxx-21.9.9999
 >llvm-runtimes/libcxxabi-21.9.9999
