@@ -1,3 +1,1 @@
-gentoo:features/musl/llvm
-# We need to put our llvm again to overwrite
-StormByte:features/llvm
+gentoo:features/musl
