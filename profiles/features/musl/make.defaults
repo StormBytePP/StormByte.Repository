@@ -8,6 +8,3 @@ CHOST="x86_64-pc-linux-musl"
 MULTILIB_ABIS="amd64"
 CHOST_amd64="${CHOST}"
 LIBDIR_amd64="lib"
-
-CFLAGS="${CFLAGS} -fno-plt"
-CXXFLAGS="${CXXFLAGS} -fno-plt"

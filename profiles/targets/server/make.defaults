@@ -1,3 +1,1 @@
 USE="-gui -X"
-CFLAGS="${CFLAGS} -fno-plt"
-CXXFLAGS="${CXXFLAGS} -fno-plt"
