@@ -1,0 +1,8 @@
+# StormByte desktop
+..
+
+# Plasma target
+StormByte:targets/desktop/plasma
+
+# Bugfixes always last to take priority
+StormByte:features/bugfixes

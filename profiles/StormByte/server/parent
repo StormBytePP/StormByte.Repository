@@ -1,9 +1,0 @@
-..
-StormByte:features/musl # Gentoo musl overwrites some of our customizations so we reapply them
-StormByte:targets/server
-StormByte:features/base
-StormByte:features/optimizations # This comes after base as it sets CFLAGS
-StormByte:features/llvm
-StormByte:features/security
-StormByte:features/silent
-StormByte:features/bugfixes

@@ -1,0 +1,100 @@
+# Language
+L10N="es es-ES"
+
+# Portage folders and config
+BASE="/var/db/gentoo"
+BASEDIR="${BASE}/repos"
+PKGDIR="${BASE}/packages"
+DISTDIR="${BASE}/distfiles"
+PORTAGE_TMPDIR="/tmp"
+EMERGE_DEFAULT_OPTS="--ask --autounmask n --buildpkg --jobs=1 --verbose --with-bdeps=y"
+GENTOO_MIRRORS="https://mirror.raiolanetworks.com/gentoo/"
+PORTAGE_SYNC_STALE=5
+BINPKG_COMPRESS="zstd"
+
+# Versioning
+PYTHON_TARGETS="-* python3_13" # Check from time to time if system is prepared to update python
+PYTHON_SINGLE_TARGET="-* python3_13"
+POSTGRES_TARGETS="-* postgres18"
+PERL_FEATURES="ithreads"
+
+# Licenses
+ACCEPT_LICENSE="*"
+
+# Environment
+GRUB_PLATFORMS="-* efi-64"
+RUBY_TARGETS="-* ruby34"
+VIDEO_CARDS="-*"
+INPUT_DEVICES="-* libinput"
+PORTAGE_WORKDIR_MODE="0770"
+
+# Features
+FEATURES="buildpkg metadata-transfer userfetch"
+
+# System
+ABI_X86="64"
+
+# Use latest packages
+ACCEPT_KEYWORDS="~amd64"
+
+# Output
+NINJA_STATUS="[1m[%f/%t [38;2;42;181;0m(%p)[0m[1m][0m "
+
+# Basic config
+# Use defaults
+USE_BASE="branding cjk -debug unicode pic icu -bindist python numa"
+USE_CODECS="lame"
+USE_COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
+USE_DEBUG="strip" # If it is named 'DEBUG' it causes problems on some ebuilds
+USE_DOCS="-doc -gtk-doc"
+USE_GRAPHICS="-X -gtk -gtk3 -gtk4 -gui -qt -qt5 -qt6"
+USE_KERNEL="dist-kernel kernel-install"
+USE_NETWORK="ipv6"
+USE_SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-pipewire system-png system-python-libs system-webp system-zlib udev zeroconf"
+USE="${USE_BASE} ${USE_CODECS} ${USE_COMPRESSION} ${USE_DEBUG} ${USE_DOCS} ${USE_GRAPHICS} ${USE_KERNEL} ${USE_NETWORK} ${USE_SYSTEM}"
+
+# Compiler custom optimizations
+FLAGS_BASE="-O2 -pipe"
+FLAGS_SECURITY="-fcf-protection=full -mshstk -ftrivial-auto-var-init=zero"
+FLAGS_CLANG="" # -Wno-unused-command-line-argument"
+FLAGS_CPU="-march=native"
+FLAGS_DEBUG="-g -ggdb3"
+FLAGS_GCC=""
+FLAGS_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
+FLAGS_LTO="-flto=thin"
+FLAGS_POLLY="-O3 -fplugin-arg-polly-polly -fplugin-arg-polly-polly-parallel -fplugin-arg-polly-polly-vectorizer=stripmine -fplugin-arg-polly-polly-run-dce -fplugin-arg-polly-polly-scheduling-chunksize=1 -fplugin-arg-polly-polly-scheduling=dynamic -fplugin-arg-polly-polly-num-threads=32 -fplugin-arg-polly-polly-omp-backend=LLVM -fplugin-arg-polly-polly-invariant-load-hoisting -fopenmp=libomp"
+
+# Linker optimizations
+LINKER_BASE="-Wl,-z,pack-relative-relocs -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,-z,separate-code -Wl,-z,noexecstack"
+LINKER_BFD="-fuse-ld=bfd"
+LINKER_GOLD="-fuse-ld=gold"
+LINKER_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--threads=16 -Wl,--build-id=uuid"
+LINKER_POLLY="-fopenmp=libomp"
+
+# LLVM vars
+LLVM_MAJOR="21"
+LLVM_TARGETS="X86 NVPTX"
+LLVM_SLOT="-* ${LLVM_MAJOR}"
+
+CC="/usr/lib/llvm/${LLVM_MAJOR}/bin/clang"
+CXX="/usr/lib/llvm/${LLVM_MAJOR}/bin/clang++"
+CPP="/usr/lib/llvm/${LLVM_MAJOR}/bin/clang-cpp"
+ADDR2LINE="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-addr2line"
+AS="${CC} -c"
+AR="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-ar"
+NM="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-nm"
+OBJCOPY="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-objcopy"
+OBJDUMP="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-objdump"
+RANLIB="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-ranlib"
+READELF="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-readelf"
+STRINGS="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-strings"
+STRIP="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-strip"
+LLVM_CONFIG="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-config"
+
+# Flags
+CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_CLANG} ${FLAGS_SECURITY}"
+CXXFLAGS="${CFLAGS}"
+FCFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
+FFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
+LDFLAGS="${LINKER_BASE} ${LINKER_LLD}"
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Clink-arg=-Wl,-z,pack-relative-relocs -Clink-arg=-Wl,--as-needed -Clink-arg=-Wl,-O2 -Clink-arg=-Wl,--sort-common -Clink-arg=-Wl,-z,separate-code -Clink-arg=-Wl,-z,noexecstack"

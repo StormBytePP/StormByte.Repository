@@ -1,5 +1,6 @@
-amd64				StormByte														stable
-amd64				StormByte/desktop												stable
-amd64				StormByte/desktop/gnome											stable
-amd64				StormByte/desktop/plasma										stable
-amd64				StormByte/server                                          		stable
+amd64				StormByte/glibc													stable
+amd64				StormByte/glibc/desktop											stable
+amd64				StormByte/glibc/desktop/gnome									stable
+amd64				StormByte/glibc/desktop/plasma									stable
+amd64				StormByte/musl													stable
+amd64				StormByte/musl/server											stable

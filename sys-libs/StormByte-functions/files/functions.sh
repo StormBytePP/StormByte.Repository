@@ -60,7 +60,7 @@ function force_binutils_vars() {
     READELF="readelf"
     STRINGS="strings"
     STRIP="strip"
-    LDFLAGS="${LINKER_OPTIMIZATION_BASE} ${LINKER_OPTIMIZATION_BFD}"
+    LDFLAGS="${LINKER_BASE} ${LINKER_BFD}"
 }
 
 function force_gcc_vars() {
@@ -69,7 +69,7 @@ function force_gcc_vars() {
     CC="gcc"
     CXX="g++"
     CPP="cpp"
-    CFLAGS="${COMPILER_OPTIMIZATION_BASE} ${COMPILER_OPTIMIZATION_CPU} ${COMPILER_OPTIMIZATION_GCC} ${COMPILER_OPTIMIZATION_GRAPHITE}"
+    CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_GCC} ${FLAGS_SECURITY} ${FLAGS_GRAPHITE}"
     CXXFLAGS="${CFLAGS}"
     force_binutils_vars
 }
@@ -80,14 +80,14 @@ function force_pic_vars() {
 }
 
 function force_lto_vars() {
-    CFLAGS="${CFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
-    CXXFLAGS="${CXXFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
-    LDFLAGS="${LDFLAGS} ${COMPILER_OPTIMIZATION_LTO}"
+    CFLAGS="${CFLAGS} ${FLAGS_LTO}"
+    CXXFLAGS="${CXXFLAGS} ${FLAGS_LTO}"
+    LDFLAGS="${LDFLAGS} ${FLAGS_LTO}"
     RUSTFLAGS="${RUSTFLAGS} -Clinker-plugin-lto"
 }
 
 function force_ld_undefined_version {
-	LDFLAGS="${LINKER_OPTIMIZATION_BASE} -Wl,--undefined-version" 
+	LDFLAGS="${LINKER_BASE} -Wl,--undefined-version" 
 }
 
 function force_openmp_vars() {

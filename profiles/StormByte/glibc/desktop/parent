@@ -1,0 +1,8 @@
+# StormByte base (all features)
+..
+
+# Desktop target
+StormByte:targets/desktop
+
+# Bugfixes always last to take priority
+StormByte:features/bugfixes

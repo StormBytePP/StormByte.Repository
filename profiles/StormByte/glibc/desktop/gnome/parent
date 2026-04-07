@@ -1,0 +1,8 @@
+# StormByte desktop
+..
+
+# GNOME target
+StormByte:targets/desktop/gnome
+
+# Bugfixes always last to take priority
+StormByte:features/bugfixes
