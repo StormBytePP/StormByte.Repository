@@ -7,3 +7,6 @@ dev-lang/rust-bin doc
 
 # Falla
 dev-libs/crypto++ openmp
+
+# Offload does not compile on musl
+llvm-runtimes/clang-runtime offload
