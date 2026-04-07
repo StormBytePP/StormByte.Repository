@@ -1,4 +1,4 @@
 FEATURES="ipc-sandbox network-sandbox news pid-sandbox preserve-libs sandbox strict userfetch userpriv usersync"
 USE="caps filecaps pkcs11 tpm"
-CFLAGS="${CFLAGS} -mshstk"
-CXXFLAGS="${CXXFLAGS} -mshstk"
+CFLAGS="${CFLAGS} -mshstk -ftrivial-auto-var-init=zero"
+CXXFLAGS="${CXXFLAGS} -mshstk -ftrivial-auto-var-init=zero"
