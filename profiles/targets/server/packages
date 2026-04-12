@@ -1,2 +1,3 @@
 *sys-apps/ethtool
+*sys-fs/cryptsetup
 *sys-power/nut
