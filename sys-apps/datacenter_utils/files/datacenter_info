@@ -1,0 +1,331 @@
+#!/bin/bash
+# datacenter_info - SCSI disk inventory tool for the datacenter
+#
+# Displays device identifiers, vendor, model, firmware revision
+# and ZFS pool membership for all detected SCSI disks. Handles
+# SAS multipath deduplication transparently.
+#
+# Usage:
+#   datacenter_info [-v] [device]
+#   datacenter_info help
+#
+# If device is omitted, all SCSI disks are listed.
+#
+# The -v flag adds Enclosure/Slot, SMART status, Temperature and
+# Link Speed columns (slower — requires smartctl per disk).
+
+set -euo pipefail
+
+VERSION="1.0.0"
+
+source /lib/StormByte/functions.sh
+
+show_help() {
+    cat <<EOF
+datacenter_info v${VERSION} - SCSI disk inventory tool for the datacenter
+
+Display device identifiers, vendor, model, firmware revision and ZFS
+pool membership for detected SCSI disks. Handles SAS multipath
+deduplication transparently.
+
+Usage:
+  datacenter_info [-v] [device]
+  datacenter_info help
+
+Options:
+  -v          Verbose output: adds Enclosure/Slot, SMART status,
+              Temperature and Link Speed columns. Requires root
+              (smartctl needs raw disk access). May appear before
+              or after the device argument.
+
+Device (optional):
+  sdX         Block device name (e.g. /dev/sda, sda).
+  wwn-*       WWN identifier (e.g. wwn-0x5000cca03e7ce8f8).
+  scsi-3*     SCSI NAA identifier (e.g. scsi-35000c500566d10c3).
+
+  If omitted, all detected SCSI disks are listed.
+
+Examples:
+  datacenter_info                   List all SCSI disks.
+  datacenter_info -v                List all with extra details.
+  datacenter_info sda               Query a specific disk.
+  datacenter_info -v sda            Query a specific disk with details.
+  datacenter_info help              Display this help message.
+EOF
+    exit "${1:-0}"
+}
+
+# Check for help first
+for _arg in "$@"; do
+    if [[ "$_arg" == "help" ]]; then
+        show_help
+    fi
+done
+
+# Parse args: -v and/or device in any order
+VERBOSE=0
+disk=""
+for _arg in "$@"; do
+    if [[ "$_arg" == "-v" ]]; then
+        VERBOSE=1
+    else
+        disk="$_arg"
+    fi
+done
+
+if [[ "$VERBOSE" -eq 1 && $EUID -ne 0 ]]; then
+    echo "Error: -v requires root (smartctl needs raw disk access)"
+    exit 1
+fi
+
+POOL_NAME="StormDataCenter"
+
+###############################################################################
+# Initialization
+###############################################################################
+
+LSSCSI_OUTPUT=$(lsscsi -g 2>/dev/null)
+POOL_STATUS=$(zpool status "$POOL_NAME" 2>/dev/null || true)
+declare -A SMART_CACHE
+
+dc_init_disk_maps
+
+###############################################################################
+# Helper functions
+###############################################################################
+
+is_in_pool() {
+    local sd="$1"
+    [[ -z "$POOL_STATUS" ]] && return 1
+    [[ -v "DISK_ALIASES[$sd]" ]] || return 1
+    local alias
+    for alias in ${DISK_ALIASES[$sd]}; do
+        grep -qwF "$alias" <<< "$POOL_STATUS" && return 0
+    done
+    return 1
+}
+
+_ensure_smart_cache() {
+    local sd="$1"
+    if [[ ! -v "SMART_CACHE[$sd]" ]]; then
+        SMART_CACHE[$sd]=$(smartctl -a "/dev/$sd" 2>/dev/null || true)
+    fi
+}
+
+get_smart_status() {
+    local sd="$1"
+    _ensure_smart_cache "$sd"
+    local output="${SMART_CACHE[$sd]}"
+    [[ -z "$output" ]] && { echo "N/A"; return; }
+    if grep -qiE 'SMART overall-health.*PASSED|SMART Health Status.*OK' <<< "$output"; then
+        echo "PASSED"
+    elif grep -qiE 'SMART overall-health.*FAILED|SMART Health Status.*FAIL' <<< "$output"; then
+        echo "FAILED"
+    elif grep -qi 'SMART' <<< "$output"; then
+        echo "WARN"
+    else
+        echo "N/A"
+    fi
+}
+
+get_temperature() {
+    local sd="$1"
+    _ensure_smart_cache "$sd"
+    local output="${SMART_CACHE[$sd]}"
+    [[ -z "$output" ]] && { echo "N/A"; return; }
+    # SAS: "Current Drive Temperature:     35 C"
+    local temp
+    temp=$(grep -i 'Current Drive Temperature' <<< "$output" | awk '{for(i=1;i<=NF;i++) if($i+0==$i) print $i}' | head -1)
+    # SATA: attribute 194
+    if [[ -z "$temp" ]]; then
+        temp=$(awk '/^194 / {print $10}' <<< "$output" | head -1)
+    fi
+    if [[ -n "$temp" && "$temp" =~ ^[0-9]+$ ]]; then
+        echo "${temp}C"
+    else
+        echo "N/A"
+    fi
+}
+
+get_link_speed() {
+    local sd="$1"
+
+    # SAS: read negotiated_linkrate from the sysfs phy of the disk's port
+    local dev_path port_dir phy_link phy_name rate
+    dev_path=$(readlink -f "/sys/block/$sd/device" 2>/dev/null)
+    if [[ -n "$dev_path" ]]; then
+        port_dir=$(grep -oE '.*/port-[0-9:]+' <<< "$dev_path")
+        if [[ -n "$port_dir" ]]; then
+            phy_link=$(ls -d "$port_dir"/phy-* 2>/dev/null | head -1)
+            if [[ -n "$phy_link" ]]; then
+                phy_name=$(basename "$phy_link")
+                rate=$(cat "/sys/class/sas_phy/$phy_name/negotiated_linkrate" 2>/dev/null)
+                if [[ -n "$rate" && "$rate" != "unknown" ]]; then
+                    echo "$rate"
+                    return
+                fi
+            fi
+        fi
+    fi
+
+    # SATA: parse from smartctl output
+    _ensure_smart_cache "$sd"
+    local output="${SMART_CACHE[$sd]}"
+    if [[ -n "$output" ]]; then
+        local sata_speed
+        sata_speed=$(grep -i 'SATA Version' <<< "$output" | grep -oE 'current: [0-9.]+ Gb/s' | awk '{print $2 " " $3}')
+        if [[ -n "$sata_speed" ]]; then
+            echo "$sata_speed"
+            return
+        fi
+    fi
+
+    echo "N/A"
+}
+
+get_transport_type() {
+    local sd="$1"
+    local dev_path
+    dev_path=$(readlink -f "/sys/block/$sd/device" 2>/dev/null) || { echo "N/A"; return; }
+    if [[ "$dev_path" == */usb* ]]; then
+        echo "USB"
+    elif [[ "$dev_path" == */ata* ]]; then
+        echo "SATA"
+    elif [[ "$dev_path" == */expander-* || "$dev_path" == */port-* ]]; then
+        echo "SAS"
+    else
+        echo "N/A"
+    fi
+}
+
+print_disk() {
+    local sd="$1"
+
+    local line
+    line=$(grep -wF "/dev/$sd" <<< "$LSSCSI_OUTPUT" | head -1) || return 1
+    [[ -z "$line" ]] && return 1
+
+    local vendor model firmware
+    vendor=$(awk '{print $3}'  <<< "$line")
+    model=$(awk  '{print $4}'  <<< "$line")
+    firmware=$(awk '{print $5}' <<< "$line")
+
+    local aliases="none"
+    [[ -v "DISK_ALIASES[$sd]" ]] && aliases="${DISK_ALIASES[$sd]}"
+
+    local in_pool="NO"
+    is_in_pool "$sd" && in_pool="YES"
+
+    local enc_slot="" smart_status="" temp="" link_speed=""
+    if [[ "$VERBOSE" -eq 1 ]]; then
+        enc_slot=$(dc_get_enclosure_slot "$sd")
+        smart_status=$(get_smart_status "$sd")
+        temp=$(get_temperature "$sd")
+        link_speed=$(get_link_speed "$sd")
+    fi
+
+    if [[ "$VERBOSE" -eq 1 ]]; then
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" \
+               "$enc_slot" "$smart_status" "$temp" "$link_speed"
+    else
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
+               "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool"
+    fi
+}
+
+###############################################################################
+# Main
+###############################################################################
+
+if [[ -z "$disk" ]]; then
+    echo "=== All SCSI Disks in the Datacenter ==="
+    if [[ "$VERBOSE" -eq 1 ]]; then
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
+               "Enclosure" "SMART" "Temp" "Link Speed"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "--------" "--------------------------------------------------" \
+               "----------" "--------------------" "--------" "--------" \
+               "--------------------" "-------" "-----" "--------------"
+    else
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
+               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
+               "--------" "--------------------------------------------------" \
+               "----------" "--------------------" "--------" "--------"
+    fi
+
+    found=0
+    count_sas=0
+    count_sata=0
+    count_usb=0
+    count_other=0
+    declare -A _seen
+    while IFS= read -r lsscsi_line; do
+        [[ "$lsscsi_line" =~ disk ]] || continue
+        sd=$(awk '{print $(NF-1)}' <<< "$lsscsi_line" | sed 's|/dev/||')
+        [[ "$sd" =~ ^sd[a-z]+$ ]] || continue
+
+        # Multipath deduplication by SCSI identifier
+        if [[ -v "DISK_ALIASES[$sd]" ]]; then
+            _id=$(echo "${DISK_ALIASES[$sd]}" | grep -oE 'scsi-[^ ]+' | head -1)
+            if [[ -n "$_id" ]]; then
+                [[ -v "_seen[$_id]" ]] && continue
+                _seen[$_id]=1
+            fi
+        fi
+
+        print_disk "$sd" || continue
+        found=$((found + 1))
+
+        case $(get_transport_type "$sd") in
+            SAS)  count_sas=$((count_sas + 1)) ;;
+            SATA) count_sata=$((count_sata + 1)) ;;
+            USB)  count_usb=$((count_usb + 1)) ;;
+            *)    count_other=$((count_other + 1)) ;;
+        esac
+    done <<< "$LSSCSI_OUTPUT"
+
+    echo ""
+    summary="Total disks found: $found"
+    details=()
+    [[ $count_sas   -gt 0 ]] && details+=("${count_sas} SAS")
+    [[ $count_sata  -gt 0 ]] && details+=("${count_sata} SATA")
+    [[ $count_usb   -gt 0 ]] && details+=("${count_usb} USB")
+    [[ $count_other -gt 0 ]] && details+=("${count_other} other")
+    if [[ ${#details[@]} -gt 0 ]]; then
+        IFS=', '; summary+=" (${details[*]})"; unset IFS
+    fi
+    echo "$summary"
+
+else
+    sd=$(dc_resolve_to_sd "$disk") || {
+        echo "Error: cannot resolve '$disk' to a block device"
+        echo "Supported formats: scsi-..., wwn-..., /dev/sdX, sdX"
+        exit 1
+    }
+    [[ -b "/dev/$sd" ]] || {
+        echo "Error: /dev/$sd is not a block device"
+        exit 1
+    }
+    if [[ "$VERBOSE" -eq 1 ]]; then
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
+               "Enclosure" "SMART" "Temp" "Link Speed"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "--------" "--------------------------------------------------" \
+               "----------" "--------------------" "--------" "--------" \
+               "--------------------" "-------" "-----" "--------------"
+    else
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
+               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
+               "--------" "--------------------------------------------------" \
+               "----------" "--------------------" "--------" "--------"
+    fi
+    print_disk "$sd" || {
+        echo "Error: /dev/$sd not found in lsscsi output"
+        exit 1
+    }
+fi

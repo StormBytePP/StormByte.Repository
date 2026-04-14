@@ -1,6 +1,4 @@
+*sys-apps/datacenter_utils
 *sys-apps/ethtool
-*sys-apps/sg3_utils
-*sys-apps/smartmontools
 *sys-fs/cryptsetup
-*sys-fs/lsscsi
 *sys-power/nut
