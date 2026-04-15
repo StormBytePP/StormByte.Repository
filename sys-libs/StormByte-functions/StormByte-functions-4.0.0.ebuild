@@ -9,7 +9,7 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE=""
+IUSE="datacenter"
 
 RDEPEND="app-shells/bash"
 DEPEND="${RDEPEND}"
@@ -21,6 +21,6 @@ src_unpack() {
 
 src_install() {
 	insinto "/lib/StormByte"
-	doins "${FILESDIR}/functions.sh"
+	doins "${FILESDIR}/portage.sh"
+	use datacenter && doins "${FILESDIR}/datacenter.sh"
 }
-

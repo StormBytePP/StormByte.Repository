@@ -30,7 +30,9 @@ set -euo pipefail
 
 VERSION="1.0.0"
 
-source /lib/StormByte/functions.sh
+source /lib/StormByte/datacenter.sh
+
+init_disk_maps
 
 action="${1:-}"
 disk="${2:-all}"
@@ -61,6 +63,7 @@ Device (optional):
   sdX         Block device name (e.g. /dev/sda, sda).
   wwn-*       WWN identifier (e.g. wwn-0x5000cca03e7ce8f8).
   scsi-3*     SCSI NAA identifier (e.g. scsi-35000c500566d10c3).
+  ata-*       ATA identifier (e.g. ata-KINGSTON_SA400S37120G_...).
 
   If omitted, the action applies to all disks in every detected enclosure.
 
@@ -105,7 +108,7 @@ fi
 if [[ "$disk" == "all" ]]; then
     if [[ "$action" == "show" ]]; then
         echo "=== IDENT LED status for all enclosure disks ==="
-        declare -A seen_prefixes
+        declare -A seen_wwns
         # Collect rows first for table formatting
         rows=()
         for enc_dir in /sys/class/enclosure/*/; do
@@ -115,13 +118,12 @@ if [[ "$disk" == "all" ]]; then
                 [[ -f "$slot_dir/locate" ]] || continue
                 [[ -f "$slot_dir/device/sas_address" ]] || continue
                 slot_sas=$(< "$slot_dir/device/sas_address")
-                sas_clean="${slot_sas#0x}"
-                sas_prefix="${sas_clean%?}"
-                [[ -z "${seen_prefixes[$sas_prefix]+x}" ]] || continue
-                seen_prefixes["$sas_prefix"]=1
+                slot_wwn=$(resolve_sas_to_wwn "$slot_sas") || continue
+                [[ -z "${seen_wwns[$slot_wwn]+x}" ]] || continue
+                seen_wwns["$slot_wwn"]=1
                 led_cur=$(< "$slot_dir/locate")
                 led_status=$([[ "$led_cur" == "1" ]] && echo "ON" || echo "OFF")
-                read -r sd_name scsi_id wwn_id <<< "$(dc_resolve_sas_to_ids "$slot_sas")"
+                read -r sd_name scsi_id wwn_id <<< "$(resolve_sas_to_ids "$slot_sas")"
                 rows+=("$led_status|$sd_name|$scsi_id|$wwn_id")
             done
         done
@@ -145,21 +147,31 @@ if [[ "$disk" == "all" ]]; then
         done
     else
         echo "=== Setting IDENT LED to $action for all enclosure disks ==="
-        slots=0
+        declare -A _seen_wwns
+        changed=0
         for enc_dir in /sys/class/enclosure/*/; do
             [[ -d "$enc_dir" ]] || continue
             for slot_dir in "$enc_dir"*/; do
                 [[ -d "$slot_dir" ]] || continue
                 [[ -f "$slot_dir/locate" ]] || continue
-                # Only update slots with a disk present (SAS device attached)
                 [[ -f "$slot_dir/device/sas_address" ]] || continue
-                echo "$led_value" > "$slot_dir/locate" 2>/dev/null && slots=$((slots + 1))
+                slot_sas=$(< "$slot_dir/device/sas_address")
+                slot_wwn=$(resolve_sas_to_wwn "$slot_sas") || continue
+                [[ -z "${_seen_wwns[$slot_wwn]+x}" ]] && _seen_wwns["$slot_wwn"]="seen"
+                led_cur=$(< "$slot_dir/locate")
+                if [[ "$led_cur" != "$led_value" ]]; then
+                    if echo "$led_value" > "$slot_dir/locate" 2>/dev/null; then
+                        if [[ "${_seen_wwns[$slot_wwn]}" != "changed" ]]; then
+                            changed=$(( changed + 1 ))
+                            _seen_wwns["$slot_wwn"]="changed"
+                        fi
+                    fi
+                fi
             done
         done
-        # Dual-port SAS: each physical disk occupies 2 enclosure slots
-        disks=$((slots / 2))
+        total=${#_seen_wwns[@]}
         status=$([[ "$action" == "on" ]] && echo "ON" || echo "OFF")
-        echo "All IDENT LEDs set to $status ($disks disks updated)."
+        echo "All IDENT LEDs set to $status ($changed of $total disks updated)."
     fi
     exit 0
 fi
@@ -168,7 +180,7 @@ fi
 # Resolve disk and find enclosure slot
 ###############################################################################
 
-wwn=$(dc_extract_wwn "$disk") || exit 1
+wwn=$(extract_wwn "$disk") || exit 1
 wwn_prefix="${wwn%?}"
 
 if [[ -z "$wwn_prefix" ]]; then
@@ -176,7 +188,7 @@ if [[ -z "$wwn_prefix" ]]; then
     exit 1
 fi
 
-dc_find_slot_by_wwn_prefix "$wwn_prefix" || {
+find_slot_by_wwn_prefix "$wwn_prefix" || {
     echo "Error: no enclosure slot matches SAS prefix 0x${wwn_prefix}_ for $disk"
     echo "  Verify the disk is in an SES enclosure and modules are loaded."
     exit 1
@@ -187,9 +199,9 @@ dc_find_slot_by_wwn_prefix "$wwn_prefix" || {
 ###############################################################################
 
 if [[ "$action" == "show" ]]; then
-    led_cur=$(< "$DC_SLOT_DIR/locate")
+    led_cur=$(< "$SLOT_DIR/locate")
     led_status=$([[ "$led_cur" == "1" ]] && echo "ON" || echo "OFF")
-    read -r sd_name scsi_id wwn_id <<< "$(dc_resolve_sas_to_ids "$DC_SLOT_SAS")"
+    read -r sd_name scsi_id wwn_id <<< "$(resolve_sas_to_ids "$SLOT_SAS")"
     w_dev=6;  (( ${#sd_name}  > w_dev  )) && w_dev=${#sd_name}
     w_scsi=4; (( ${#scsi_id}  > w_scsi )) && w_scsi=${#scsi_id}
     w_wwn=3;  (( ${#wwn_id}   > w_wwn  )) && w_wwn=${#wwn_id}
@@ -202,12 +214,12 @@ if [[ "$action" == "show" ]]; then
            "$(printf '%*s' "$w_led" '' | tr ' ' '-')"
     printf "%-${w_dev}s   %-${w_scsi}s   %-${w_wwn}s   %-${w_led}s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_status"
 else
-    echo "$led_value" > "$DC_SLOT_DIR/locate" || {
-        echo "Error: failed to write to $DC_SLOT_DIR/locate"
+    echo "$led_value" > "$SLOT_DIR/locate" || {
+        echo "Error: failed to write to $SLOT_DIR/locate"
         exit 1
     }
     status=$([[ "$action" == "on" ]] && echo "ON" || echo "OFF")
-    read -r sd_name scsi_id wwn_id <<< "$(dc_resolve_sas_to_ids "$DC_SLOT_SAS")"
+    read -r sd_name scsi_id wwn_id <<< "$(resolve_sas_to_ids "$SLOT_SAS")"
     w_dev=6;  (( ${#sd_name} > w_dev  )) && w_dev=${#sd_name}
     w_scsi=4; (( ${#scsi_id} > w_scsi )) && w_scsi=${#scsi_id}
     w_wwn=3;  (( ${#wwn_id}  > w_wwn  )) && w_wwn=${#wwn_id}

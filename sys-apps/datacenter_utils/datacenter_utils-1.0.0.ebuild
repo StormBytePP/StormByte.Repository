@@ -18,7 +18,7 @@ RDEPEND="
 	sys-apps/util-linux
 	sys-fs/lsscsi
 	sys-fs/zfs
-	>=sys-libs/StormByte-functions-3.0.1
+	>=sys-libs/StormByte-functions-4.0.0[datacenter]
 "
 
 S="${WORKDIR}"

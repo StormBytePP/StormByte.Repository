@@ -1,4 +1,4 @@
-source /lib/StormByte/functions.sh
+source /lib/StormByte/portage.sh
 
 if [[ ${EBUILD_PHASE} == "configure" ]]; then
 	# Glibc special options for valgrind

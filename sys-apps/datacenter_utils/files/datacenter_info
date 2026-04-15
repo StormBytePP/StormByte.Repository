@@ -16,9 +16,9 @@
 
 set -euo pipefail
 
-VERSION="1.0.1"
+VERSION="1.0.0"
 
-source /lib/StormByte/functions.sh
+source /lib/StormByte/datacenter.sh
 
 show_help() {
     cat <<EOF
@@ -45,8 +45,9 @@ Device (optional):
   sdX         Block device name (e.g. /dev/sda, sda).
   wwn-*       WWN identifier (e.g. wwn-0x5000cca03e7ce8f8).
   scsi-3*     SCSI NAA identifier (e.g. scsi-35000c500566d10c3).
+  ata-*       ATA identifier (e.g. ata-KINGSTON_SA400S37120G_...).
 
-  If omitted, all detected SCSI disks are listed.
+  If omitted, all detected disks are listed.
 
 Examples:
   datacenter_info                   List all SCSI disks.
@@ -91,18 +92,18 @@ LSSCSI_OUTPUT=$(lsscsi -g 2>/dev/null)
 POOL_STATUS=$(zpool status "$POOL_NAME" 2>/dev/null || true)
 declare -A SMART_CACHE
 
-dc_init_disk_maps
+init_disk_maps
 
 ###############################################################################
 # Helper functions
 ###############################################################################
 
 is_in_pool() {
-    local sd="$1"
+    local wwn="$1"
     [[ -z "$POOL_STATUS" ]] && return 1
-    [[ -v "DISK_ALIASES[$sd]" ]] || return 1
+    [[ -v "WWN_ALIASES[$wwn]" ]] || return 1
     local alias
-    for alias in ${DISK_ALIASES[$sd]}; do
+    for alias in ${WWN_ALIASES[$wwn]}; do
         grep -qwF "$alias" <<< "$POOL_STATUS" && return 0
     done
     return 1
@@ -190,9 +191,7 @@ get_transport_type() {
     local sd="$1"
     local dev_path
     dev_path=$(readlink -f "/sys/block/$sd/device" 2>/dev/null) || { echo "N/A"; return; }
-    if [[ "$dev_path" == */usb* ]]; then
-        echo "USB"
-    elif [[ "$dev_path" == */ata* ]]; then
+    if [[ "$dev_path" == */ata* ]]; then
         echo "SATA"
     elif [[ "$dev_path" == */expander-* || "$dev_path" == */port-* ]]; then
         echo "SAS"
@@ -240,7 +239,8 @@ get_health() {
 }
 
 print_disk() {
-    local sd="$1"
+    local wwn="$1"
+    local sd="${WWN_TO_SD[$wwn]}"
 
     local line
     line=$(grep -wF "/dev/$sd" <<< "$LSSCSI_OUTPUT" | head -1) || return 1
@@ -251,15 +251,40 @@ print_disk() {
     model=$(awk  '{print $4}'  <<< "$line")
     firmware=$(awk '{print $5}' <<< "$line")
 
-    local aliases="none"
-    [[ -v "DISK_ALIASES[$sd]" ]] && aliases="${DISK_ALIASES[$sd]}"
+    local aliases="${WWN_ALIASES[$wwn]:-none}"
+
+    # Fix ATA devices: lsscsi reports "ATA" as vendor and the real
+    # model string (which contains spaces) gets split across awk fields.
+    # Extract real vendor/model from the ata-* identifier instead.
+    if [[ "$vendor" == "ATA" ]]; then
+        local ata_alias
+        ata_alias=$(grep -oE 'ata-[^ ]+' <<< "$aliases")
+        if [[ -n "$ata_alias" ]]; then
+            local ata_info="${ata_alias#ata-}"
+            # Remove serial number (last underscore-separated component)
+            local ata_model="${ata_info%_*}"
+            # Vendor is the first component
+            vendor="${ata_model%%_*}"
+            # Model is everything after the vendor
+            model="${ata_model#*_}"
+            model="${model//_/ }"
+        fi
+        # Firmware: lsscsi field position is shifted due to multi-word
+        # product string; read the SCSI revision from sysfs instead.
+        local rev_file="/sys/block/$sd/device/rev"
+        if [[ -f "$rev_file" ]]; then
+            firmware=$(<"$rev_file")
+            firmware="${firmware#"${firmware%%[![:space:]]*}"}"
+            firmware="${firmware%"${firmware##*[![:space:]]}"}"
+        fi
+    fi
 
     local in_pool="NO"
-    is_in_pool "$sd" && in_pool="YES"
+    is_in_pool "$wwn" && in_pool="YES"
 
     local enc_slot="" smart_status="" temp="" link_speed="" health=""
     if [[ "$VERBOSE" -eq 1 ]]; then
-        enc_slot=$(dc_get_enclosure_slot "$sd")
+        enc_slot=$(get_enclosure_slot "$sd")
         smart_status=$(get_smart_status "$sd")
         temp=$(get_temperature "$sd")
         link_speed=$(get_link_speed "$sd")
@@ -281,7 +306,7 @@ print_disk() {
 ###############################################################################
 
 if [[ -z "$disk" ]]; then
-    echo "=== All SCSI Disks in the Datacenter ==="
+    echo "=== All Disks in the Datacenter ==="
     if [[ "$VERBOSE" -eq 1 ]]; then
         printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
@@ -301,40 +326,23 @@ if [[ -z "$disk" ]]; then
     found=0
     count_sas=0
     count_sata=0
-    count_usb=0
     count_other=0
-    declare -A _seen
-    while IFS= read -r lsscsi_line; do
-        [[ "$lsscsi_line" =~ disk ]] || continue
-        sd=$(awk '{print $(NF-1)}' <<< "$lsscsi_line" | sed 's|/dev/||')
-        [[ "$sd" =~ ^sd[a-z]+$ ]] || continue
-
-        # Multipath deduplication by SCSI identifier
-        if [[ -v "DISK_ALIASES[$sd]" ]]; then
-            _id=$(echo "${DISK_ALIASES[$sd]}" | grep -oE 'scsi-[^ ]+' | head -1)
-            if [[ -n "$_id" ]]; then
-                [[ -v "_seen[$_id]" ]] && continue
-                _seen[$_id]=1
-            fi
-        fi
-
-        print_disk "$sd" || continue
+    for wwn in "${ALL_WWNS[@]}"; do
+        print_disk "$wwn" || continue
         found=$((found + 1))
 
-        case $(get_transport_type "$sd") in
+        case $(get_transport_type "${WWN_TO_SD[$wwn]}") in
             SAS)  count_sas=$((count_sas + 1)) ;;
             SATA) count_sata=$((count_sata + 1)) ;;
-            USB)  count_usb=$((count_usb + 1)) ;;
             *)    count_other=$((count_other + 1)) ;;
         esac
-    done <<< "$LSSCSI_OUTPUT"
+    done
 
     echo ""
     summary="Total disks found: $found"
     details=()
     [[ $count_sas   -gt 0 ]] && details+=("${count_sas} SAS")
     [[ $count_sata  -gt 0 ]] && details+=("${count_sata} SATA")
-    [[ $count_usb   -gt 0 ]] && details+=("${count_usb} USB")
     [[ $count_other -gt 0 ]] && details+=("${count_other} other")
     if [[ ${#details[@]} -gt 0 ]]; then
         IFS=', '; summary+=" (${details[*]})"; unset IFS
@@ -342,11 +350,12 @@ if [[ -z "$disk" ]]; then
     echo "$summary"
 
 else
-    sd=$(dc_resolve_to_sd "$disk") || {
-        echo "Error: cannot resolve '$disk' to a block device"
-        echo "Supported formats: scsi-..., wwn-..., /dev/sdX, sdX"
+    wwn=$(resolve_to_wwn "$disk") || {
+        echo "Error: cannot resolve '$disk'"
+        echo "Supported formats: scsi-..., wwn-..., ata-..., /dev/sdX, sdX"
         exit 1
     }
+    sd="${WWN_TO_SD[$wwn]}"
     [[ -b "/dev/$sd" ]] || {
         echo "Error: /dev/$sd is not a block device"
         exit 1
@@ -366,7 +375,7 @@ else
                "--------" "--------------------------------------------------" \
                "----------" "--------------------" "--------" "--------"
     fi
-    print_disk "$sd" || {
+    print_disk "$wwn" || {
         echo "Error: /dev/$sd not found in lsscsi output"
         exit 1
     }

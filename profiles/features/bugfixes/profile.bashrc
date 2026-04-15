@@ -1,4 +1,4 @@
-source /lib/StormByte/functions.sh
+source /lib/StormByte/portage.sh
 
 local FORCE_BINUTIL_VARS="app-crypt/efitools dev-lang/ocaml dev-libs/jansson"
 local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk media-libs/tremor net-analyzer/rrdtool net-firewall/nfacct"
