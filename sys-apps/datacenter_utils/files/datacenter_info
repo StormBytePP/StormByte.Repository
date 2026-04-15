@@ -11,8 +11,8 @@
 #
 # If device is omitted, all SCSI disks are listed.
 #
-# The -v flag adds Enclosure/Slot, SMART status, Temperature and
-# Link Speed columns (slower — requires smartctl per disk).
+# The -v flag adds Enclosure/Slot, SMART status, Temperature,
+# Link Speed and Health columns (slower — requires smartctl per disk).
 
 set -euo pipefail
 
@@ -34,7 +34,10 @@ Usage:
 
 Options:
   -v          Verbose output: adds Enclosure/Slot, SMART status,
-              Temperature and Link Speed columns. Requires root
+              Temperature, Link Speed and Health columns. Health
+              is derived from SMART data: SSD life remaining
+              (attr 231), reallocated sector count (attr 5) for
+              SATA, or grown defect list for SAS. Requires root
               (smartctl needs raw disk access). May appear before
               or after the device argument.
 
@@ -198,6 +201,44 @@ get_transport_type() {
     fi
 }
 
+get_health() {
+    local sd="$1"
+    _ensure_smart_cache "$sd"
+    local output="${SMART_CACHE[$sd]}"
+    [[ -z "$output" ]] && { echo "N/A"; return; }
+
+    # SATA SSD: attribute 231 (SSD_Life_Left) — raw value is % directly
+    local ssd_life
+    ssd_life=$(awk '/^231 / {print $10}' <<< "$output" | head -1)
+    if [[ -n "$ssd_life" && "$ssd_life" =~ ^[0-9]+$ ]]; then
+        echo "${ssd_life}%"
+        return
+    fi
+
+    # SATA HDD: attribute 5 (Reallocated_Sector_Ct) — normalized VALUE
+    local realloc_val
+    realloc_val=$(awk '/^  5 / {print $4}' <<< "$output" | head -1)
+    if [[ -n "$realloc_val" && "$realloc_val" =~ ^[0-9]+$ ]]; then
+        [[ "$realloc_val" -gt 100 ]] && realloc_val=100
+        echo "${realloc_val}%"
+        return
+    fi
+
+    # SAS: Elements in grown defect list
+    local defects
+    defects=$(grep -i 'Elements in grown defect list' <<< "$output" | awk '{print $NF}')
+    if [[ -n "$defects" && "$defects" =~ ^[0-9]+$ ]]; then
+        if [[ "$defects" -eq 0 ]]; then
+            echo "100%"
+        else
+            echo "${defects}d"
+        fi
+        return
+    fi
+
+    echo "N/A"
+}
+
 print_disk() {
     local sd="$1"
 
@@ -216,18 +257,19 @@ print_disk() {
     local in_pool="NO"
     is_in_pool "$sd" && in_pool="YES"
 
-    local enc_slot="" smart_status="" temp="" link_speed=""
+    local enc_slot="" smart_status="" temp="" link_speed="" health=""
     if [[ "$VERBOSE" -eq 1 ]]; then
         enc_slot=$(dc_get_enclosure_slot "$sd")
         smart_status=$(get_smart_status "$sd")
         temp=$(get_temperature "$sd")
         link_speed=$(get_link_speed "$sd")
+        health=$(get_health "$sd")
     fi
 
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" \
-               "$enc_slot" "$smart_status" "$temp" "$link_speed"
+               "$enc_slot" "$smart_status" "$temp" "$link_speed" "$health"
     else
         printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
                "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool"
@@ -241,13 +283,13 @@ print_disk() {
 if [[ -z "$disk" ]]; then
     echo "=== All SCSI Disks in the Datacenter ==="
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
-               "Enclosure" "SMART" "Temp" "Link Speed"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "Enclosure" "SMART" "Temp" "Link Speed" "Health"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "--------" "--------------------------------------------------" \
                "----------" "--------------------" "--------" "--------" \
-               "--------------------" "-------" "-----" "--------------"
+               "--------------------" "-------" "-----" "--------------" "--------"
     else
         printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
                "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
@@ -310,13 +352,13 @@ else
         exit 1
     }
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
-               "Enclosure" "SMART" "Temp" "Link Speed"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s\n" \
+               "Enclosure" "SMART" "Temp" "Link Speed" "Health"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
                "--------" "--------------------------------------------------" \
                "----------" "--------------------" "--------" "--------" \
-               "--------------------" "-------" "-----" "--------------"
+               "--------------------" "-------" "-----" "--------------" "--------"
     else
         printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
                "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
