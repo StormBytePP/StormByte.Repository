@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 2.0.1
+# Version 3.0.2
 
 function displayError() {
 	echo $1
@@ -122,13 +122,13 @@ dc_init_disk_maps() {
         _wwn=$(awk '{print $2}' <<< "$_line")
         [[ "$_sd" =~ ^sd[a-z]+$ ]] || continue
         [[ -n "$_wwn" ]] || continue
-        DISK_ALIASES[$_sd]="scsi-3${_wwn#0x} wwn-${_wwn}"
+        DISK_ALIASES[$_sd]="wwn-${_wwn}"
     done < <(lsblk -dno NAME,WWN 2>/dev/null)
 
     for _link in /dev/disk/by-id/*; do
         [[ -L "$_link" ]] || continue
         _name=$(basename "$_link")
-        [[ "$_name" == scsi-* || "$_name" == wwn-* ]] || continue
+        [[ "$_name" == scsi-* || "$_name" == wwn-* || "$_name" == ata-* ]] || continue
         [[ "$_name" =~ -part[0-9]+$ ]] && continue
         _target=$(readlink -f "$_link" 2>/dev/null) || continue
         [[ -b "$_target" ]] || continue
