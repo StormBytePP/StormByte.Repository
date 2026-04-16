@@ -291,13 +291,18 @@ print_disk() {
         health=$(get_health "$sd")
     fi
 
+    # Determine LED state (ON/OFF/N/A) via shared helper
+    local led
+    led=$(led_status "$sd" 2>/dev/null || true)
+    [[ -z "$led" ]] && led="N/A"
+
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s %-4s\n" \
                "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" \
-               "$enc_slot" "$smart_status" "$temp" "$link_speed" "$health"
+               "$enc_slot" "$smart_status" "$temp" "$link_speed" "$health" "$led"
     else
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
-               "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool"
+        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-4s\n" \
+               "$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" "$led"
     fi
 }
 
@@ -308,19 +313,19 @@ print_disk() {
 if [[ -z "$disk" ]]; then
     echo "=== All Disks in the Datacenter ==="
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
-               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
-               "Enclosure" "SMART" "Temp" "Link Speed" "Health"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
-               "--------" "--------------------------------------------------" \
-               "----------" "--------------------" "--------" "--------" \
-               "--------------------" "-------" "-----" "--------------" "--------"
+     printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s %-4s\n" \
+         "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
+         "Enclosure" "SMART" "Temp" "Link Speed" "Health" "LED"
+     printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s %-4s\n" \
+         "--------" "--------------------------------------------------" \
+         "----------" "--------------------" "--------" "--------" \
+         "--------------------" "-------" "-----" "--------------" "--------" "----"
     else
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
-               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
-               "--------" "--------------------------------------------------" \
-               "----------" "--------------------" "--------" "--------"
+     printf "%-8s %-50s %-10s %-20s %-8s %-8s %-4s\n" \
+         "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" "LED"
+     printf "%-8s %-50s %-10s %-20s %-8s %-8s %-4s\n" \
+         "--------" "--------------------------------------------------" \
+         "----------" "--------------------" "--------" "--------" "----"
     fi
 
     found=0
@@ -361,19 +366,19 @@ else
         exit 1
     }
     if [[ "$VERBOSE" -eq 1 ]]; then
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
-               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
-               "Enclosure" "SMART" "Temp" "Link Speed" "Health"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s\n" \
-               "--------" "--------------------------------------------------" \
-               "----------" "--------------------" "--------" "--------" \
-               "--------------------" "-------" "-----" "--------------" "--------"
+         printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s %-4s\n" \
+             "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
+             "Enclosure" "SMART" "Temp" "Link Speed" "Health" "LED"
+         printf "%-8s %-50s %-10s %-20s %-8s %-8s %-20s %-7s %-5s %-14s %-8s %-4s\n" \
+             "--------" "--------------------------------------------------" \
+             "----------" "--------------------" "--------" "--------" \
+             "--------------------" "-------" "-----" "--------------" "--------" "----"
     else
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
-               "Device" "Identifiers" "Vendor" "Model" "FW" "Pool"
-        printf "%-8s %-50s %-10s %-20s %-8s %-8s\n" \
-               "--------" "--------------------------------------------------" \
-               "----------" "--------------------" "--------" "--------"
+         printf "%-8s %-50s %-10s %-20s %-8s %-8s %-4s\n" \
+             "Device" "Identifiers" "Vendor" "Model" "FW" "Pool" "LED"
+         printf "%-8s %-50s %-10s %-20s %-8s %-8s %-4s\n" \
+             "--------" "--------------------------------------------------" \
+             "----------" "--------------------" "--------" "--------" "----"
     fi
     print_disk "$wwn" || {
         echo "Error: /dev/$sd not found in lsscsi output"

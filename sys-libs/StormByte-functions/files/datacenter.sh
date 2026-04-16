@@ -199,3 +199,64 @@ get_enclosure_slot() {
         echo "N/A"
     fi
 }
+
+# led_status <slot_dir|sdX|sas_addr|alias>
+# Return: "ON" / "OFF" / "N/A" based on SES locate attribute
+led_status() {
+    local input="$1"
+
+    # If a sysfs slot directory was passed, read directly
+    if [[ -d "$input" && -f "$input/locate" ]]; then
+        local v
+        v=$(<"$input/locate")
+        [[ "$v" == "1" ]] && { echo "ON"; return 0; } || { echo "OFF"; return 0; }
+    fi
+
+    # Accept /dev/sdX or sdX
+    if [[ "$input" == /dev/* ]]; then
+        input="${input#/dev/}"
+    fi
+    if [[ "$input" =~ ^sd[a-z]+$ ]]; then
+        # Ensure disk maps exist
+        [[ -v "SD_TO_WWN[$input]" ]] || { echo "N/A"; return 0; }
+        local wwn_prefix="${SD_TO_WWN[$input]%?}"
+        if find_slot_by_wwn_prefix "$wwn_prefix"; then
+            [[ -f "$SLOT_DIR/locate" ]] || { echo "N/A"; return 0; }
+            local v
+            v=$(<"$SLOT_DIR/locate")
+            [[ "$v" == "1" ]] && { echo "ON"; return 0; } || { echo "OFF"; return 0; }
+        fi
+        echo "N/A"
+        return 0
+    fi
+
+    # SAS address (0x...) or raw hex: try resolve to WWN then find slot
+    if [[ "$input" =~ ^0x[0-9a-fA-F]+$ || "$input" =~ ^[0-9a-fA-F]+$ ]]; then
+        local wwn
+        wwn=$(resolve_sas_to_wwn "$input") || true
+        if [[ -n "$wwn" ]]; then
+            local prefix="${wwn%?}"
+            if find_slot_by_wwn_prefix "$prefix"; then
+                [[ -f "$SLOT_DIR/locate" ]] || { echo "N/A"; return 0; }
+                local v
+                v=$(<"$SLOT_DIR/locate")
+                [[ "$v" == "1" ]] && { echo "ON"; return 0; } || { echo "OFF"; return 0; }
+            fi
+        fi
+    fi
+
+    # Try resolving aliases (scsi-*, wwn-*, ata-*) to WWN
+    local wwn2
+    wwn2=$(resolve_to_wwn "$input" 2>/dev/null) || true
+    if [[ -n "$wwn2" ]]; then
+        local prefix2="${wwn2%?}"
+        if find_slot_by_wwn_prefix "$prefix2"; then
+            [[ -f "$SLOT_DIR/locate" ]] || { echo "N/A"; return 0; }
+            local v
+            v=$(<"$SLOT_DIR/locate")
+            [[ "$v" == "1" ]] && { echo "ON"; return 0; } || { echo "OFF"; return 0; }
+        fi
+    fi
+
+    echo "N/A"
+}

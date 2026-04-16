@@ -121,10 +121,9 @@ if [[ "$disk" == "all" ]]; then
                 slot_wwn=$(resolve_sas_to_wwn "$slot_sas") || continue
                 [[ -z "${seen_wwns[$slot_wwn]+x}" ]] || continue
                 seen_wwns["$slot_wwn"]=1
-                led_cur=$(< "$slot_dir/locate")
-                led_status=$([[ "$led_cur" == "1" ]] && echo "ON" || echo "OFF")
+                led_state=$(led_status "$slot_dir")
                 read -r sd_name scsi_id wwn_id <<< "$(resolve_sas_to_ids "$slot_sas")"
-                rows+=("$led_status|$sd_name|$scsi_id|$wwn_id")
+                rows+=("$led_state|$sd_name|$scsi_id|$wwn_id")
             done
         done
         # Compute column widths
@@ -198,21 +197,20 @@ find_slot_by_wwn_prefix "$wwn_prefix" || {
 # Control the IDENT LED
 ###############################################################################
 
-if [[ "$action" == "show" ]]; then
-    led_cur=$(< "$SLOT_DIR/locate")
-    led_status=$([[ "$led_cur" == "1" ]] && echo "ON" || echo "OFF")
+    if [[ "$action" == "show" ]]; then
+    led_state=$(led_status "$SLOT_DIR")
     read -r sd_name scsi_id wwn_id <<< "$(resolve_sas_to_ids "$SLOT_SAS")"
     w_dev=6;  (( ${#sd_name}  > w_dev  )) && w_dev=${#sd_name}
     w_scsi=4; (( ${#scsi_id}  > w_scsi )) && w_scsi=${#scsi_id}
-    w_wwn=3;  (( ${#wwn_id}   > w_wwn  )) && w_wwn=${#wwn_id}
-    w_led=3;  (( ${#led_status} > w_led )) && w_led=${#led_status}
+    w_wwn=3;  (( ${#wwn_id}   > w_wwn )) && w_wwn=${#wwn_id}
+    w_led=3;  (( ${#led_state} > w_led )) && w_led=${#led_state}
     printf "%-${w_dev}s   %-${w_scsi}s   %-${w_wwn}s   %-${w_led}s\n" "Device" "SCSI" "WWN" "LED"
     printf "%-${w_dev}s   %-${w_scsi}s   %-${w_wwn}s   %-${w_led}s\n" \
-           "$(printf '%*s' "$w_dev" '' | tr ' ' '-')" \
-           "$(printf '%*s' "$w_scsi" '' | tr ' ' '-')" \
-           "$(printf '%*s' "$w_wwn" '' | tr ' ' '-')" \
-           "$(printf '%*s' "$w_led" '' | tr ' ' '-')"
-    printf "%-${w_dev}s   %-${w_scsi}s   %-${w_wwn}s   %-${w_led}s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_status"
+        "$(printf '%*s' "$w_dev" '' | tr ' ' '-')" \
+        "$(printf '%*s' "$w_scsi" '' | tr ' ' '-')" \
+        "$(printf '%*s' "$w_wwn" '' | tr ' ' '-')" \
+        "$(printf '%*s' "$w_led" '' | tr ' ' '-')"
+    printf "%-${w_dev}s   %-${w_scsi}s   %-${w_wwn}s   %-${w_led}s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_state"
 else
     echo "$led_value" > "$SLOT_DIR/locate" || {
         echo "Error: failed to write to $SLOT_DIR/locate"
