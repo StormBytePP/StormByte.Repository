@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE metadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<metadata>
+  <homepage>https://blog.stormbyte.org</homepage>
+  <description>StormByte's helper functions for system scripts.</description>
+
+  <use>
+    <flag name="bash">
+      <description>Install helper functions used by Bash scripts.</description>
+    </flag>
+    <flag name="portage">
+      <description>Install Portage-related helper functions (integration with Portage).</description>
+    </flag>
+    <flag name="datacenter">
+      <description>Install datacenter-specific helper functions.</description>
+    </flag>
+  </use>
+</metadata>

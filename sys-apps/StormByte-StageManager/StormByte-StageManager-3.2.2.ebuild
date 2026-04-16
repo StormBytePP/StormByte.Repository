@@ -24,7 +24,7 @@ RDEPEND="
 	sys-apps/coreutils
 	sys-apps/pv
 	sys-fs/btrfs-progs
-	sys-libs/StormByte-functions
+	sys-libs/StormByte-functions[bash]
 "
 DEPEND="${RDEPEND}"
 
