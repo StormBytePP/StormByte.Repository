@@ -1,4 +1,5 @@
 *sys-apps/datacenter_utils
 *sys-apps/ethtool
 *sys-fs/cryptsetup
+*sys-fs/multipath-tools
 *sys-power/nut
