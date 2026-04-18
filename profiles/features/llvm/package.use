@@ -1,4 +1,4 @@
 llvm-core/llvm zstd binutils-plugin
 llvm-core/lld zstd
-llvm-runtimes/clang-runtime offload
+llvm-runtimes/clang-runtime -offload
 llvm-runtimes/openmp hwloc ompt

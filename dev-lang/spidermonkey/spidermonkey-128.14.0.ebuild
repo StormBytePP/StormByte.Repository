@@ -6,7 +6,7 @@ EAPI="8"
 FIREFOX_PATCHSET="firefox-128esr-patches-11.tar.xz"
 SPIDERMONKEY_PATCHSET="spidermonkey-128-patches-04.tar.xz"
 
-LLVM_COMPAT=( 17 18 19 20 21 )
+LLVM_COMPAT=( 17 18 19 20 21 22 )
 RUST_NEEDS_LLVM=1
 
 PYTHON_COMPAT=( python3_{11..13} )
