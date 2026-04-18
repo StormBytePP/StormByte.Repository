@@ -72,7 +72,7 @@ LINKER_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--threads=16 -Wl,--build-id=
 LINKER_POLLY="-fopenmp=libomp"
 
 # LLVM vars
-LLVM_MAJOR="21"
+LLVM_MAJOR="22"
 LLVM_TARGETS="X86 NVPTX"
 LLVM_SLOT="-* ${LLVM_MAJOR}"
 
