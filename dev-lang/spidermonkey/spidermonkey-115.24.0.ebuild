@@ -9,7 +9,7 @@ SPIDERMONKEY_PATCHSET="spidermonkey-115-patches-02.tar.xz"
 
 LLVM_COMPAT=( 18 19 20 21 22 )
 
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYTHON_REQ_USE="ncurses,ssl,xml(+)"
 
 RUST_NEEDS_LLVM="1"
