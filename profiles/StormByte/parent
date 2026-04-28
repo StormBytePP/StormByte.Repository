@@ -4,4 +4,4 @@ StormByte:features/llvm
 StormByte:features/security
 StormByte:features/silent
 
-# Bugfixes always added as last item in leafs to take priority
+# Bugfixes is added at the first selectable tier (glibc/musl) so it propagates to all descendants

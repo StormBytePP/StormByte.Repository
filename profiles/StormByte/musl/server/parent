@@ -1,8 +1,5 @@
-# StormByte musl base
+# StormByte musl base (inherits all features including bugfixes)
 ..
 
 # Server target
 StormByte:targets/server
-
-# Bugfixes always last to take priority
-StormByte:features/bugfixes

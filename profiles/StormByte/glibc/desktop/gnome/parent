@@ -1,8 +1,5 @@
-# StormByte desktop
+# StormByte glibc desktop base (inherits all features including bugfixes)
 ..
 
 # GNOME target
 StormByte:targets/desktop/gnome
-
-# Bugfixes always last to take priority
-StormByte:features/bugfixes
