@@ -16,5 +16,14 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 		list_contains "${FORCE_OPENMP_VARS}" "${CATEGORY}/${PN}" && force_openmp_vars
 		list_contains "${FORCE_REDUCE_PARALLEL}" "${CATEGORY}/${PN}" && force_reduce_parallel
 	fi
+	# Gcc needs it for Intel's big little arch
+	if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
+		force_gcc_vars
+		if [[ -n "$INTEL_BIG_LITTLE" ]]; then
+			CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
+			CXXFLAGS="${CFLAGS}"
+		fi
+		LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
+	fi
 fi
 
