@@ -1,5 +1,8 @@
-# StormByte glibc desktop base (inherits all features including bugfixes)
+# StormByte glibc desktop base
 ..
 
 # Plasma target
 StormByte:targets/desktop/plasma
+
+# Bugfixes always last to take priority
+StormByte:features/bugfixes

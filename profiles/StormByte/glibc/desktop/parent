@@ -1,5 +1,8 @@
-# StormByte glibc base (inherits all features including bugfixes)
+# StormByte glibc base
 ..
 
 # Desktop target
 StormByte:targets/desktop
+
+# Bugfixes always last to take priority
+StormByte:features/bugfixes
