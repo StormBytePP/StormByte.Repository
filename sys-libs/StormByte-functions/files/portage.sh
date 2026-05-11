@@ -1,20 +1,21 @@
 #! /bin/bash
 
-# Version 3.0.2
+# Version 4.0.1
 
 function list_contains() { [[ "$1" =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; }
 
 function force_binutils_vars() {
-    ADDR2LINE="addr2line"
-    AS="as"
-    AR="ar"
-    NM="nm"
-    OBJCOPY="objcopy"
-    OBJDUMP="objdump"
-    RANLIB="ranlib"
-    READELF="readelf"
-    STRINGS="strings"
-    STRIP="strip"
+	local binutils_prefix="$(binutils-config -B)"
+    ADDR2LINE="${binutils_prefix}/addr2line"
+    AS="${binutils_prefix}/as"
+    AR="${binutils_prefix}/ar"
+    NM="${binutils_prefix}/nm"
+    OBJCOPY="${binutils_prefix}/objcopy"
+    OBJDUMP="${binutils_prefix}/objdump"
+    RANLIB="${binutils_prefix}/ranlib"
+    READELF="${binutils_prefix}/readelf"
+    STRINGS="${binutils_prefix}/strings"
+    STRIP="${binutils_prefix}/strip"
     LDFLAGS="${LINKER_BASE} ${LINKER_BFD}"
 }
 
