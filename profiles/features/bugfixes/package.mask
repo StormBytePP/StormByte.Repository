@@ -1,2 +1,2 @@
 # Does not compile currently
-=dev-ruby/prism-1.9.0
+=sys-auth/elogind-257.14
