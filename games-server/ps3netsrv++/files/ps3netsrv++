@@ -3,14 +3,14 @@
 # Distributed under the terms of the GNU General Public License v2
 
 depend() {
-	need net mountWarehouse
+	need net localmount
 }
 
 start() {
 	ebegin "Starting ${SVCNAME}"
 	start-stop-daemon --start --exec /usr/bin/ps3netsrv++ \
-		--make-pidfile --user nobody --group nobody --pidfile /var/run/ps3netsrv++.pid -b \
-		-- /warehouse/Multimedia/Games/PS3
+		--make-pidfile --user "${PS3NETSRV_USER}" --group "${PS3NETSRV_GROUP}" --pidfile /var/run/ps3netsrv++.pid -b \
+		-- "${PS3NETSRV_DIR}"
 	eend $?
 }
 

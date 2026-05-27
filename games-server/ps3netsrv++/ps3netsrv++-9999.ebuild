@@ -28,6 +28,7 @@ RDEPEND=""
 
 src_install() {
 	dobin ps3netsrv++
-	doinitd ${FILESDIR}/ps3netsrv++
+	doinitd "${FILESDIR}/ps3netsrv++"
+	newconfd "${FILESDIR}/ps3netsrv++.confd" ps3netsrv++
 }
 

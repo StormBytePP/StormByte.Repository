@@ -1,0 +1,9 @@
+# Configuration file for ps3netsrv++
+# See /etc/init.d/ps3netsrv++ for usage
+
+# Directory to serve PS3 game files from
+PS3NETSRV_DIR="/warehouse/Multimedia/Games/PS3"
+
+# User and group to run the daemon as
+PS3NETSRV_USER="nobody"
+PS3NETSRV_GROUP="nobody"
