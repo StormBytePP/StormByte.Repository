@@ -1,4 +1,4 @@
-# Copyright 1999-2025 Gentoo Authors
+# Copyright 1999-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -13,12 +13,11 @@ if [[ ${PV} == *9999 ]] ; then
 	inherit git-r3
 else
 	SRC_URI="
-		https://github.com/netdata/${PN}/releases/download/v${PV}/${PN}-v${PV}.tar.gz -> ${P}.tar.gz
+		https://github.com/netdata/netdata/releases/download/v${PV}/${PN}-v${PV}.tar.gz -> ${P}.tar.gz
 		https://github.com/davisking/dlib/archive/v${DLIB_VER}.tar.gz -> dlib-${DLIB_VER}.tar.gz
-		https://app.netdata.cloud/agent.tar.gz
 		"
 	S="${WORKDIR}/${PN}-v${PV}"
-	KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
+	KEYWORDS="~amd64"
 fi
 
 DESCRIPTION="Linux real time system monitoring, done right!"
@@ -26,7 +25,7 @@ HOMEPAGE="https://github.com/netdata/netdata https://my-netdata.io/"
 
 LICENSE="GPL-3+ MIT BSD"
 SLOT="0"
-IUSE="cups +dbengine ipmi jemalloc lto mold mongodb mysql nfacct nodejs postgres prometheus +python systemd xen"
+IUSE="cups +dbengine ipmi jemalloc mongodb mysql nfacct nodejs prometheus +python systemd xen"
 REQUIRED_USE="
 	mysql? ( python )
 	python? ( ${PYTHON_REQUIRED_USE} )"
@@ -50,6 +49,7 @@ RDEPEND="
 		net-analyzer/openbsd-netcat
 		net-analyzer/netcat
 	)
+	net-libs/libmnl:=
 	net-libs/libwebsockets
 	net-misc/curl
 	net-misc/wget
@@ -63,13 +63,12 @@ RDEPEND="
 	)
 	ipmi? ( sys-libs/freeipmi )
 	jemalloc? ( dev-libs/jemalloc:= )
-	mongodb? ( dev-libs/mongo-c-driver )
+	mongodb? ( dev-libs/mongo-c-driver:0 )
 	nfacct? (
 		net-firewall/nfacct
 		net-libs/libmnl:=
 	)
 	nodejs? ( net-libs/nodejs )
-	postgres? ( net-analyzer/netdata-go-plugin )
 	prometheus? (
 		app-arch/snappy:=
 	)
@@ -86,7 +85,6 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 BDEPEND="
 	virtual/pkgconfig
-	mold? ( sys-devel/mold )
 "
 
 FILECAPS=(
@@ -100,10 +98,6 @@ pkg_setup() {
 	linux-info_pkg_setup
 }
 
-#PATCHES=(
-#	"${FILESDIR}"/${PN}-dlib-global_optimization-add-template-argument-list.patch
-#)
-
 src_configure() {
 	local mycmakeargs=(
 		-DNETDATA_DLIB_SOURCE_PATH="${WORKDIR}/dlib-${DLIB_VER}"
@@ -114,7 +108,7 @@ src_configure() {
 		-DENABLE_BUNDLED_JSONC=OFF
 		-DENABLE_BUNDLED_PROTOBUF=OFF
 		-DENABLE_BUNDLED_YAML=OFF
-		-DENABLE_DASHBOARD=OFF # handle manually in install phase
+		-DENABLE_DASHBOARD=OFF # uses binary blobs, license issues
 		-DENABLE_DBENGINE=$(usex dbengine)
 		-DENABLE_EXPORTER_MONGODB=$(usex mongodb)
 		-DENABLE_EXPORTER_PROMETHEUS_REMOTE_WRITE=$(usex prometheus)
@@ -122,7 +116,6 @@ src_configure() {
 		-DENABLE_LIBBACKTRACE=OFF
 		-DENABLE_MIMALLOC=OFF
 		-DENABLE_ML=ON
-		-DENABLE_NETDATA_JOURNAL_FILE_READER=OFF
 		-DENABLE_PLUGIN_APPS=ON
 		-DENABLE_PLUGIN_CGROUP_NETWORK=ON
 		-DENABLE_PLUGIN_CHARTS=ON
@@ -130,18 +123,18 @@ src_configure() {
 		-DENABLE_PLUGIN_DEBUGFS=ON
 		-DENABLE_PLUGIN_EBPF=OFF # bundles libbpf
 		-DENABLE_PLUGIN_GO=OFF
+		-DENABLE_PLUGIN_SCRIPTS=OFF # builds Go scriptsdplugin, fetches modules online
 		-DENABLE_PLUGIN_FREEIPMI=$(usex ipmi)
 		-DENABLE_PLUGIN_NFACCT=$(usex nfacct)
 		-DENABLE_PLUGIN_OTEL=OFF
-		-DENABLE_PLUGIN_OTEL_SIGNAL_VIEWER=OFF
+		-DENABLE_PLUGIN_OTEL_SIGNAL_VIEWER=OFF # bundles Rust/Corrosion via FetchContent
+		-DENABLE_NETDATA_JOURNAL_FILE_READER=OFF # bundles Rust/Corrosion via FetchContent
 		-DENABLE_PLUGIN_PERF=ON
 		-DENABLE_PLUGIN_PYTHON=$(usex python)
 		-DENABLE_PLUGIN_SLABINFO=ON
 		-DENABLE_PLUGIN_SYSTEMD_JOURNAL=$(usex systemd)
 		-DENABLE_PLUGIN_SYSTEMD_UNITS=$(usex systemd)
 		-DENABLE_PLUGIN_XENSTAT=$(usex xen)
-		-DUSE_LTO=$(usex lto)
-		-DUSE_MOLD=$(usex mold)
 	)
 	cmake_src_configure
 }
@@ -159,14 +152,6 @@ src_install() {
 	keepdir /var/lib/netdata/cloud.d
 	fowners -Rc netdata:netdata /var/lib/netdata
 
-	insinto /usr/share/netdata/web
-	for i in index.html registry-access.html registry-alert-redirect.html registry-hello.html
-	do
-		doins "${WORKDIR}/dist/agent/${i}"
-	done
-	doins -r "${WORKDIR}/dist/agent/static"
-	doins -r "${WORKDIR}/dist/agent/v3"
-
 	newinitd "${D}/usr/lib/netdata/system/openrc/init.d/netdata" "${PN}"
 	newconfd "${D}/usr/lib/netdata/system/openrc/conf.d/netdata" "${PN}"
 	systemd_newunit "${D}/usr/lib/netdata/system/systemd/netdata.service.v235" netdata.service
@@ -176,7 +161,7 @@ src_install() {
 	doins system/netdata.conf
 
 	# Opt-out anonymous statistics
-	touch "${D}/etc/netdata/.opt-out-from-anonymous-statistics"
+	touch "${D}/etc/netdata/.opt-out-from-anonymous-statistics" || die
 }
 
 pkg_postinst() {
