@@ -7,7 +7,10 @@ inherit unpacker
 
 DESCRIPTION="Proprietary plugins and firmware for HPLIP"
 HOMEPAGE="https://developers.hp.com/hp-linux-imaging-and-printing/plugins"
-SRC_URI="https://www.openprinting.org/download/printdriver/auxfiles/HP/plugins/hplip-${PV}-plugin.run"
+SRC_URI="
+	https://www.openprinting.org/download/printdriver/auxfiles/HP/plugins/hplip-${PV}-plugin.run
+	https://developers.hp.com/sites/default/files/2026-05/hplip-${PV}-plugin.run
+"
 S="${WORKDIR}"
 
 LICENSE="hplip-plugin"
