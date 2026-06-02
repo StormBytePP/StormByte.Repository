@@ -1,3 +1,3 @@
 # Does not compile currently
-=sys-auth/elogind-257.14
+>sys-auth/elogind-255.25
 =net-analyzer/nmap-7.99
