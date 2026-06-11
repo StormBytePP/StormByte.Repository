@@ -1,3 +1,4 @@
 app-alternatives/bzip2 -reference lbzip2
 app-alternatives/gzip -reference pigz
 sys-kernel/gentoo-kernel savedconfig
+www-client/firefox -pgo # Does not bring real improvements
