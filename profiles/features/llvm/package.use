@@ -2,3 +2,4 @@ llvm-core/llvm zstd binutils-plugin
 llvm-core/lld zstd
 llvm-runtimes/clang-runtime -offload
 llvm-runtimes/openmp hwloc ompt
+sys-devel/gcc -lto -pgo # Gcc is rarely used so we don't spend time into optimizing it
