@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Version 4.0.1
+# Version 4.0.2
 
 function list_contains() { [[ "$1" =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; }
 
@@ -39,7 +39,7 @@ function force_lto_vars() {
     CFLAGS="${CFLAGS} ${FLAGS_LTO}"
     CXXFLAGS="${CXXFLAGS} ${FLAGS_LTO}"
     LDFLAGS="${LDFLAGS} ${FLAGS_LTO}"
-    RUSTFLAGS="${RUSTFLAGS} -Clinker-plugin-lto"
+	RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes -Clto=thin -Zdylib-lto -Clinker-plugin-lto"
 }
 
 function force_ld_undefined_version {
