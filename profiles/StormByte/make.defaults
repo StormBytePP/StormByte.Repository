@@ -98,4 +98,10 @@ CXXFLAGS="${CFLAGS}"
 FCFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
 FFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
 LDFLAGS="${LINKER_BASE} ${LINKER_LLD}"
-RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Clink-arg=-Wl,-z,pack-relative-relocs -Clink-arg=-Wl,--as-needed -Clink-arg=-Wl,-O2 -Clink-arg=-Wl,--sort-common -Clink-arg=-Wl,-z,separate-code -Clink-arg=-Wl,-z,noexecstack"
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Cembed-bitcode=yes -Clto=thin -Zdylib-lto \
+-Clink-arg=-Wl,-z,pack-relative-relocs \
+-Clink-arg=-Wl,--as-needed \
+-Clink-arg=-Wl,-O2 \
+-Clink-arg=-Wl,--sort-common \
+-Clink-arg=-Wl,-z,separate-code \
+-Clink-arg=-Wl,-z,noexecstack"
