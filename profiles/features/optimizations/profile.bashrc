@@ -5,6 +5,7 @@ local LTO_FORCED_PACKAGES="
 	dev-lang/erlang
 	dev-lang/nasm
 	mail-client/thunderbird
+	media-libs/avidemux-core
 	media-libs/x264
 	media-libs/x265
 	media-video/ffmpeg
