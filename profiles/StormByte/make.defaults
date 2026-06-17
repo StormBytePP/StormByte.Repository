@@ -63,7 +63,7 @@ FLAGS_DEBUG="-g -ggdb3"
 FLAGS_GCC=""
 FLAGS_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 FLAGS_LTO="-flto=thin"
-FLAGS_POLLY="-O3 -fplugin-arg-polly-polly -fplugin-arg-polly-polly-parallel -fplugin-arg-polly-polly-vectorizer=stripmine -fplugin-arg-polly-polly-run-dce -fplugin-arg-polly-polly-scheduling-chunksize=1 -fplugin-arg-polly-polly-scheduling=dynamic -fplugin-arg-polly-polly-num-threads=32 -fplugin-arg-polly-polly-omp-backend=LLVM -fplugin-arg-polly-polly-invariant-load-hoisting -fopenmp=libomp"
+POLLY_FLAGS="-mllvm -polly -mllvm -polly-vectorizer=stripmine -mllvm -polly-parallel -mllvm -polly-num-threads=32 -mllvm -polly-scheduling=dynamic -mllvm -polly-omp-backend=LLVM"
 
 # Linker optimizations
 LINKER_BASE="-Wl,-z,pack-relative-relocs -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,-z,separate-code -Wl,-z,noexecstack"
