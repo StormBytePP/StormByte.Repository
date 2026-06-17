@@ -1,3 +1,4 @@
+*app-benchmarks/hyperfine
 *app-crypt/efitools
 *app-emulation/wine-vanilla
 *dev-debug/strace
