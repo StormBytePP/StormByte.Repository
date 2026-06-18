@@ -14,9 +14,9 @@ local LTO_FORCED_PACKAGES="
 	llvm-runtimes/libcxx
 	www-client/firefox
 "
+# Thunderbird and firefox fails with polly
 local POLLY_FORCED_PACKAGES="
 	app-office/libreoffice
-	mail-client/thunderbird
 	media-gfx/gimp
 	media-libs/avidemux-core
 	media-libs/avidemux-plugins
@@ -25,7 +25,6 @@ local POLLY_FORCED_PACKAGES="
 	media-video/obs-studio
 	media-sound/audacity
 	media-sound/mixxx
-	www-client/firefox
 "
 
 if [[ ${EBUILD_PHASE} == "configure" ]]; then
