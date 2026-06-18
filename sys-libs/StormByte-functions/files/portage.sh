@@ -39,7 +39,7 @@ function force_lto_vars() {
 	CFLAGS="${CFLAGS} ${FLAGS_LTO}"
 	CXXFLAGS="${CXXFLAGS} ${FLAGS_LTO}"
 	LDFLAGS="${LDFLAGS} ${FLAGS_LTO}"
-	RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes -Clto=thin -Zdylib-lto -Clinker-plugin-lto"
+	RUSTFLAGS="${RUSTFLAGS} -Cembed-bitcode=yes -Clto=thin -Clinker-plugin-lto"
 }
 
 function force_polly_vars() {
