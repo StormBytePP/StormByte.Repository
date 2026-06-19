@@ -16,6 +16,7 @@ gnome-base/gdm plymouth
 gnome-base/gnome-keyring ssh-agent
 gnome-base/gvfs fuse mtp google nfs
 kde-frameworks/sonnet designer
+mail-client/evolution archive geolocation spamassassin
 media-fonts/corefonts tahoma
 media-fonts/fonts-meta ms
 media-gfx/xsane gimp
