@@ -1,5 +1,5 @@
 # Language
-L10N="es es-ES"
+L10N="-* es es-ES"
 
 # Portage folders and config
 BASE="/var/db/gentoo"
