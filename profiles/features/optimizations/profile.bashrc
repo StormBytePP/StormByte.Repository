@@ -9,6 +9,7 @@ local LTO_FORCED_PACKAGES="
 	media-libs/x264
 	media-libs/x265
 	media-video/ffmpeg
+	media-video/ffmpeg-chromium
 	llvm-core/clang
 	llvm-core/llvm
 	llvm-runtimes/libcxx
@@ -21,6 +22,7 @@ local POLLY_FORCED_PACKAGES="
 	media-libs/avidemux-core
 	media-libs/avidemux-plugins
 	media-video/ffmpeg
+	media-video/ffmpeg-chromium
 	media-video/mpv
 	media-video/obs-studio
 	media-sound/audacity
