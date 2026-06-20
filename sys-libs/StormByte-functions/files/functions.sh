@@ -1,6 +1,6 @@
 function displayError() {
-	echo $1
-	exit
+	echo "$1"
+	exit 1
 }
 
 function handleCommand() {
@@ -37,7 +37,6 @@ function loadConfig() {
 	elif [ -f "/etc/conf.d/${self}.conf" ]; then
 		source "/etc/conf.d/${self}.conf"
 	else
-		list_contains "${DISABLE_CCACHE}" "${CATEGORY}/${PN}" && force_disable_ccache
 		echo "Configuration file ${self}.conf not found neither in current directory neither in /etc/conf.d!"
 		exit 1
 	fi
