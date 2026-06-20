@@ -24,7 +24,7 @@ RDEPEND="
 	sys-apps/coreutils
 	sys-apps/pv
 	sys-fs/btrfs-progs
-	sys-libs/StormByte-functions[bash]
+	>=sys-libs/StormByte-functions-4.1.1[bash]
 "
 DEPEND="${RDEPEND}"
 
@@ -42,5 +42,7 @@ pkg_pretend() {
 src_install() {
 	dobin "${S}/StormByte-StageManager"
 	doconfd "${S}/StormByte-StageManager.conf"
+	insinto /usr/share/bash-completion/completions
+	newins "${S}/StormByte-StageManager.bash-completion" StormByte-StageManager
 }
 
