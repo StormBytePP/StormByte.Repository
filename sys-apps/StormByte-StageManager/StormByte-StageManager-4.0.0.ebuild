@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2026 StormByte
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -23,19 +23,21 @@ RDEPEND="
 	net-misc/curl
 	sys-apps/coreutils
 	sys-apps/pv
-	sys-fs/btrfs-progs
-	>=sys-libs/StormByte-functions-4.1.1[bash]
+	>=sys-libs/StormByte-functions-4.2.0[bash]
+	sys-fs/e2fsprogs
 "
+
 DEPEND="${RDEPEND}"
 
 pkg_pretend() {
-	# Error messages for missing kernel options
-	ERROR_BTRFS_FS="BTRFS MUST be enabled on kernel for this to work"
-	ERROR_ZRAM="ZRAM MUST be enabled on kernel for this to work"
+	if use zram; then
+		CHECK_REQUIRED="ZRAM || ( EXT2_FS EXT4_USE_FOR_EXT2 )"
 
-	# Kernel config checks
-	CONFIG_CHECK="BTRFS_FS"
-	use zram && CONFIG_CHECK="${CONFIG_CHECK} ZRAM"
+		ERROR_ZRAM="ZRAM MUST be enabled on kernel for this to work"
+		ERROR_EXT2_FS="EXT2_FS or EXT4_USE_FOR_EXT2 must be enabled when using zram"
+		ERROR_EXT4_USE_FOR_EXT2="EXT2_FS or EXT4_USE_FOR_EXT2 must be enabled when using zram"
+	fi
+
 	check_extra_config
 }
 
@@ -45,4 +47,3 @@ src_install() {
 	insinto /usr/share/bash-completion/completions
 	newins "${S}/StormByte-StageManager.bash-completion" StormByte-StageManager
 }
-
