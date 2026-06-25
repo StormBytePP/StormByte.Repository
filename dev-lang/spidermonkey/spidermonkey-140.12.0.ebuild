@@ -3,12 +3,13 @@
 
 EAPI="8"
 
-FIREFOX_PATCHSET="firefox-140esr-patches-10.tar.xz"
+FIREFOX_PATCHSET="firefox-140esr-patches-12.tar.xz"
 SPIDERMONKEY_PATCHSET="spidermonkey-140-patches-02.tar.xz"
 
 LLVM_COMPAT=( 20 21 22 )
 RUST_NEEDS_LLVM=1
 RUST_MIN_VER=1.82.0
+RUST_MAX_VER=1.95.0
 
 PYTHON_COMPAT=( python3_{12..14} )
 PYTHON_REQ_USE="ncurses,ssl,xml(+)"
@@ -439,7 +440,7 @@ src_test() {
 		die "Smoke-test failed: did interpreter initialization fail?"
 	fi
 
-	cp "${FILESDIR}"/spidermonkey-${SLOT}-known-test-failures.txt "${T}"/known_test_failures.list || die
+	cp "${FILESDIR}"/spidermonkey-140-known-test-failures.txt "${T}"/known_test_failures.list || die
 	./mach jstests --exclude-file="${T}"/known_test_failures.list || die
 }
 
