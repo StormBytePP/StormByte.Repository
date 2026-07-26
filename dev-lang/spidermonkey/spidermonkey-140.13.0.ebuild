@@ -3,13 +3,13 @@
 
 EAPI="8"
 
-FIREFOX_PATCHSET="firefox-140esr-patches-12.tar.xz"
+FIREFOX_PATCHSET="firefox-140esr-patches-13.tar.xz"
 SPIDERMONKEY_PATCHSET="spidermonkey-140-patches-02.tar.xz"
 
 LLVM_COMPAT=( 20 21 22 )
 RUST_NEEDS_LLVM=1
 RUST_MIN_VER=1.82.0
-RUST_MAX_VER=1.96.1
+RUST_MAX_VER=1.98.0
 
 PYTHON_COMPAT=( python3_{12..14} )
 PYTHON_REQ_USE="ncurses,ssl,xml(+)"
