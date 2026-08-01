@@ -48,7 +48,7 @@ function force_polly_vars() {
 }
 
 function force_ld_undefined_version {
-	LDFLAGS="${LINKER_BASE} -Wl,--undefined-version" 
+	LDFLAGS="${LINKER_BASE} -Wl,--allow-shlib-undefined" 
 }
 
 function force_openmp_vars() {
