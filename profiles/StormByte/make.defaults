@@ -105,3 +105,7 @@ RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 \
 -Clink-arg=-Wl,--sort-common \
 -Clink-arg=-Wl,-z,separate-code \
 -Clink-arg=-Wl,-z,noexecstack"
+
+# CCACHE default config
+CCACHE_DIR="/var/cache/ccache"
+CCACHE_SIZE="20G"
