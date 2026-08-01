@@ -12,43 +12,47 @@ readonly _CLR_CYAN=$'\033[0;36m'
 readonly _CLR_BOLD_CYAN=$'\033[1;36m'
 readonly _CLR_WHITE=$'\033[0;37m'
 readonly _CLR_BOLD_WHITE=$'\033[1;37m'
+readonly _CLR_BLUE=$'\033[0;34m'
+readonly _CLR_BOLD_BLUE=$'\033[1;34m'
+readonly _CLR_MAGENTA=$'\033[0;35m'
+readonly _CLR_BOLD_MAGENTA=$'\033[1;35m'
 
 function displayError() {
-	printf "${_CLR_BOLD_RED}  ✗ ERROR:${_CLR_RESET} %s\n" "$1" >&2
+	printf "  ${_CLR_BOLD_RED}✗  ERROR${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$1" >&2
 	exit 1
 }
 
 function displayWarning() {
-	printf "${_CLR_BOLD_YELLOW}  ⚠ WARNING:${_CLR_RESET} %s\n" "$1"
+	printf "  ${_CLR_BOLD_YELLOW}⚠  WARNING${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$1"
 }
 
 function printStep() {
-	printf "  ${_CLR_CYAN}▸${_CLR_RESET} %s ... " "$1"
+	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET} " "$1"
 }
 
 function printOK() {
-	printf "${_CLR_BOLD_GREEN}[ OK ]${_CLR_RESET}\n"
+	printf "${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
 }
 
 function printFail() {
-	printf "${_CLR_BOLD_RED}[ FAIL ]${_CLR_RESET}\n"
+	printf "${_CLR_BOLD_RED}✗ FAIL${_CLR_RESET}\n"
 }
 
 function printSkip() {
-	printf "${_CLR_BOLD_YELLOW}[ SKIP ]${_CLR_RESET}${_CLR_DIM} %s${_CLR_RESET}\n" "$1"
+	printf "${_CLR_BOLD_YELLOW}○ SKIP${_CLR_RESET}${_CLR_DIM} %s${_CLR_RESET}\n" "$1"
 }
 
 function handleCommand() {
 	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
 	# Example
 	# handleCommand 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
-	printf "  ${_CLR_CYAN}▸${_CLR_RESET} %s ... " "${2}"
+	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET} " "${2}"
 	eval $1 > /dev/null 2>&1
 
 	if [ $? -eq 0 ]; then
-		printf "${_CLR_BOLD_GREEN}[ OK ]${_CLR_RESET}\n"
+		printf "${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
 	else
-		printf "${_CLR_BOLD_RED}[ FAIL ]${_CLR_RESET}\n"
+		printf "${_CLR_BOLD_RED}✗ FAIL${_CLR_RESET}\n"
 		cd "${current_folder}"
 		displayError "in command $1"
 	fi
@@ -58,7 +62,7 @@ function handleCommandWithOutput() {
 	# This helper will execute $1 outputting $2 as first text along with OK or ERROR if it failed
 	# Example
 	# handleCommand 'mount -t proc /proc "${tmp_folder}/proc"' "Mounting system..."
-	printf "\n  ${_CLR_BOLD_CYAN}▶${_CLR_RESET} ${_CLR_BOLD_WHITE}%s${_CLR_RESET}\n\n" "${2}"
+	printf "\n  ${_CLR_BOLD_MAGENTA}▶${_CLR_RESET} ${_CLR_BOLD_WHITE}%s${_CLR_RESET}\n\n" "${2}"
 	eval $1
 
 	if [ $? -ne 0 ]; then
