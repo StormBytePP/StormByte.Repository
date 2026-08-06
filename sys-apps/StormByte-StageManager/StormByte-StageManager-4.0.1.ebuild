@@ -25,7 +25,6 @@ RDEPEND="
 	sys-apps/pv
 	>=sys-libs/StormByte-functions-4.2.1[bash]
 	sys-fs/e2fsprogs
-	sys-process/lsof
 "
 
 DEPEND="${RDEPEND}"
