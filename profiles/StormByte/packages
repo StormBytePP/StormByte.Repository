@@ -4,6 +4,7 @@
 *app-crypt/sbsigntools
 *app-misc/resolve-march-native
 *app-portage/eix
+*app-portage/genlop
 *app-portage/gentoolkit
 *app-shells/gentoo-bashcomp
 *app-shells/bash-completion
