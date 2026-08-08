@@ -40,3 +40,4 @@
 >dev-lang/rust-1.94.1
 dev-lang/rust-bin
 >dev-python/uv-0.11.25
+>dev-python/uv-build-0.11.25
