@@ -16,3 +16,4 @@
 *sys-boot/plymouth-unwrap-theme
 *sys-power/acpid
 *sys-power/nut
+*sys-process/nvtop
