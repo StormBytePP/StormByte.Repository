@@ -1,3 +1,4 @@
+AMDGPU_TARGETS="-*"
 BASE_CONNECTIVITY="bluetooth"
 BASE_DEVELOPMENT="boost"
 BASE_FONTS="corefonts fontconfig fontforge freetype harfbuzz truetype woff2"
