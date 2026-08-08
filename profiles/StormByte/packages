@@ -1,6 +1,7 @@
 *app-admin/pwgen
 *app-admin/sudo
 *app-containers/docker
+*app-containers/docker-cli
 *app-crypt/gnupg
 *app-crypt/sbsigntools
 *app-misc/resolve-march-native
