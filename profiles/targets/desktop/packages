@@ -1,6 +1,5 @@
 *app-benchmarks/hyperfine
 *app-crypt/efitools
-*app-emulation/wine-vanilla
 *dev-debug/strace
 *dev-libs/libisoburn #For virt-manager
 *games-util/game-device-udev-rules
