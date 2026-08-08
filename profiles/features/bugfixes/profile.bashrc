@@ -1,6 +1,6 @@
 source /lib/StormByte/portage.sh
 
-local FORCE_BINUTIL_VARS="app-crypt/efitools dev-lang/ocaml dev-libs/jansson"
+local FORCE_BINUTIL_VARS="app-crypt/efitools dev-lang/ocaml dev-libs/jansson sys-libs/libnvidia-container"
 local FORCE_LD_UNDEFINED_VERSION="dev-java/openjdk media-libs/tremor media-gfx/gimp net-analyzer/rrdtool net-firewall/nfacct"
 local FORCE_GCC_VARS="dev-debug/ddd sys-power/iasl sys-apps/apparmor"
 local FORCE_PIC_VARS="llvm-runtimes/libcxx llvm-runtimes/libcxxabi"
