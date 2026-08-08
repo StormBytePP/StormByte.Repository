@@ -12,7 +12,7 @@ EAPI=8
 CRATES="
 "
 
-RUST_MIN_VER="1.98.0"
+RUST_MIN_VER="1.94.0"
 
 inherit cargo
 
@@ -37,7 +37,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 
 RDEPEND="
-	=dev-libs/libgit2-1.9.3*:=
+	dev-libs/libgit2:=
 	dev-libs/openssl:=
 	net-libs/libssh2:=
 	net-misc/curl[ssl]
