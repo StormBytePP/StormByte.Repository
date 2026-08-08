@@ -38,3 +38,4 @@
 
 # Rust versions that require LLVM-22
 >dev-lang/rust-1.94.1
+dev-lang/rust-bin
