@@ -35,3 +35,6 @@
 >=llvm-runtimes/openmp-amdgcn-amd-amdhsa-22.0.0
 >=llvm-runtimes/openmp-nvptx64-nvidia-cuda-22.0.0
 >=llvm-runtimes/openmp-spirv64-intel-22.0.0
+
+# Rust versions that require LLVM-22
+>dev-lang/rust-1.94.1
