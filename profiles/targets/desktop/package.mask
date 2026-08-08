@@ -1,2 +1,5 @@
 # Block pulseaudio daemon in favor to pipewire
 media-sound/pulseaudio-daemon
+
+# Cuda only supports gcc15
+>=sys-devel/gcc-16.0.0
