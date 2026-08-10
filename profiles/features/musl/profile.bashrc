@@ -11,4 +11,10 @@ case "${CATEGORY}/${PN}" in
             export LD_PRELOAD="/usr/lib/libmimalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}"
         fi
         ;;
+
+    dev-lang/python)
+        # Python has TLS conflicts with mimalloc during build
+        # Clear LD_PRELOAD to avoid the "initial-exec TLS" error
+        unset LD_PRELOAD
+        ;;
 esac
