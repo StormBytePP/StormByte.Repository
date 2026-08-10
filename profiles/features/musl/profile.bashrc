@@ -2,7 +2,7 @@
 # Force mimalloc on the most allocation-heavy toolchain packages
 
 case "${CATEGORY}/${PN}" in
-    llvm-core/llvm|llvm-core/clang|llvm-core/lld|llvm-runtimes/libcxx|llvm-runtimes/libcxxabi|dev-lang/rust)
+    llvm-core/llvm|llvm-core/clang|llvm-core/lld|dev-lang/rust)
         # Link the final binaries/libraries against mimalloc
         export LDFLAGS="${LDFLAGS} -lmimalloc"
 
