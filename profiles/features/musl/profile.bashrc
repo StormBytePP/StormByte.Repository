@@ -12,7 +12,7 @@ case "${CATEGORY}/${PN}" in
         fi
         ;;
 
-    dev-lang/python)
+    dev-db/sqlite|dev-lang/python)
         # Python has TLS conflicts with mimalloc during build
         # Clear LD_PRELOAD to avoid the "initial-exec TLS" error
         unset LD_PRELOAD
