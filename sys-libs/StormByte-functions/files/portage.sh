@@ -42,8 +42,8 @@ function force_lto_vars() {
 }
 
 function force_polly_vars() {
-	CFLAGS="${CFLAGS} ${POLLY_FLAGS}"
-	CXXFLAGS="${CXXFLAGS} ${POLLY_FLAGS}"
+	CFLAGS="${CFLAGS} ${FLAGS_CLANG_POLLY}"
+	CXXFLAGS="${CXXFLAGS} ${FLAGS_CLANG_POLLY}"
 	LDFLAGS="${LDFLAGS} ${LINKER_POLLY}"
 }
 
