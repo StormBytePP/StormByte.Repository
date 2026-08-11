@@ -36,12 +36,10 @@ esac
 if [[ -z ${_KERNEL_BUILD_ECLASS} ]]; then
 _KERNEL_BUILD_ECLASS=1
 
-PYTHON_COMPAT=( python3_{11..14} )
-if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then
-	inherit secureboot
-fi
+PYTHON_COMPAT=( python3_{12..14} )
 
-inherit multiprocessing python-any-r1 savedconfig toolchain-funcs kernel-install
+inherit branding multiprocessing python-any-r1 savedconfig secureboot
+inherit toolchain-funcs kernel-install
 
 BDEPEND="
 	${PYTHON_DEPS}
@@ -54,19 +52,49 @@ BDEPEND="
 	virtual/libelf
 	arm? ( sys-apps/dtc )
 	arm64? ( sys-apps/dtc )
+	modules-sign? ( dev-libs/openssl )
 	riscv? ( sys-apps/dtc )
 "
 
-IUSE="+strip"
+if ver_test -ge 6.19; then
+	BDEPEND+="
+		sys-libs/binutils-libs
+	"
+fi
 
-# @ECLASS_VARIABLE: KERNEL_IUSE_MODULES_SIGN
-# @PRE_INHERIT
+IUSE="+strip modules-sign"
+REQUIRED_USE="secureboot? ( modules-sign )"
+
+# @ECLASS_VARIABLE: MEASUREDBOOT_SIGN_CERT
+# @USER_VARIABLE
 # @DEFAULT_UNSET
 # @DESCRIPTION:
-# If set to a non-null value, inherits secureboot.eclass, adds
-# IUSE=modules-sign and required logic to manipulate the kernel
-# config while respecting the MODULES_SIGN_HASH, MODULES_SIGN_CERT,
-# and MODULES_SIGN_KEY  user variables.
+# Used with USE=generic-uki.  May be set to the path of the public key
+# certificate in PEM format to use for signing PCR policies. Useful
+# for automatically unlocking encrypted disks with a TPM.
+# If unspecified defaults to the value of SECUREBOOT_SIGN_CERT.
+: "${MEASUREDBOOT_SIGN_CERT:=${SECUREBOOT_SIGN_CERT}}"
+
+# @ECLASS_VARIABLE: MEASUREDBOOT_SIGN_HASH
+# @USER_VARIABLE
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# Used with USE=generic-uki.  Can be set to a comma or space-separated
+# list specifying which PCR banks to perform measurements for. If
+# unset all PCR banks are used which will fail if not supported by the
+# system.
+#
+# Valid values: sha512,sha384,sha256,sha1
+
+# @ECLASS_VARIABLE: MEASUREDBOOT_SIGN_KEY
+# @USER_VARIABLE
+# @DEFAULT_UNSET
+# @DESCRIPTION:
+# Used with USE=generic-uki.  May be set to the path of the private
+# key in PEM format to use for signing PCR policies. Useful for
+# automatically unlocking encrypted disks with a TPM.
+# If unspecified defaults to the value of SECUREBOOT_SIGN_KEY.
+: "${MEASUREDBOOT_SIGN_KEY:=${SECUREBOOT_SIGN_KEY}}"
 
 # @ECLASS_VARIABLE: MODULES_SIGN_HASH
 # @USER_VARIABLE
@@ -78,6 +106,7 @@ IUSE="+strip"
 # Valid values: sha512,sha384,sha256,sha224,sha1
 #
 # Default if unset: sha512
+: "${MODULES_SIGN_HASH:=sha512}"
 
 # @ECLASS_VARIABLE: MODULES_SIGN_KEY
 # @USER_VARIABLE
@@ -113,10 +142,12 @@ IUSE="+strip"
 # empty, then the contents are used as the first kernel cmdline
 # option of the multi-profile generic UKI. Supplementing the four
 # standard options of:
-# - ro
-# - ro quiet splash
-# - ro lockdown=integrity
-# - ro quiet splash lockdown=integrity
+# - quiet
+# - quiet splash
+# - quiet lockdown=integrity
+# - quiet splash lockdown=integrity
+# - emergency
+# - rescue
 
 # @ECLASS_VARIABLE: KERNEL_VERBOSE
 # @USER_VARIABLE
@@ -143,7 +174,7 @@ fi
 # Call python-any-r1 and secureboot pkg_setup
 kernel-build_pkg_setup() {
 	python-any-r1_pkg_setup
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} && ${MERGE_TYPE} != binary ]]; then
+	if [[ ${MERGE_TYPE} != binary ]]; then
 		# inherits linux-info to check config values for keys
 		# ensure KV_FULL will not be set globally, that breaks configure
 		local KV_FULL
@@ -175,6 +206,30 @@ kernel-build_pkg_setup() {
 				else
 					MODULES_SIGN_KEY_CONTENTS="$(< "${MODULES_SIGN_KEY}")"
 				fi
+			fi
+		fi
+
+		if [[ ${KERNEL_IUSE_GENERIC_UKI} ]] && use generic-uki; then
+			if [[ -n ${MEASUREDBOOT_SIGN_KEY} ]]; then
+				if [[ -z ${MEASUREDBOOT_SIGN_CERT} ]]; then
+					ewarn "A MEASUREDBOOT_SIGN_KEY was specified but no MEASUREDBOOT_SIGN_CERT"
+					ewarn "was set. Assuming the certificate is in the same file as the key."
+					export MEASUREDBOOT_SIGN_CERT=${MEASUREDBOOT_SIGN_KEY}
+				fi
+
+				# Sanity check: fail early if key/cert in DER format or does not exist
+				local openssl_args=(
+					-inform PEM -in "${MEASUREDBOOT_SIGN_CERT}"
+					-noout -nocert
+				)
+				if [[ ${MEASUREDBOOT_SIGN_KEY} == pkcs11:* ]]; then
+					openssl_args+=( -engine pkcs11 -keyform ENGINE -key "${MEASUREDBOOT_SIGN_KEY}" )
+				else
+					openssl_args+=( -keyform PEM -key "${MEASUREDBOOT_SIGN_KEY}" )
+				fi
+
+				openssl x509 "${openssl_args[@]}" ||
+					die "Measured Boot signing certificate or key not found or not PEM format."
 			fi
 		fi
 	fi
@@ -361,7 +416,8 @@ kernel-build_src_test() {
 
 	kernel-install_test "${KV_FULL}" \
 		"${WORKDIR}/build/$(dist-kernel_get_image_path)" \
-		"${T}/lib/modules/${KV_FULL}"
+		"${T}/lib/modules/${KV_FULL}" \
+		"${WORKDIR}/modprep/.config"
 }
 
 # @FUNCTION: kernel-build_src_install
@@ -393,7 +449,7 @@ kernel-build_src_install() {
 	dostrip -x /lib/modules
 
 	local compress=()
-	if [[ ${KERNEL_IUSE_GENERIC_UKI} ]] && ! use modules-compress; then
+	if [[ ${KERNEL_IUSE_GENERIC_UKI} ]]; then
 		compress+=(
 			# Workaround for <6.12, does not have CONFIG_MODULE_COMPRESS_ALL
 			suffix-y=
@@ -501,6 +557,9 @@ kernel-build_src_install() {
 	# add a dist-kernel identifier file
 	echo "${CATEGORY}/${PF}:${SLOT}" > "${ED}${kernel_dir}/dist-kernel" || die
 
+	# Clean up dead symlinks
+	find -L "${ED}${kernel_dir}/" -type l -delete || die
+
 	# fix source tree and build dir symlinks
 	dosym "../../../${kernel_dir}" "/lib/modules/${KV_FULL}/build"
 	dosym "../../../${kernel_dir}" "/lib/modules/${KV_FULL}/source"
@@ -512,16 +571,14 @@ kernel-build_src_install() {
 		dosym "../../../${kernel_dir}/${image_path}" "/lib/modules/${KV_FULL}/vmlinuz"
 	fi
 
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then
-		if [[ ${image} == *.gz ]]; then
-			# Backwards compatibility with pre-zboot images
-			gunzip "${image}" || die
-			secureboot_sign_efi_file "${image%.gz}"
-			# Use same gzip options as the kernel Makefile
-			gzip -n -f -9 "${image%.gz}" || die
-		else
-			secureboot_sign_efi_file "${image}"
-		fi
+	if [[ ${image} == *.gz ]]; then
+		# Backwards compatibility with pre-zboot images
+		gunzip "${image}" || die
+		secureboot_sign_efi_file "${image%.gz}"
+		# Use same gzip options as the kernel Makefile
+		gzip -n -f -9 "${image%.gz}" || die
+	else
+		secureboot_sign_efi_file "${image}"
 	fi
 
 	if [[ ${KERNEL_IUSE_GENERIC_UKI} ]]; then
@@ -539,9 +596,16 @@ kernel-build_src_install() {
 				mdraid modsign network network-manager nfs nvdimm nvmf pcsc
 				pkcs11 plymouth qemu qemu-net resume rngd rootfs-block shutdown
 				systemd systemd-ac-power systemd-ask-password systemd-cryptsetup
-				systemd-initrd systemd-integritysetup systemd-pcrphase
-				systemd-sysusers systemd-udevd systemd-veritysetup terminfo
-				tpm2-tss udev-rules uefi-lib usrmount virtiofs
+				systemd-emergency systemd-initrd systemd-integritysetup
+				systemd-pcrextend systemd-sysusers systemd-udevd
+				systemd-veritysetup terminfo tpm2-tss udev-rules uefi-lib
+				usrmount virtiofs
+			)
+
+			# Pulls in huge firmware files
+			local omit_drivers=(
+				amdgpu i915 nfp nova nova_core nouveau nvidia nvidia-drm
+				nvidia-modeset nvidia-peermem nvidia-uvm radeon xe
 			)
 
 			local dracut_args=(
@@ -551,7 +615,7 @@ kernel-build_src_install() {
 				--kmoddir "${ED}/lib/modules/${KV_FULL}"
 				--kver "${KV_FULL}"
 				--verbose
-				--compress="xz -9e --check=crc32"
+				--compress="$(dist-kernel_get_compressor "${ED}/usr/src/linux-${KV_FULL}/.config")"
 				--no-hostonly
 				--no-hostonly-cmdline
 				--no-hostonly-i18n
@@ -562,8 +626,7 @@ kernel-build_src_install() {
 				--reproducible
 				--ro-mnt
 				--modules "${dracut_modules[*]}"
-				# Pulls in huge firmware files
-				--omit-drivers "amdgpu i915 nfp nouveau nvidia xe"
+				--omit-drivers "${omit_drivers[*]}"
 			)
 
 			# Tries to update ld cache
@@ -589,13 +652,29 @@ kernel-build_src_install() {
 				$'TITLE=Default with splash\nID=splash'
 				$'TITLE=Default with lockdown\nID=lockdown'
 				$'TITLE=Default with splash and lockdown\nID=splash-lockdown'
+				$'TITLE=Emergency\nID=emergency'
+				$'TITLE=Rescue\nID=rescue'
 			)
 
 			cmdlines+=(
-				"ro"
-				"ro quiet splash"
-				"ro lockdown=integrity"
-				"ro quiet splash lockdown=integrity"
+				"quiet"
+				"quiet splash"
+				"quiet lockdown=integrity"
+				"quiet splash lockdown=integrity"
+				"emergency"
+				"rescue"
+			)
+
+			local os_release=(
+				${BRANDING_OS_NAME+"NAME='${BRANDING_OS_NAME}'"}
+				${BRANDING_OS_ID+"ID='${BRANDING_OS_ID}'"}
+				${BRANDING_OS_ID_LIKE+"ID_LIKE='${BRANDING_OS_ID_LIKE}'"}
+				${BRANDING_OS_HOME_URL+"HOME_URL='${BRANDING_OS_HOME_URL}'"}
+				${BRANDING_OS_SUPPORT_URL+"SUPPORT_URL='${BRANDING_OS_SUPPORT_URL}'"}
+				${BRANDING_OS_BUG_REPORT_URL+"BUG_REPORT_URL='${BRANDING_OS_BUG_REPORT_URL}'"}
+				${BRANDING_OS_VERSION+"VERSION='${BRANDING_OS_VERSION}'"}
+				${BRANDING_OS_VERSION_ID+"VERSION_ID='${BRANDING_OS_VERSION_ID}'"}
+				${BRANDING_OS_PRETTY_NAME+"PRETTY_NAME='${BRANDING_OS_PRETTY_NAME}'"}
 			)
 
 			local ukify_args=(
@@ -605,6 +684,7 @@ kernel-build_src_install() {
 				--output="${image%/*}/uki.efi"
 				--profile="${profiles[0]}"
 				--cmdline="${cmdlines[0]}"
+				--os-release="$(printf '%s\n' "${os_release[@]}")"
 			) # 0th profile is default
 
 			# Additional profiles have to be added with --join-profile
@@ -619,38 +699,43 @@ kernel-build_src_install() {
 				ukify_args+=( --join-profile="${T}/profile${i}.efi" )
 			done
 
-			if [[ ${KERNEL_IUSE_MODULES_SIGN} ]] && use secureboot; then
+			if use secureboot; then
+				if [[ ${SECUREBOOT_SIGN_KEY} == pkcs11:* ]]; then
+					ukify_args+=(
+						--signing-engine="pkcs11"
+					)
+				fi
+				# systemd-sbsign does not support --sign-kernel.
+				# Disable unconditionally since we know the kernel
+				# image is already signed always.
+				ukify_args+=(
+					--secureboot-private-key="${SECUREBOOT_SIGN_KEY}"
+					--secureboot-certificate="${SECUREBOOT_SIGN_CERT}"
+					--signtool="${SECUREBOOT_SIGN_TOOL}"
+					--no-sign-kernel
+				)
+			fi
+			if [[ -n ${MEASUREDBOOT_SIGN_KEY} ]]; then
 				# The PCR public key option should contain *only* the
 				# public key, not the full certificate containing the
 				# public key. Bug #960276
 				openssl x509 \
-					-in "${SECUREBOOT_SIGN_CERT}" -inform PEM \
+					-in "${MEASUREDBOOT_SIGN_CERT}" -inform PEM \
 					-noout -pubkey > "${T}/pcrpkey.pem" ||
 						die "Failed to extract public key"
 				ukify_args+=(
-					--secureboot-private-key="${SECUREBOOT_SIGN_KEY}"
-					--secureboot-certificate="${SECUREBOOT_SIGN_CERT}"
-					--pcrpkey="${T}/pcrpkey.pem"
 					--measure
+					--pcrpkey="${T}/pcrpkey.pem"
+					--pcr-private-key="${MEASUREDBOOT_SIGN_KEY}"
+					--pcr-public-key="${T}/pcrpkey.pem"
+					--phases="enter-initrd"
+					--pcr-private-key="${MEASUREDBOOT_SIGN_KEY}"
+					--pcr-public-key="${T}/pcrpkey.pem"
+					--phases="enter-initrd:leave-initrd enter-initrd:leave-initrd:sysinit enter-initrd:leave-initrd:sysinit:ready"
 				)
-				if [[ ${SECUREBOOT_SIGN_KEY} == pkcs11:* ]]; then
+				if [[ -n ${MEASUREDBOOT_SIGN_HASH} ]]; then
 					ukify_args+=(
-						--signing-engine="pkcs11"
-						--pcr-private-key="${SECUREBOOT_SIGN_KEY}"
-						--pcr-public-key="${T}/pcrpkey.pem"
-						--phases="enter-initrd"
-						--pcr-private-key="${SECUREBOOT_SIGN_KEY}"
-						--pcr-public-key="${T}/pcrpkey.pem"
-						--phases="enter-initrd:leave-initrd enter-initrd:leave-initrd:sysinit enter-initrd:leave-initrd:sysinit:ready"
-					)
-				else
-					ukify_args+=(
-						--pcr-private-key="${SECUREBOOT_SIGN_KEY}"
-						--pcr-public-key="${T}/pcrpkey.pem"
-						--phases="enter-initrd"
-						--pcr-private-key="${SECUREBOOT_SIGN_KEY}"
-						--pcr-public-key="${T}/pcrpkey.pem"
-						--phases="enter-initrd:leave-initrd enter-initrd:leave-initrd:sysinit enter-initrd:leave-initrd:sysinit:ready"
+						--pcr-banks="${MEASUREDBOOT_SIGN_HASH}"
 					)
 				fi
 			fi
@@ -664,6 +749,9 @@ kernel-build_src_install() {
 			> "${image%/*}/uki.efi" || die
 		fi
 		> "${image%/*}/initrd" || die
+
+		# If requested, compress modules *after* building generic initrd
+		kernel-install_compress_modules
 	fi
 
 	# unset to at least be out of the environment file in, e.g. shared binpkgs
@@ -679,23 +767,21 @@ kernel-build_pkg_postinst() {
 	kernel-install_pkg_postinst
 	savedconfig_pkg_postinst
 
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} ]]; then
-		if use modules-sign && [[ -z ${MODULES_SIGN_KEY} ]]; then
-			ewarn
-			ewarn "MODULES_SIGN_KEY was not set, this means the kernel build system"
-			ewarn "automatically generated the signing key. This key was installed"
-			ewarn "in ${EROOT}/usr/src/linux-${KV_FULL}/certs"
-			ewarn "Please take appropriate action to protect the key!"
-			ewarn
-			ewarn "Recompiling this package causes a new key to be generated. As"
-			ewarn "a result any external kernel modules will need to be resigned."
-			ewarn "Use emerge @module-rebuild, or manually sign the modules as"
-			ewarn "described on the wiki [1]"
-			ewarn
-			ewarn "Consider using the MODULES_SIGN_KEY variable to use an external key."
-			ewarn
-			ewarn "[1]: https://wiki.gentoo.org/wiki/Signed_kernel_module_support"
-		fi
+	if use modules-sign && [[ -z ${MODULES_SIGN_KEY} ]]; then
+		ewarn
+		ewarn "MODULES_SIGN_KEY was not set, this means the kernel build system"
+		ewarn "automatically generated the signing key. This key was installed"
+		ewarn "in ${EROOT}/usr/src/linux-${KV_FULL}/certs"
+		ewarn "Please take appropriate action to protect the key!"
+		ewarn
+		ewarn "Recompiling this package causes a new key to be generated. As"
+		ewarn "a result any external kernel modules will need to be resigned."
+		ewarn "Use emerge @module-rebuild, or manually sign the modules as"
+		ewarn "described on the wiki [1]"
+		ewarn
+		ewarn "Consider using the MODULES_SIGN_KEY variable to use an external key."
+		ewarn
+		ewarn "[1]: https://wiki.gentoo.org/wiki/Signed_kernel_module_support"
 	fi
 }
 
@@ -710,7 +796,7 @@ kernel-build_pkg_postinst() {
 #    (if applicable).
 # 3. Config saved via USE=savedconfig (if applicable).
 # 4. Module signing key specified via MODULES_SIGN_KEY* variables.
-# 5. User-supplied configs from ${BROOT}/etc/kernel/config.d/*.config.
+# 5. User-supplied configs from ${ESYSROOT}/etc/kernel/config.d/*.config.
 #
 # This function must be called by the ebuild in the src_prepare phase.
 kernel-build_merge_configs() {
@@ -723,13 +809,12 @@ kernel-build_merge_configs() {
 
 	local shopt_save=$(shopt -p nullglob)
 	shopt -s nullglob
-	local user_configs=( "${BROOT}"/etc/kernel/config.d/*.config )
+	local user_configs=( "${ESYSROOT}"/etc/kernel/config.d/*.config )
 	eval "${shopt_save}"
 
 	local merge_configs=( "${@}" )
 
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} ]] && use modules-sign; then
-		: "${MODULES_SIGN_HASH:=sha512}"
+	if use modules-sign; then
 		cat <<-EOF > "${WORKDIR}/modules-sign.config" || die
 			## Enable module signing
 			CONFIG_MODULE_SIG=y
@@ -737,8 +822,16 @@ kernel-build_merge_configs() {
 			CONFIG_MODULE_SIG_FORCE=y
 			CONFIG_MODULE_SIG_${MODULES_SIGN_HASH^^}=y
 		EOF
-		merge_configs+=( "${WORKDIR}/modules-sign.config" )
+	else
+		cat <<-EOF > "${WORKDIR}/modules-sign.config" || die
+			## Disable module signing
+			# CONFIG_MODULE_SIG is not set
+			# CONFIG_MODULE_SIG_ALL is not set
+			# CONFIG_MODULE_SIG_FORCE is not set
+			# CONFIG_MODULE_SIG_KEY is not set
+		EOF
 	fi
+	merge_configs+=( "${WORKDIR}/modules-sign.config" )
 
 	# Only semi-related but let's use that to avoid changing stable ebuilds.
 	if [[ ${KERNEL_IUSE_GENERIC_UKI} ]]; then
@@ -748,16 +841,8 @@ kernel-build_merge_configs() {
 		cat <<-EOF > "${WORKDIR}/module-compress.config" || die
 			CONFIG_MODULE_COMPRESS=y
 			CONFIG_MODULE_COMPRESS_XZ=y
+			# CONFIG_MODULE_COMPRESS_ALL is not set
 		EOF
-		# CONFIG_MODULE_COMPRESS_ALL is supported only by >=6.12, for older
-		# versions we accomplish the same by overriding suffix-y=
-		if use modules-compress; then
-			echo "CONFIG_MODULE_COMPRESS_ALL=y" \
-				>> "${WORKDIR}/module-compress.config" || die
-		else
-			echo "# CONFIG_MODULE_COMPRESS_ALL is not set" \
-				>> "${WORKDIR}/module-compress.config" || die
-		fi
 		merge_configs+=( "${WORKDIR}/module-compress.config" )
 	fi
 
@@ -766,7 +851,7 @@ kernel-build_merge_configs() {
 		merge_configs+=( "${WORKDIR}/savedconfig.config" )
 	fi
 
-	if [[ ${KERNEL_IUSE_MODULES_SIGN} ]] && use modules-sign; then
+	if use modules-sign; then
 		local modules_sign_key=${MODULES_SIGN_KEY}
 		if [[ -n ${MODULES_SIGN_KEY_CONTENTS} ]]; then
 			modules_sign_key="${T}/kernel_key.pem"
