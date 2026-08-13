@@ -1,5 +1,6 @@
 *app-admin/pwgen
 *app-admin/sudo
+*app-benchmarks/hyperfine
 *app-containers/docker
 *app-containers/docker-cli
 *app-crypt/gnupg
