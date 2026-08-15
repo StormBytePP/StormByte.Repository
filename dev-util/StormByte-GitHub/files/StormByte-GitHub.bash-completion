@@ -1,0 +1,135 @@
+# StormByte-GitHub.bash-completion
+# Bash completion for StormByte-GitHub
+#
+# Installed as:
+#   /usr/share/bash-completion/completions/StormByte-GitHub
+#
+# Keep in sync with StormByte-GitHub CLI (cache show|list|delete, …).
+
+_StormByte_GitHub() {
+	local cur prev cword cmd sub
+	local -a words
+	local -a top_cmds cache_subs runners_subs submodules_subs dump_extra
+
+	COMPREPLY=()
+
+	# Manual word setup — more reliable than _init_completion for this CLI
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD - 1]}"
+	cword=$COMP_CWORD
+	words=("${COMP_WORDS[@]}")
+
+	top_cmds=(help cache runners submodules reset pull dump)
+	cache_subs=(show list delete)
+	runners_subs=(stop start restart)
+	submodules_subs=(deinit update init)
+	dump_extra=('type=c++' 'type=cmake' 50 100 200 500)
+
+	# Immediate subdirs of $PWD that look like git checkouts
+	_sb_github_repo_dirs() {
+		local d
+		local -a out=()
+		shopt -s nullglob
+		for d in ./*/; do
+			d="${d%/}"
+			d="${d#./}"
+			if [[ -d "$d/.git" || -f "$d/.git" ]]; then
+				out+=("$d")
+			fi
+		done
+		shopt -u nullglob
+		((${#out[@]})) && printf '%s\n' "${out[@]}"
+	}
+
+	# ----- position 1: top-level command -----
+	if ((cword == 1)); then
+		mapfile -t COMPREPLY < <(compgen -W "${top_cmds[*]}" -- "$cur")
+		return 0
+	fi
+
+	cmd="${words[1]-}"
+
+	case "$cmd" in
+	help | -h | --help)
+		return 0
+		;;
+
+	cache)
+		# cache <show|list|delete> [repo-dir]
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${cache_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		show | list | delete)
+			if ((cword == 3)); then
+				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+			fi
+			;;
+		esac
+		return 0
+		;;
+
+	runners)
+		# runners <stop|start|restart> [repo-dir]
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${runners_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		stop | start | restart)
+			if ((cword == 3)); then
+				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+			fi
+			;;
+		esac
+		return 0
+		;;
+
+	submodules)
+		# submodules <deinit|update|init> [repo-dir]
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${submodules_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		deinit | update | init)
+			if ((cword == 3)); then
+				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+			fi
+			;;
+		esac
+		return 0
+		;;
+
+	reset | pull)
+		# reset|pull [repo-dir]
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+		fi
+		return 0
+		;;
+
+	dump)
+		# dump <directory> [chunk_size_kb] [type=c++|type=cmake]
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+			return 0
+		fi
+		if [[ "$cur" == type=* || "$cur" == type ]]; then
+			mapfile -t COMPREPLY < <(compgen -W 'type=c++ type=cmake' -- "$cur")
+			return 0
+		fi
+		mapfile -t COMPREPLY < <(compgen -W "${dump_extra[*]}" -- "$cur")
+		return 0
+		;;
+	esac
+
+	COMPREPLY=()
+	return 0
+}
+
+complete -F _StormByte_GitHub StormByte-GitHub

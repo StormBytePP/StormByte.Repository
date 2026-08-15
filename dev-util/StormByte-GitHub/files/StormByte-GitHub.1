@@ -1,0 +1,103 @@
+.TH STORMBYTE-GITHUB 1 "August 2026" "StormByte" "User Commands"
+.SH NAME
+StormByte-GitHub \- helper script for managing StormByte GitHub repositories and submodules
+.SH SYNOPSIS
+.B StormByte-GitHub
+[\fIOPTIONS\fR] \fICOMMAND\fR [\fIARGS\fR...]
+.SH DESCRIPTION
+.B StormByte-GitHub
+is a convenience wrapper around common Git and GitHub operations used in the StormByte project ecosystem.
+It provides a consistent interface for cloning, updating, managing submodules and performing other
+repository-related tasks across Linux, macOS and Windows (via Git Bash / MSYS2).
+
+The script is designed to be quiet by default and only show detailed output when something fails
+or when verbose mode is explicitly requested.
+
+.SH OPTIONS
+.TP
+.BR \-h ", " \-\-help
+Show the general help message and exit.
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output (equivalent to setting BUILDMASTER_VERBOSE or similar debug flags).
+.TP
+.BR \-\-version
+Print the version of the script and exit.
+
+.SH COMMANDS
+.SS Repository management
+.TP
+.B clone \fI<repo>\fR [\fIdest\fR]
+Clone a StormByte repository (shortcut for the full GitHub URL).
+.TP
+.B update [\fIrepo\fR...]
+Fetch and pull the latest changes for the current repository or the specified ones.
+
+.SS Submodules
+.TP
+.B submodules init
+Initialize and update all submodules recursively
+(\fBgit submodule update --init --recursive\fR).
+This is the recommended first step after cloning a repository that uses submodules.
+.TP
+.B submodules update
+Update already initialized submodules to the commits recorded in the superproject.
+.TP
+.B submodules status
+Show the status of all submodules.
+
+.SS Other
+.TP
+.B help [\fIcommand\fR]
+Show help for a specific command (or the general help if no command is given).
+
+.SH EXAMPLES
+.nf
+# Clone a repository
+StormByte-GitHub clone StormByte/BuildMaster
+
+# Initialize submodules after cloning
+cd BuildMaster
+StormByte-GitHub submodules init
+
+# Update everything
+StormByte-GitHub update
+StormByte-GitHub submodules update
+.fi
+
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+General error (invalid arguments, git failure, etc.)
+.TP
+.B 2
+Missing required tools (git, etc.)
+
+.SH ENVIRONMENT
+.TP
+.B STORMBYTE_GITHUB_VERBOSE
+If set to a non-empty value, enables verbose output (same as \fB\-\-verbose\fR).
+
+.SH FILES
+.TP
+.I ~/.config/StormByte/GitHub.conf
+Optional configuration file (future use).
+
+.SH NOTES
+- The script is intended to be used from the root of a StormByte repository or from anywhere when using the
+  \fBclone\fR command.
+- Submodule operations are recursive by default when using \fBsubmodules init\fR.
+- On Windows the script expects a POSIX-compatible shell (Git Bash, MSYS2, WSL, etc.).
+
+.SH SEE ALSO
+.BR git (1),
+.BR git-submodule (1)
+
+.SH AUTHOR
+StormByte Project <https://github.com/StormByte>
+.SH COPYRIGHT
+Copyright \(co 2024-2026 StormByte.
+Licensed under the terms of the project license.
