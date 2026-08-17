@@ -1,2 +1,0 @@
-# Does not compile currently
-=net-analyzer/nmap-7.99
