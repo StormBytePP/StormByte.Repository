@@ -40,21 +40,6 @@ _get_lto_flags() {
 	fi
 }
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(

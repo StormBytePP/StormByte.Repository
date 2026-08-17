@@ -5,8 +5,8 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte System module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
+DESCRIPTION="StormByte Crypto module"
+HOMEPAGE="https://dev.stormbyte.org/StormByte-Crypto"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -21,10 +21,11 @@ SLOT="0"
 IUSE="pgo lto"
 
 DEPEND="
+	app-arch/bzip2
+	dev-libs/crypto++
 	dev-libs/StormByte
 	dev-libs/StormByte-Buffer
 	dev-libs/StormByte-Logger
-	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -40,24 +41,11 @@ _get_lto_flags() {
 	fi
 }
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 	)
@@ -97,6 +85,8 @@ src_compile() {
 	fi
 
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=ON
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_generate_flags}"
@@ -151,6 +141,8 @@ src_compile() {
 	pgo_use_flags+=" ${lto_flags}"
 
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_use_flags}"

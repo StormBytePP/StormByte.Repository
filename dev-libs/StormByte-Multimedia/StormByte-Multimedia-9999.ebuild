@@ -5,8 +5,8 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte System module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
+DESCRIPTION="StormByte Multimedia module"
+HOMEPAGE="https://dev.stormbyte.org/StormByte-Multimedia"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -18,13 +18,10 @@ fi
 
 LICENSE="LGPL-3"
 SLOT="0"
-IUSE="pgo lto"
+IUSE="advanced pgo lto"
 
 DEPEND="
 	dev-libs/StormByte
-	dev-libs/StormByte-Buffer
-	dev-libs/StormByte-Logger
-	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -40,25 +37,12 @@ _get_lto_flags() {
 	fi
 }
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(
 		-DWITH_STORMBYTE=SYSTEM
+		-DWITH_FFMPEG=SYSTEM
+		-DENABLE_ADVANCED_INSTALL=$(usex advanced ON OFF)
 		-DENABLE_TEST=OFF
 	)
 
@@ -98,6 +82,8 @@ src_compile() {
 
 	local mycmakeargs=(
 		-DWITH_STORMBYTE=SYSTEM
+		-DWITH_FFMPEG=SYSTEM
+		-DENABLE_ADVANCED_INSTALL=$(usex advanced ON OFF)
 		-DENABLE_TEST=ON
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_generate_flags}"
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS} ${pgo_generate_flags}"
@@ -152,6 +138,8 @@ src_compile() {
 
 	local mycmakeargs=(
 		-DWITH_STORMBYTE=SYSTEM
+		-DWITH_FFMPEG=SYSTEM
+		-DENABLE_ADVANCED_INSTALL=$(usex advanced ON OFF)
 		-DENABLE_TEST=OFF
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_use_flags}"
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS} ${pgo_use_flags}"

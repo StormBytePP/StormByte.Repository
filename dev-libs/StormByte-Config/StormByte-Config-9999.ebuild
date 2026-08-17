@@ -5,8 +5,8 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte System module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
+DESCRIPTION="StormByte Config module"
+HOMEPAGE="https://dev.stormbyte.org/StormByte-Config"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -22,9 +22,6 @@ IUSE="pgo lto"
 
 DEPEND="
 	dev-libs/StormByte
-	dev-libs/StormByte-Buffer
-	dev-libs/StormByte-Logger
-	dev-libs/crypto++
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -38,21 +35,6 @@ _get_lto_flags() {
 			echo "-flto"
 		fi
 	fi
-}
-
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
 }
 
 src_configure() {

@@ -5,8 +5,8 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte System module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
+DESCRIPTION="StormByte Database module"
+HOMEPAGE="https://dev.stormbyte.org/StormByte-Database"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -18,13 +18,14 @@ fi
 
 LICENSE="LGPL-3"
 SLOT="0"
-IUSE="pgo lto"
+IUSE="+mariadb +postgres +sqlite pgo lto"
 
 DEPEND="
 	dev-libs/StormByte
-	dev-libs/StormByte-Buffer
 	dev-libs/StormByte-Logger
-	dev-libs/crypto++
+	mariadb? ( dev-db/mariadb-connector-c )
+	postgres? ( dev-db/postgresql )
+	sqlite? ( dev-db/sqlite:3 )
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -40,24 +41,12 @@ _get_lto_flags() {
 	fi
 }
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(
+		-DWITH_MARIADB=$(usex mariadb SYSTEM OFF)
+		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
+		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 	)
@@ -97,6 +86,9 @@ src_compile() {
 	fi
 
 	local mycmakeargs=(
+		-DWITH_MARIADB=$(usex mariadb SYSTEM OFF)
+		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
+		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=ON
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_generate_flags}"
@@ -151,6 +143,9 @@ src_compile() {
 	pgo_use_flags+=" ${lto_flags}"
 
 	local mycmakeargs=(
+		-DWITH_MARIADB=$(usex mariadb SYSTEM OFF)
+		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
+		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_use_flags}"
