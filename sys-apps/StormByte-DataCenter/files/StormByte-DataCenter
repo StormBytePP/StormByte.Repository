@@ -1,0 +1,905 @@
+#!/usr/bin/env bash
+# =============================================================================
+# StormByte-DataCenter — disk inventory, SES LEDs, ZFS & Btrfs helpers
+# =============================================================================
+set -euo pipefail
+
+readonly STORMBYTE_DATACENTER_VERSION="1.0.0"
+readonly REQUIRE_STORMBYTE_FUNCTIONS="1.0.0"
+readonly REQUIRE_STORMBYTE_FUNCTIONS_DATACENTER="1.0.0"
+
+: "${POOL:=StormDataCenter}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_NAME
+SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+
+# -----------------------------------------------------------------------------
+# Libraries: script dir first, then /lib/StormByte
+# -----------------------------------------------------------------------------
+if [[ -f "${SCRIPT_DIR}/functions.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "${SCRIPT_DIR}/functions.sh"
+elif [[ -f "/lib/StormByte/functions.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "/lib/StormByte/functions.sh"
+else
+	printf 'ERROR: StormByte functions.sh not found\n' >&2
+	exit 1
+fi
+
+require_version "${STORMBYTE_FUNCTIONS_VERSION}" "${REQUIRE_STORMBYTE_FUNCTIONS}" "StormByte functions"
+
+if [[ -f "${SCRIPT_DIR}/datacenter.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "${SCRIPT_DIR}/datacenter.sh"
+elif [[ -f "/lib/StormByte/datacenter.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "/lib/StormByte/datacenter.sh"
+else
+	displayError "StormByte datacenter.sh not found"
+fi
+
+require_version "${STORMBYTE_FUNCTIONS_DATACENTER_VERSION}" "${REQUIRE_STORMBYTE_FUNCTIONS_DATACENTER}" "StormByte datacenter helpers"
+
+# -----------------------------------------------------------------------------
+# Privileges: use sudo when not root (do not force the user to re-run the script)
+# -----------------------------------------------------------------------------
+as_root() {
+	if [[ $EUID -eq 0 ]]; then
+		"$@"
+	else
+		sudo "$@"
+	fi
+}
+
+# -----------------------------------------------------------------------------
+# UI
+# -----------------------------------------------------------------------------
+
+display_header() {
+	local line1="StormByte-DataCenter  v${STORMBYTE_DATACENTER_VERSION}"
+	local line2="Disks · SES LEDs · ZFS · Btrfs"
+	local inner_w border_mid
+
+	inner_w=${#line1}
+	(( ${#line2} > inner_w )) && inner_w=${#line2}
+	inner_w=$((inner_w + 4))
+	(( inner_w < 50 )) && inner_w=50
+	border_mid="$(printf '═%.0s' $(seq 1 "$inner_w"))"
+
+	_sb_center() {
+		local text="$1" tw=${#text} total=$inner_w
+		local left=$(( (total - tw) / 2 ))
+		local right=$(( total - tw - left ))
+		printf '%*s%s%*s' "$left" '' "$text" "$right" ''
+	}
+
+	printf '\n'
+	printf '  %s╔%s╗%s\n' "${_CLR_BOLD_BLUE}" "$border_mid" "${_CLR_RESET}"
+	printf '  %s║%s%s%s║%s\n' \
+		"${_CLR_BOLD_BLUE}" "${_CLR_RESET}${_CLR_BOLD}" \
+		"$(_sb_center "$line1")" \
+		"${_CLR_BOLD_BLUE}" "${_CLR_RESET}"
+	printf '  %s║%s%s%s║%s\n' \
+		"${_CLR_BOLD_BLUE}" "${_CLR_RESET}" \
+		"$(_sb_center "$line2")" \
+		"${_CLR_BOLD_BLUE}" "${_CLR_RESET}"
+	printf '  %s╚%s╝%s\n' "${_CLR_BOLD_BLUE}" "$border_mid" "${_CLR_RESET}"
+	printf '\n'
+}
+
+usage_error() {
+	err "$1"
+	echo
+	echo "Accepted: $2"
+	echo "Use '${SCRIPT_NAME} help' for full help."
+	exit 1
+}
+
+display_help() {
+	display_header
+	cat <<EOF
+${_CLR_BOLD}USAGE${_CLR_RESET}
+${SCRIPT_NAME} <command> [subcommand…] [arguments…]
+
+${_CLR_BOLD}ENVIRONMENT${_CLR_RESET}
+POOL=name              Default ZFS pool (current: ${POOL})
+SMARTCTL_TIMEOUT=N     smartctl timeout in seconds (default: ${SMARTCTL_TIMEOUT:-10})
+
+${_CLR_BOLD}DEVICE ARGUMENTS${_CLR_RESET}
+sdX | /dev/sdX
+wwn-0x… | /dev/disk/by-id/wwn-0x…
+scsi-…  | /dev/disk/by-id/scsi-…
+ata-…   | /dev/disk/by-id/ata-…
+
+Identity resolves to a stable key; I/O uses the best access path
+(multipath mapper preferred when by-id is blocked).
+
+${_CLR_BOLD}PRIVILEGES${_CLR_RESET}
+Operations that need elevated rights call ${ _CLR_BOLD}sudo${_CLR_RESET} automatically
+when the script is not already running as root. You do not need to
+re-invoke the whole command under sudo.
+
+Uses elevated rights:
+	disk list -v | disk health | disk info | disk format
+	led on|off|blink
+	disk zfs scrub | disk zfs scrub stop
+	disk btrfs scrub start|cancel
+
+${_CLR_BOLD}COMMANDS${_CLR_RESET}
+
+${_CLR_BOLD_CYAN}help${_CLR_RESET}
+Show this help.
+
+${_CLR_BOLD_CYAN}disk list${_CLR_RESET} [-v|--verbose] [device]
+List disks (all sd*), ordered by enclosure/slot when available.
+-v adds Enclosure, SMART, Temp, Link, Health, Path (uses smartctl via sudo).
+
+${_CLR_BOLD_CYAN}disk health${_CLR_RESET} [device]
+Compact SMART/health summary (smartctl via sudo).
+
+${_CLR_BOLD_CYAN}disk info${_CLR_RESET} <device>
+Formatted SMART summary (not a raw dump).
+
+${_CLR_BOLD_CYAN}disk format${_CLR_RESET} <device> [--progress]
+SCSI FORMAT UNIT via sg_format (sg3_utils). Fails if the device cannot
+be formatted that way. Optional --progress shows sg_format progress.
+${ _CLR_DIM}Destructive. Requires confirmation.${_CLR_RESET}
+
+${_CLR_BOLD_CYAN}disk zfs status${_CLR_RESET} [-v] [pool]
+zpool status (errors if pool does not exist).
+
+${_CLR_BOLD_CYAN}disk zfs list${_CLR_RESET}
+Pools and datasets.
+
+${_CLR_BOLD_CYAN}disk zfs iostat${_CLR_RESET} [interval]
+zpool iostat.
+
+${_CLR_BOLD_CYAN}disk zfs events${_CLR_RESET}
+zpool events.
+
+${_CLR_BOLD_CYAN}disk zfs scrub${_CLR_RESET} | ${ _CLR_BOLD_CYAN}disk zfs scrub stop${_CLR_RESET}
+Start/stop scrub on POOL (via sudo).
+
+${_CLR_BOLD_CYAN}disk btrfs status|list|df|device${_CLR_RESET} …
+Non-btrfs paths rejected; list skips non-btrfs mounts.
+
+${_CLR_BOLD_CYAN}disk btrfs scrub start|status|cancel${_CLR_RESET} [path]
+start/cancel via sudo.
+
+${_CLR_BOLD_CYAN}led on|off|show${_CLR_RESET} [device]
+SES IDENT LED. Without device → all enclosure disks.
+on/off via sudo; show does not need elevation.
+
+${_CLR_BOLD_CYAN}led blink${_CLR_RESET} <device> [seconds]
+Device mandatory. Default 30s. Uses sudo.
+
+${_CLR_BOLD}EXAMPLES${_CLR_RESET}
+${SCRIPT_NAME} disk list
+${SCRIPT_NAME} disk list -v
+${SCRIPT_NAME} disk info wwn-0x5000cca03e7ce8f8
+${SCRIPT_NAME} disk format scsi-35000c500566d10c3 --progress
+${SCRIPT_NAME} led blink sda 15
+${SCRIPT_NAME} disk zfs status -v
+POOL=Other ${SCRIPT_NAME} disk zfs scrub
+EOF
+}
+
+# -----------------------------------------------------------------------------
+# Shared state
+# -----------------------------------------------------------------------------
+
+declare -A SMART_CACHE=()
+
+ensure_maps() {
+	if [[ ${#ALL_WWNS[@]:-0} -eq 0 ]]; then
+		init_disk_maps
+	fi
+}
+
+# smartctl via access path + sudo when needed + timeout
+_smartctl_a() {
+	local access="$1"
+	local out
+	if command -v timeout >/dev/null 2>&1; then
+		out=$(as_root timeout "${SMARTCTL_TIMEOUT:-10}" smartctl -a "$access" 2>/dev/null || true)
+	else
+		out=$(as_root smartctl -a "$access" 2>/dev/null || true)
+	fi
+	printf '%s' "$out"
+}
+
+get_smart_cached() {
+	local key="$1"
+	local access out
+
+	if [[ -v "SMART_CACHE[$key]" ]]; then
+		printf '%s' "${SMART_CACHE[$key]}"
+		return 0
+	fi
+	access=$(resolve_to_access_dev "$key" 2>/dev/null) || {
+		SMART_CACHE[$key]=""
+		return 1
+	}
+	out="$(_smartctl_a "$access")"
+	SMART_CACHE[$key]="$out"
+	printf '%s' "$out"
+}
+
+ordered_ids() {
+	ensure_maps
+	local id sd key
+	local -a keys=()
+	for id in "${ALL_WWNS[@]}"; do
+		sd="${WWN_TO_SD[$id]:-}"
+		[[ -n "$sd" ]] || continue
+		key="$(enclosure_sort_key "$sd")"
+		keys+=("$key|$id")
+	done
+	local line
+	while IFS= read -r line; do
+		[[ -z "$line" ]] && continue
+		echo "${line##*|}"
+	done < <(printf '%s\n' "${keys[@]}" | LC_ALL=C sort)
+}
+
+_zpool_exists() {
+	local pool="$1"
+	zpool list -H -o name "$pool" &>/dev/null
+}
+
+_is_btrfs_path() {
+	local path="$1"
+	[[ -e "$path" ]] || return 1
+	if command -v findmnt >/dev/null 2>&1; then
+		local fstype
+		fstype=$(findmnt -n -o FSTYPE -T "$path" 2>/dev/null || true)
+		[[ "$fstype" == "btrfs" ]] && return 0
+		return 1
+	fi
+	if [[ -b "$path" ]]; then
+		local t
+		t=$(blkid -o value -s TYPE "$path" 2>/dev/null || true)
+		[[ "$t" == "btrfs" ]] && return 0
+	fi
+	return 1
+}
+
+_require_btrfs_path() {
+	local path="$1"
+	if ! _is_btrfs_path "$path"; then
+		displayError "Not a btrfs filesystem (or path not on btrfs): $path"
+	fi
+}
+
+# Write SES locate with sudo when needed
+_led_write() {
+	local slot_dir="$1"
+	local value="$2"
+	if [[ $EUID -eq 0 ]]; then
+		echo "$value" >"$slot_dir/locate"
+	else
+		echo "$value" | sudo tee "$slot_dir/locate" >/dev/null
+	fi
+}
+
+_led_set_user() {
+	local input="$1"
+	local value="$2"
+	local id prefix
+
+	if [[ -d "$input" && -f "$input/locate" ]]; then
+		_led_write "$input" "$value"
+		return $?
+	fi
+
+	id=$(extract_wwn "$input") || return 1
+	if ! [[ "$id" =~ ^[0-9a-fA-F]{16,}$ ]]; then
+		err "Device has no SES enclosure slot (not a SAS/WWN disk): $input"
+		return 1
+	fi
+	prefix="${id%?}"
+	find_slot_by_wwn_prefix "$prefix" || return 1
+	_led_write "$SLOT_DIR" "$value"
+}
+
+# -----------------------------------------------------------------------------
+# disk list / health / info
+# -----------------------------------------------------------------------------
+
+_print_list_header() {
+	local verbose="$1"
+	if [[ "$verbose" -eq 1 ]]; then
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
+			"Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
+			"Enclosure" "SMART" "Temp" "Link" "Health" "LED" "Path"
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
+			"--------" "------------------------------------------" "----------" "------------------" \
+			"--------" "------" "------------------" "-------" "-----" "------------" "--------" "----" "--------------"
+	else
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
+			"Device" "Identifiers" "Vendor" "Model" "FW" "Pool" "LED"
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
+			"--------" "------------------------------------------" "----------" "------------------" \
+			"--------" "------" "----"
+	fi
+}
+
+_print_one_disk() {
+	local id="$1"
+	local verbose="$2"
+	local pool_status="$3"
+	local lsscsi_out="${4:-}"
+	local sd aliases vendor model firmware line in_pool led
+	local enc_slot smart_st temp link health path kind access
+
+	sd="${WWN_TO_SD[$id]:-}"
+	[[ -n "$sd" ]] || return 1
+
+	aliases="${WWN_ALIASES[$id]:-none}"
+	line=$(grep -wF "/dev/$sd" <<<"$lsscsi_out" | head -1 || true)
+	if [[ -z "$line" ]]; then
+		vendor="?"; model="?"; firmware="?"
+	else
+		vendor=$(awk '{print $3}' <<<"$line")
+		model=$(awk '{print $4}' <<<"$line")
+		firmware=$(awk '{print $5}' <<<"$line")
+	fi
+
+	if [[ "$vendor" == "ATA" ]]; then
+		local ata_alias ata_info ata_model
+		ata_alias=$(grep -oE 'ata-[^ ]+' <<<"$aliases" | head -1 || true)
+		if [[ -n "$ata_alias" ]]; then
+			ata_info="${ata_alias#ata-}"
+			ata_model="${ata_info%_*}"
+			vendor="${ata_model%%_*}"
+			model="${ata_model#*_}"
+			model="${model//_/ }"
+		fi
+		if [[ -f "/sys/block/$sd/device/rev" ]]; then
+			firmware=$(<"/sys/block/$sd/device/rev")
+			firmware="${firmware#"${firmware%%[![:space:]]*}"}"
+			firmware="${firmware%"${firmware##*[![:space:]]}"}"
+		fi
+	fi
+
+	in_pool="NO"
+	is_in_pool_status "$id" "$pool_status" && in_pool="YES"
+
+	led=$(led_status "$sd" 2>/dev/null || echo "N/A")
+	[[ -z "$led" ]] && led="N/A"
+
+	access="${WWN_TO_ACCESS[$id]:-/dev/$sd}"
+	kind="${WWN_TO_PATH_KIND[$id]:-sd}"
+	path="$(basename "$access")"
+	[[ "$kind" == "mapper" ]] && path="mp:${path}"
+
+	if [[ "$verbose" -eq 1 ]]; then
+		enc_slot=$(get_enclosure_slot "$sd")
+		local sm
+		sm=$(get_smart_cached "$id" || true)
+		if [[ -z "$sm" ]]; then
+			smart_st="TIMEOUT"
+			temp="N/A"
+			health="N/A"
+		else
+			smart_st=$(smart_status_from_output "$sm")
+			temp=$(smart_temperature_from_output "$sm")
+			health=$(smart_health_from_output "$sm")
+		fi
+		link=$(get_link_speed "$sd")
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
+			"$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" \
+			"$enc_slot" "$smart_st" "$temp" "$link" "$health" "$led" "$path"
+	else
+		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
+			"$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" "$led"
+	fi
+}
+
+cmd_disk_list() {
+	local verbose=0 device="" arg
+	for arg in "$@"; do
+		case "$arg" in
+			-v|--verbose) verbose=1 ;;
+			*) device="$arg" ;;
+		esac
+	done
+
+	ensure_maps
+	local pool_status lsscsi_out id count=0
+	pool_status=$(zpool status "$POOL" 2>/dev/null || true)
+	lsscsi_out=$(lsscsi -g 2>/dev/null || true)
+
+	section "Disk inventory"
+	info "Pool check" "$POOL"
+	_print_list_header "$verbose"
+
+	if [[ -n "$device" ]]; then
+		id=$(resolve_to_wwn "$device") || displayError "Cannot resolve device: $device"
+		_print_one_disk "$id" "$verbose" "$pool_status" "$lsscsi_out" \
+			|| displayError "Disk not found in inventory"
+		count=1
+	else
+		while IFS= read -r id; do
+			[[ -z "$id" ]] && continue
+			_print_one_disk "$id" "$verbose" "$pool_status" "$lsscsi_out" || true
+			count=$((count + 1))
+		done < <(ordered_ids)
+	fi
+	log ""
+	ok "Listed $count disk(s)"
+}
+
+cmd_disk_health() {
+	ensure_maps
+	local device="${1:-}" id sd access sm st hl
+
+	printf "%-8s %-14s %-10s %-10s %-s\n" "Device" "Access" "SMART" "Health" "Path kind"
+	printf "%-8s %-14s %-10s %-10s %-s\n" "--------" "--------------" "----------" "----------" "---------"
+
+	_one_health() {
+		id="$1"
+		sd="${WWN_TO_SD[$id]:-?}"
+		access=$(resolve_to_access_dev "$id" 2>/dev/null || echo "?")
+		sm=$(get_smart_cached "$id" || true)
+		if [[ -z "$sm" ]]; then
+			st="TIMEOUT"; hl="N/A"
+		else
+			st=$(smart_status_from_output "$sm")
+			hl=$(smart_health_from_output "$sm")
+		fi
+		printf "%-8s %-14s %-10s %-10s %-s\n" \
+			"$sd" "$(basename "$access")" "$st" "$hl" "${WWN_TO_PATH_KIND[$id]:-?}"
+	}
+
+	if [[ -n "$device" ]]; then
+		id=$(resolve_to_wwn "$device") || displayError "Cannot resolve: $device"
+		_one_health "$id"
+	else
+		while IFS= read -r id; do
+			[[ -z "$id" ]] && continue
+			_one_health "$id"
+		done < <(ordered_ids)
+	fi
+}
+
+cmd_disk_info() {
+	local device="${1:-}"
+	[[ -z "$device" ]] && usage_error "disk info requires a device" "disk info <device>"
+
+	ensure_maps
+
+	local id sd access kind sm aliases pool_status in_pool="NO"
+	id=$(resolve_to_wwn "$device") || displayError "Cannot resolve: $device"
+	sd="${WWN_TO_SD[$id]:-?}"
+	access=$(resolve_to_access_dev "$id") || displayError "No usable access path for $device"
+	kind="${WWN_TO_PATH_KIND[$id]:-unknown}"
+	aliases="${WWN_ALIASES[$id]:-}"
+	sm=$(get_smart_cached "$id" || true)
+
+	section "Disk info"
+	info "Input" "$device"
+	info "Device" "$sd"
+	info "Identity" "$id"
+	info "Access" "$access ($kind)"
+	info "Aliases" "${aliases:-none}"
+	info "Enclosure" "$(get_enclosure_slot "$sd")"
+	info "Transport" "$(get_transport_type "$sd")"
+	info "LED" "$(led_status "$sd")"
+
+	pool_status=$(zpool status "$POOL" 2>/dev/null || true)
+	is_in_pool_status "$id" "$pool_status" && in_pool="YES"
+	info "In pool ($POOL)" "$in_pool"
+
+	if [[ -z "$sm" ]]; then
+		warn "smartctl returned no data (timeout or unsupported)"
+		return 0
+	fi
+
+	log ""
+	printf "  ${_CLR_BOLD}SMART summary${_CLR_RESET}\n"
+	info "Overall" "$(smart_status_from_output "$sm")"
+	info "Health" "$(smart_health_from_output "$sm")"
+	info "Temperature" "$(smart_temperature_from_output "$sm")"
+	info "Link" "$(get_link_speed "$sd")"
+
+	local model serial capacity hours cycles
+	model=$(grep -iE '^(Device Model|Product):' <<<"$sm" | head -1 | sed 's/^[^:]*:[[:space:]]*//')
+	serial=$(grep -iE '^(Serial Number|Serial number):' <<<"$sm" | head -1 | sed 's/^[^:]*:[[:space:]]*//')
+	capacity=$(grep -iE '^User Capacity:' <<<"$sm" | head -1 | sed 's/^[^:]*:[[:space:]]*//')
+	hours=$(awk '/^9 / {print $10}' <<<"$sm" | head -1)
+	[[ -z "$hours" ]] && hours=$(grep -i 'Power_On_Hours' <<<"$sm" | awk '{print $10}' | head -1)
+	cycles=$(awk '/^12 / {print $10}' <<<"$sm" | head -1)
+
+	[[ -n "$model" ]] && info "Model" "$model"
+	[[ -n "$serial" ]] && info "Serial" "$serial"
+	[[ -n "$capacity" ]] && info "Capacity" "$capacity"
+	[[ -n "$hours" ]] && info "Power-on hours" "$hours"
+	[[ -n "$cycles" ]] && info "Power cycles" "$cycles"
+
+	local realloc pending offline defects
+	realloc=$(awk '/^  5 / {print $10}' <<<"$sm" | head -1)
+	pending=$(awk '/^197 / {print $10}' <<<"$sm" | head -1)
+	offline=$(awk '/^198 / {print $10}' <<<"$sm" | head -1)
+	defects=$(grep -i 'Elements in grown defect list' <<<"$sm" | awk '{print $NF}')
+	[[ -n "$realloc" ]] && info "Reallocated sectors" "$realloc"
+	[[ -n "$pending" ]] && info "Pending sectors" "$pending"
+	[[ -n "$offline" ]] && info "Offline uncorrectable" "$offline"
+	[[ -n "$defects" ]] && info "Grown defects" "$defects"
+}
+
+# -----------------------------------------------------------------------------
+# disk format (sg_format / sg3_utils)
+# -----------------------------------------------------------------------------
+
+cmd_disk_format() {
+	local device="" progress=0 arg
+	local access id sd reply
+
+	for arg in "$@"; do
+		case "$arg" in
+			--progress) progress=1 ;;
+			-*)
+				usage_error "Unknown option: $arg" "disk format <device> [--progress]"
+				;;
+			*)
+				[[ -z "$device" ]] && device="$arg" || usage_error "Unexpected argument: $arg" \
+					"disk format <device> [--progress]"
+				;;
+		esac
+	done
+
+	[[ -n "$device" ]] || usage_error "disk format requires a device" "disk format <device> [--progress]"
+
+	command -v sg_format >/dev/null 2>&1 \
+		|| displayError "sg_format not found (install sys-apps/sg3_utils)"
+
+	ensure_maps
+	id=$(resolve_to_wwn "$device") || displayError "Cannot resolve device: $device"
+	sd="${WWN_TO_SD[$id]:-?}"
+	access=$(resolve_to_access_dev "$id") || displayError "No usable access path for $device"
+
+	section "SCSI FORMAT UNIT"
+	info "Input" "$device"
+	info "Device" "$sd"
+	info "Access" "$access"
+	info "Identity" "$id"
+	warn "This will DESTROY all data on the device."
+
+	read -r -p "  Type YES to confirm format: " reply
+	[[ "$reply" == "YES" ]] || displayError "Aborted (confirmation not YES)"
+
+	local -a cmd=(sg_format --format --ffmt=0)
+	# --progress: poll and display progress (sg_format long option)
+	if [[ "$progress" -eq 1 ]]; then
+		cmd+=(--progress)
+	fi
+	cmd+=("$access")
+
+	info "Running" "${cmd[*]}"
+	if as_root "${cmd[@]}"; then
+		ok "Format completed on $access"
+	else
+		displayError "sg_format failed on $access (device may not support SCSI FORMAT UNIT)"
+	fi
+}
+
+# -----------------------------------------------------------------------------
+# disk zfs
+# -----------------------------------------------------------------------------
+
+cmd_disk_zfs() {
+	local sub="${1:-}"
+	shift || true
+	local pool="$POOL"
+
+	case "$sub" in
+		status)
+			local verbose=0 arg
+			for arg in "$@"; do
+				case "$arg" in
+					-v|--verbose) verbose=1 ;;
+					*) pool="$arg" ;;
+				esac
+			done
+			if ! _zpool_exists "$pool"; then
+				displayError "ZFS pool does not exist: $pool"
+			fi
+			section "ZFS status ($pool)"
+			if [[ "$verbose" -eq 1 ]]; then
+				zpool status -v "$pool"
+			else
+				zpool status "$pool"
+			fi
+			;;
+		list)
+			section "ZFS pools"
+			zpool list 2>/dev/null || warn "No ZFS pools found"
+			log ""
+			section "ZFS datasets"
+			zfs list 2>/dev/null || warn "No ZFS datasets found"
+			;;
+		iostat)
+			local interval="${1:-1}"
+			if ! _zpool_exists "$POOL"; then
+				displayError "ZFS pool does not exist: $POOL"
+			fi
+			[[ "$interval" =~ ^[0-9]+$ ]] || displayError "interval must be a positive integer"
+			section "ZFS iostat ($POOL)"
+			zpool iostat -v "$POOL" "$interval"
+			;;
+		events)
+			if ! _zpool_exists "$POOL"; then
+				displayError "ZFS pool does not exist: $POOL"
+			fi
+			section "ZFS events ($POOL)"
+			zpool events "$POOL" 2>/dev/null || zpool events
+			;;
+		scrub)
+			local action="${1:-start}"
+			if ! _zpool_exists "$POOL"; then
+				displayError "ZFS pool does not exist: $POOL"
+			fi
+			case "$action" in
+				""|start)
+					section "ZFS scrub start ($POOL)"
+					as_root zpool scrub "$POOL"
+					ok "Scrub started on $POOL"
+					;;
+				stop)
+					section "ZFS scrub stop ($POOL)"
+					as_root zpool scrub -s "$POOL"
+					ok "Scrub stop requested on $POOL"
+					;;
+				*)
+					usage_error "Unknown scrub action: $action" "disk zfs scrub [stop]"
+					;;
+			esac
+			;;
+		*)
+			usage_error "Missing or unknown disk zfs subcommand" \
+				"disk zfs status|list|iostat|events|scrub [stop]"
+			;;
+	esac
+}
+
+# -----------------------------------------------------------------------------
+# disk btrfs
+# -----------------------------------------------------------------------------
+
+cmd_disk_btrfs() {
+	local sub="${1:-}"
+	shift || true
+	local path="${1:-/}"
+
+	case "$sub" in
+		status)
+			path="${1:-/}"
+			_require_btrfs_path "$path"
+			section "Btrfs status ($path)"
+			btrfs filesystem show "$path" 2>/dev/null || btrfs filesystem show
+			log ""
+			btrfs filesystem usage "$path"
+			;;
+		list)
+			section "Btrfs filesystems"
+			if ! btrfs filesystem show 2>/dev/null | grep -q .; then
+				warn "No btrfs filesystems detected"
+			else
+				btrfs filesystem show 2>/dev/null || true
+			fi
+			log ""
+			section "Subvolumes"
+			local mnt count=0
+			while IFS= read -r mnt; do
+				[[ -z "$mnt" ]] && continue
+				_is_btrfs_path "$mnt" || continue
+				info "Mount" "$mnt"
+				btrfs subvolume list "$mnt" 2>/dev/null || warn "subvolume list failed for $mnt"
+				count=$((count + 1))
+			done < <(findmnt -n -t btrfs -o TARGET 2>/dev/null || true)
+			if [[ "$count" -eq 0 ]]; then
+				if _is_btrfs_path "/"; then
+					btrfs subvolume list / 2>/dev/null || warn "subvolume list failed"
+				else
+					warn "No btrfs mounts to list subvolumes from"
+				fi
+			fi
+			;;
+		df)
+			path="${1:-/}"
+			_require_btrfs_path "$path"
+			section "Btrfs df ($path)"
+			btrfs filesystem df "$path"
+			;;
+		device)
+			path="${1:-/}"
+			_require_btrfs_path "$path"
+			section "Btrfs device ($path)"
+			btrfs device usage "$path" 2>/dev/null || btrfs filesystem show "$path"
+			;;
+		scrub)
+			local action="${1:-status}"
+			path="${2:-/}"
+			_require_btrfs_path "$path"
+			case "$action" in
+				start)
+					section "Btrfs scrub start ($path)"
+					as_root btrfs scrub start "$path"
+					ok "Scrub started"
+					;;
+				status)
+					section "Btrfs scrub status ($path)"
+					btrfs scrub status "$path"
+					;;
+				cancel)
+					section "Btrfs scrub cancel ($path)"
+					as_root btrfs scrub cancel "$path"
+					ok "Scrub cancel requested"
+					;;
+				*)
+					usage_error "Unknown btrfs scrub action: $action" \
+						"disk btrfs scrub start|status|cancel [path]"
+					;;
+			esac
+			;;
+		*)
+			usage_error "Missing or unknown disk btrfs subcommand" \
+				"disk btrfs status|list|df|device|scrub …"
+			;;
+	esac
+}
+
+cmd_disk() {
+	local sub="${1:-}"
+	shift || true
+	case "$sub" in
+		list)   cmd_disk_list "$@" ;;
+		health) cmd_disk_health "$@" ;;
+		info)   cmd_disk_info "$@" ;;
+		format) cmd_disk_format "$@" ;;
+		zfs)    cmd_disk_zfs "$@" ;;
+		btrfs)  cmd_disk_btrfs "$@" ;;
+		*)
+			usage_error "Missing or unknown disk subcommand" \
+				"disk list|health|info|format|zfs|btrfs …"
+			;;
+	esac
+}
+
+# -----------------------------------------------------------------------------
+# led
+# -----------------------------------------------------------------------------
+
+cmd_led() {
+	local action="${1:-}"
+	shift || true
+	local device="${1:-}"
+	local seconds="${2:-30}"
+
+	ensure_maps
+
+	case "$action" in
+		on|off)
+			local val
+			[[ "$action" == "on" ]] && val=1 || val=0
+			if [[ -z "$device" ]]; then
+				section "LED $action (all)"
+				local -A seen=()
+				local enc_dir slot_dir slot_sas slot_wwn n=0
+				for enc_dir in /sys/class/enclosure/*/; do
+					[[ -d "$enc_dir" ]] || continue
+					for slot_dir in "$enc_dir"*/; do
+						[[ -f "$slot_dir/locate" && -f "$slot_dir/device/sas_address" ]] || continue
+						slot_sas=$(<"$slot_dir/device/sas_address")
+						slot_wwn=$(resolve_sas_to_wwn "$slot_sas" 2>/dev/null) || continue
+						[[ -z "${seen[$slot_wwn]+x}" ]] || continue
+						seen[$slot_wwn]=1
+						_led_write "$slot_dir" "$val" 2>/dev/null || true
+						n=$((n + 1))
+					done
+				done
+				ok "LED $action applied on $n disk(s)"
+			else
+				section "LED $action"
+				_led_set_user "$device" "$val" || displayError "Failed to set LED for $device"
+				info "Device" "$device"
+				info "LED" "$([[ $val -eq 1 ]] && echo ON || echo OFF)"
+				ok "Done"
+			fi
+			;;
+		show)
+			section "LED status"
+			local -a rows=()
+			local -A seen=()
+			local enc_dir slot_dir slot_sas slot_wwn led_state sd_name scsi_id wwn_id sortk
+
+			if [[ -n "$device" ]]; then
+				local id
+				id=$(extract_wwn "$device") || exit 1
+				if ! [[ "$id" =~ ^[0-9a-fA-F]{16,}$ ]]; then
+					displayError "Device has no SES enclosure slot: $device"
+				fi
+				find_slot_by_wwn_prefix "${id%?}" || displayError "No enclosure slot for $device"
+				led_state=$(led_status "$SLOT_DIR")
+				read -r sd_name scsi_id wwn_id <<<"$(resolve_sas_to_ids "$SLOT_SAS")"
+				printf "%-8s %-36s %-28s %-4s\n" "Device" "SCSI" "WWN" "LED"
+				printf "%-8s %-36s %-28s %-4s\n" "--------" "------------------------------------" "----------------------------" "----"
+				printf "%-8s %-36s %-28s %-4s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_state"
+			else
+				for enc_dir in /sys/class/enclosure/*/; do
+					[[ -d "$enc_dir" ]] || continue
+					for slot_dir in "$enc_dir"*/; do
+						[[ -f "$slot_dir/locate" && -f "$slot_dir/device/sas_address" ]] || continue
+						slot_sas=$(<"$slot_dir/device/sas_address")
+						slot_wwn=$(resolve_sas_to_wwn "$slot_sas" 2>/dev/null) || continue
+						[[ -z "${seen[$slot_wwn]+x}" ]] || continue
+						seen[$slot_wwn]=1
+						led_state=$(led_status "$slot_dir")
+						read -r sd_name scsi_id wwn_id <<<"$(resolve_sas_to_ids "$slot_sas")"
+						sortk="$(enclosure_sort_key "$sd_name")"
+						rows+=("$sortk|$sd_name|$scsi_id|$wwn_id|$led_state")
+					done
+				done
+				printf "%-8s %-36s %-28s %-4s\n" "Device" "SCSI" "WWN" "LED"
+				printf "%-8s %-36s %-28s %-4s\n" "--------" "------------------------------------" "----------------------------" "----"
+				local row
+				while IFS= read -r row; do
+					[[ -z "$row" ]] && continue
+					IFS='|' read -r _ sd_name scsi_id wwn_id led_state <<<"$row"
+					printf "%-8s %-36s %-28s %-4s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_state"
+				done < <(printf '%s\n' "${rows[@]}" | LC_ALL=C sort)
+			fi
+			;;
+		blink)
+			[[ -z "$device" ]] && usage_error "led blink requires a device" "led blink <device> [seconds]"
+			[[ "$seconds" =~ ^[0-9]+$ ]] || displayError "seconds must be a positive integer"
+			section "LED blink"
+			info "Device" "$device"
+			info "Duration" "${seconds}s"
+			_led_set_user "$device" 1 || displayError "Failed to turn LED on for $device"
+			ok "LED ON"
+			sleep "$seconds"
+			_led_set_user "$device" 0 || displayError "Failed to turn LED off for $device"
+			ok "LED OFF"
+			;;
+		*)
+			usage_error "Missing or unknown led action" "led on|off|show|blink …"
+			;;
+	esac
+}
+
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
+
+main() {
+	if [[ $# -lt 1 ]]; then
+		display_help
+		exit 0
+	fi
+
+	local cmd="$1"
+	shift
+
+	case "$cmd" in
+		help|-h|--help)
+			display_help
+			;;
+		disk)
+			display_header
+			cmd_disk "$@"
+			;;
+		led)
+			display_header
+			cmd_led "$@"
+			;;
+		*)
+			usage_error "Unknown command: $cmd" "help | disk | led"
+			;;
+	esac
+}
+
+main "$@"

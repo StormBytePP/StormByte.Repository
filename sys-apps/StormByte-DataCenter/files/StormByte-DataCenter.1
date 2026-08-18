@@ -1,0 +1,290 @@
+.TH STORMBYTE-DATACENTER 1 "August 2026" "StormByte" "User Commands"
+.SH NAME
+StormByte-DataCenter \- disk inventory, SES IDENT LEDs, SCSI format, ZFS and Btrfs helpers
+.SH SYNOPSIS
+.B StormByte-DataCenter
+[\fICOMMAND\fR] [\fISUBCOMMAND\fR...] [\fIARGS\fR...]
+.SH DESCRIPTION
+.B StormByte-DataCenter
+is a unified CLI for SCSI/SAS/SATA disk inventory, enclosure IDENT LED control,
+SCSI FORMAT UNIT, and common ZFS/Btrfs operations in a multipath-capable environment.
+
+Disk identity arguments (device names, WWN, SCSI or ATA by-id names, including
+full
+.I /dev/disk/by-id/...
+paths) are normalized to a stable identity key (real WWN hex, or a synthetic
+key for disks without WWN such as many system SATA drives). Block I/O uses a
+resolved
+.B access path
+(multipath mapper preferred when raw by-id nodes are blocked by multipath).
+
+The script loads shared libraries from the same directory as the executable
+first, then from
+.IR /lib/StormByte/
+.RB ( functions.sh
+and
+.BR datacenter.sh ).
+
+.SH ENVIRONMENT
+.TP
+.B POOL
+Default ZFS pool name (default:
+.BR StormDataCenter ).
+.TP
+.B SMARTCTL_TIMEOUT
+Timeout in seconds for
+.B smartctl
+invocations (default:
+.BR 10 ).
+
+.SH DEVICE ARGUMENTS
+Where a device is accepted, the following forms are equivalent when unique:
+.RS
+.IP \(bu 2
+.IR sdX
+or
+.I /dev/sdX
+.IP \(bu 2
+.IR wwn-0x...
+or
+.I /dev/disk/by-id/wwn-0x...
+.IP \(bu 2
+.IR scsi-...
+or
+.I /dev/disk/by-id/scsi-...
+.IP \(bu 2
+.IR ata-...
+or
+.I /dev/disk/by-id/ata-...
+.RE
+Identity is always resolved first; privileged I/O uses the best usable access
+path. SES LED control uses enclosure sysfs matching by SAS/WWN prefix for disks
+with a real hex WWN only (system SATA without WWN show Enclosure/LED as N/A).
+
+.SH PRIVILEGES
+Operations that need elevated rights invoke
+.B sudo
+automatically when the process is not already root. The user does not need to
+re-run the entire CLI under
+.BR sudo .
+
+Elevated rights are used for:
+.BR "disk list -v" ,
+.BR "disk health" ,
+.BR "disk info" ,
+.BR "disk format" ,
+.BR "led on" ,
+.BR "led off" ,
+.BR "led blink" ,
+.BR "disk zfs scrub" ,
+.BR "disk zfs scrub stop" ,
+.BR "disk btrfs scrub start" ,
+.BR "disk btrfs scrub cancel" .
+
+.SH COMMANDS
+.SS help
+.TP
+.B help
+Show the built-in help message and exit.
+
+.SS disk list
+.TP
+.B disk list\fR [\fB\-v\fR|\fB\-\-verbose\fR] [\fIdevice\fR]
+List disks (all
+.B sd*
+nodes), deduplicated by identity, ordered by enclosure/slot when available.
+Without
+.B \-v
+columns include Device, Identifiers, Vendor, Model, FW, Pool membership and LED.
+With
+.B \-v
+also Enclosure, SMART, Temperature, Link, Health and Path.
+Uses
+.B smartctl
+via
+.B sudo
+when
+.B \-v
+is set.
+
+.SS disk health
+.TP
+.B disk health\fR [\fIdevice\fR]
+Compact SMART/health summary for one disk or all disks
+.RB ( smartctl
+via
+.BR sudo ).
+
+.SS disk info
+.TP
+.B disk info\fR \fIdevice\fR
+Formatted SMART-oriented summary for a single disk (not a raw smartctl dump):
+identity, access path, enclosure, pool membership, overall SMART, temperature
+and selected error counters.
+Device is mandatory.
+
+.SS disk format
+.TP
+.B disk format\fR \fIdevice\fR [\fB\-\-progress\fR]
+Perform a SCSI FORMAT UNIT using
+.B sg_format
+from
+.B sg3_utils
+on the resolved access path.
+Fails if
+.B sg_format
+is missing or if the device cannot be formatted that way.
+.B \-\-progress
+requests progress reporting from
+.BR sg_format .
+The operation is destructive and requires typing
+.B YES
+to confirm.
+Runs via
+.B sudo
+when not root.
+
+.SS disk zfs
+If a named pool does not exist, the tool reports an error itself (it does not
+rely on opaque
+.B zpool
+messages alone).
+.TP
+.B disk zfs status\fR [\fB\-v\fR] [\fIpool\fR]
+Show
+.B zpool status
+(default pool from
+.BR POOL ).
+With
+.B \-v
+uses
+.BR "zpool status -v" .
+Does not require elevation.
+.TP
+.B disk zfs list
+List pools and datasets. Does not require elevation.
+.TP
+.B disk zfs iostat\fR [\fIinterval\fR]
+.B zpool iostat
+for the default pool. Does not require elevation.
+.TP
+.B disk zfs events
+.B zpool events
+for the default pool. Does not require elevation.
+.TP
+.B disk zfs scrub
+Start a scrub on the default pool (via
+.BR sudo ).
+.TP
+.B disk zfs scrub stop
+Stop a scrub on the default pool (via
+.BR sudo ).
+
+.SS disk btrfs
+Non-btrfs paths are rejected with a clear error. Listing skips non-btrfs mounts.
+.TP
+.B disk btrfs status\fR [\fIpath\fR]
+Filesystem show/usage for a btrfs path (default
+.IR / ).
+.TP
+.B disk btrfs list
+Detected btrfs filesystems and subvolumes on btrfs mounts only.
+.TP
+.B disk btrfs df\fR [\fIpath\fR]
+.B btrfs filesystem df .
+.TP
+.B disk btrfs device\fR [\fIpath\fR]
+Device usage summary for a btrfs path.
+.TP
+.B disk btrfs scrub start\fR [\fIpath\fR]
+Start scrub (via
+.BR sudo ).
+.TP
+.B disk btrfs scrub status\fR [\fIpath\fR]
+Scrub status.
+.TP
+.B disk btrfs scrub cancel\fR [\fIpath\fR]
+Cancel scrub (via
+.BR sudo ).
+
+.SS led
+.TP
+.B led on\fR [\fIdevice\fR]
+Turn IDENT LED on for one disk or all enclosure disks (via
+.BR sudo ).
+.TP
+.B led off\fR [\fIdevice\fR]
+Turn IDENT LED off for one disk or all enclosure disks (via
+.BR sudo ).
+.TP
+.B led show\fR [\fIdevice\fR]
+Show IDENT LED state (table ordered by enclosure/slot when listing all).
+Does not require elevation.
+.TP
+.B led blink\fR \fIdevice\fR [\fIseconds\fR]
+Turn LED on, wait (default 30 seconds), turn LED off.
+Device is mandatory.
+Uses
+.BR sudo .
+
+.SH EXAMPLES
+.nf
+StormByte-DataCenter disk list
+StormByte-DataCenter disk list -v
+StormByte-DataCenter disk health
+StormByte-DataCenter disk info wwn-0x5000cca03e7ce8f8
+StormByte-DataCenter disk info /dev/disk/by-id/scsi-35000c500566d10c3
+StormByte-DataCenter disk format scsi-35000c500566d10c3 --progress
+StormByte-DataCenter led show
+StormByte-DataCenter led blink sda 15
+StormByte-DataCenter disk zfs status -v
+POOL=Other StormByte-DataCenter disk zfs scrub
+StormByte-DataCenter disk btrfs status /
+.fi
+
+.SH EXIT STATUS
+.TP
+.B 0
+Success
+.TP
+.B 1
+Error (invalid arguments, missing pool, non-btrfs path, format failure,
+missing tools, cancelled confirmation, etc.)
+
+.SH FILES
+.TP
+.I functions.sh
+Shared StormByte helpers. Looked up next to the script, then
+.IR /lib/StormByte/functions.sh .
+.TP
+.I datacenter.sh
+Disk/WWN/SES/multipath helpers. Looked up next to the script, then
+.IR /lib/StormByte/datacenter.sh .
+
+.SH NOTES
+- Incorrect commands print a short error and accepted syntax, not the full help.
+- Multipath may block opening some by-id nodes; those names remain valid as
+  identity because access is resolved separately.
+- Enclosure LED operations require SES sysfs
+  .RB ( /sys/class/enclosure )
+  and a real WWN-based identity.
+- .B disk format
+  depends on
+  .B sg_format
+  from
+  .BR sg3_utils .
+
+.SH SEE ALSO
+.BR smartctl (8),
+.BR sg_format (8),
+.BR zpool (8),
+.BR zfs (8),
+.BR btrfs (8),
+.BR multipath (8),
+.BR lsscsi (8)
+
+.SH AUTHOR
+StormByte Project <https://github.com/StormBytePP>
+.SH COPYRIGHT
+Copyright \(co 2024-2026 StormByte.
+Licensed under the terms of the project license.

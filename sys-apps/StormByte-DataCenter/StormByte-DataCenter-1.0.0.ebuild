@@ -16,7 +16,9 @@ RDEPEND="
 	sys-apps/sg3_utils
 	sys-apps/smartmontools
 	sys-apps/util-linux
+	sys-fs/btrfs-progs
 	sys-fs/lsscsi
+	sys-fs/multipath-tools
 	sys-fs/zfs
 	sys-libs/StormByte-functions-datacenter
 "
@@ -30,6 +32,11 @@ pkg_setup() {
 }
 
 src_install() {
-	dobin "${FILESDIR}/datacenter_info"
-	dobin "${FILESDIR}/datacenter_led"
+	dobin "${FILESDIR}/StormByte-DataCenter"
+
+	insinto /usr/share/bash-completion/completions
+	newins "${FILESDIR}/StormByte-DataCenter.bash-completion" StormByte-DataCenter
+
+	# Man page (section 1)
+	doman "${FILESDIR}/StormByte-DataCenter.1"
 }

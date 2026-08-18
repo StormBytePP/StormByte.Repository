@@ -1,0 +1,217 @@
+# StormByte-DataCenter.bash-completion
+# Bash completion for StormByte-DataCenter
+#
+# Install as:
+#   /usr/share/bash-completion/completions/StormByte-DataCenter
+#   or
+#   /etc/bash_completion.d/StormByte-DataCenter
+
+_StormByte_DataCenter() {
+	local cur prev cword cmd sub sub2
+	local -a words
+	local -a top_cmds disk_subs zfs_subs btrfs_subs btrfs_scrub_subs led_subs
+
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD - 1]}"
+	cword=$COMP_CWORD
+	words=("${COMP_WORDS[@]}")
+
+	top_cmds=(help disk led)
+	disk_subs=(list health info format zfs btrfs)
+	zfs_subs=(status list iostat events scrub)
+	btrfs_subs=(status list df device scrub)
+	btrfs_scrub_subs=(start status cancel)
+	led_subs=(on off show blink)
+
+	# -----------------------------------------------------------------------
+	# Device completion
+	# - Path (/dev/..., ~/..., ./...) → completion estilo shell (filenames)
+	# - Id suelto (sd, wwn-, scsi-, ata-) → catálogo real del sistema
+	# -----------------------------------------------------------------------
+	_sb_dc_devices() {
+		local -a out=()
+		local p d base
+
+		shopt -s nullglob
+
+		for p in /dev/disk/by-id/wwn-* /dev/disk/by-id/scsi-* /dev/disk/by-id/ata-*; do
+			[[ -e "$p" ]] || continue
+			[[ "$p" == *-part[0-9]* ]] && continue
+			base="$(basename "$p")"
+			out+=("$base")
+			out+=("$p")
+		done
+
+		for d in /dev/sd[a-z] /dev/sd[a-z][a-z] /dev/sd[a-z][a-z][a-z]; do
+			[[ -b "$d" ]] || continue
+			base="$(basename "$d")"
+			out+=("$base")
+			out+=("$d")
+		done
+
+		shopt -u nullglob
+		((${#out[@]})) && printf '%s\n' "${out[@]}" | sort -u
+	}
+
+	_sb_complete_device() {
+		local cur="$1"
+
+		if [[ "$cur" == /* || "$cur" == ./* || "$cur" == ../* || "$cur" == ~* ]]; then
+			compopt -o filenames 2>/dev/null
+			mapfile -t COMPREPLY < <(compgen -f -- "$cur")
+			if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+				mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+			fi
+			return 0
+		fi
+
+		compopt +o filenames 2>/dev/null
+		mapfile -t COMPREPLY < <(compgen -W "$(_sb_dc_devices)" -- "$cur")
+		return 0
+	}
+
+	# ----- top-level -----
+	if ((cword == 1)); then
+		mapfile -t COMPREPLY < <(compgen -W "${top_cmds[*]}" -- "$cur")
+		return 0
+	fi
+
+	cmd="${words[1]-}"
+
+	case "$cmd" in
+	help | -h | --help)
+		return 0
+		;;
+
+	# -----------------------------------------------------------------
+	# disk list|health|info|format|zfs|btrfs
+	# -----------------------------------------------------------------
+	disk)
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${disk_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		list)
+			if [[ "$cur" == -* ]]; then
+				mapfile -t COMPREPLY < <(compgen -W "-v --verbose" -- "$cur")
+			else
+				_sb_complete_device "$cur"
+			fi
+			return 0
+			;;
+		health)
+			_sb_complete_device "$cur"
+			return 0
+			;;
+		info)
+			_sb_complete_device "$cur"
+			return 0
+			;;
+		format)
+			# disk format <device> [--progress]
+			if [[ "$cur" == -* ]]; then
+				mapfile -t COMPREPLY < <(compgen -W "--progress" -- "$cur")
+				return 0
+			fi
+			# After a device, still offer --progress
+			if ((cword >= 4)); then
+				mapfile -t COMPREPLY < <(compgen -W "--progress" -- "$cur")
+				return 0
+			fi
+			_sb_complete_device "$cur"
+			return 0
+			;;
+		zfs)
+			if ((cword == 3)); then
+				mapfile -t COMPREPLY < <(compgen -W "${zfs_subs[*]}" -- "$cur")
+				return 0
+			fi
+			sub2="${words[3]-}"
+			case "$sub2" in
+			status)
+				if [[ "$cur" == -* ]]; then
+					mapfile -t COMPREPLY < <(compgen -W "-v --verbose" -- "$cur")
+				else
+					mapfile -t COMPREPLY < <(compgen -W "$(zpool list -H -o name 2>/dev/null)" -- "$cur")
+				fi
+				;;
+			scrub)
+				if ((cword == 4)); then
+					mapfile -t COMPREPLY < <(compgen -W "stop" -- "$cur")
+				fi
+				;;
+			iostat)
+				mapfile -t COMPREPLY < <(compgen -W "1 2 5 10" -- "$cur")
+				;;
+			list | events)
+				return 0
+				;;
+			esac
+			return 0
+			;;
+		btrfs)
+			if ((cword == 3)); then
+				mapfile -t COMPREPLY < <(compgen -W "${btrfs_subs[*]}" -- "$cur")
+				return 0
+			fi
+			sub2="${words[3]-}"
+			case "$sub2" in
+			status | df | device)
+				compopt -o filenames 2>/dev/null
+				mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+				;;
+			list)
+				return 0
+				;;
+			scrub)
+				if ((cword == 4)); then
+					mapfile -t COMPREPLY < <(compgen -W "${btrfs_scrub_subs[*]}" -- "$cur")
+					return 0
+				fi
+				if ((cword >= 5)); then
+					compopt -o filenames 2>/dev/null
+					mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+				fi
+				;;
+			esac
+			return 0
+			;;
+		esac
+		return 0
+		;;
+
+	# -----------------------------------------------------------------
+	# led on|off|show|blink
+	# -----------------------------------------------------------------
+	led)
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${led_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		on | off | show)
+			if ((cword == 3)); then
+				_sb_complete_device "$cur"
+			fi
+			;;
+		blink)
+			if ((cword == 3)); then
+				_sb_complete_device "$cur"
+			elif ((cword == 4)); then
+				mapfile -t COMPREPLY < <(compgen -W "10 15 30 60" -- "$cur")
+			fi
+			;;
+		esac
+		return 0
+		;;
+	esac
+
+	COMPREPLY=()
+	return 0
+}
+
+complete -F _StormByte_DataCenter StormByte-DataCenter
