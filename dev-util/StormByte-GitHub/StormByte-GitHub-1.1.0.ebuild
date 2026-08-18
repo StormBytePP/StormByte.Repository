@@ -17,8 +17,8 @@ S="${WORKDIR}"
 RDEPEND="
 	app-misc/jq
 	dev-util/github-cli
-	sys-libs/StormByte-functions-bash
-	sys-libs/StormByte-functions-git
+	>=sys-libs/StormByte-functions-bash-1.1.0
+	>=sys-libs/StormByte-functions-git-1.1.0
 "
 DEPEND="${RDEPEND}"
 
