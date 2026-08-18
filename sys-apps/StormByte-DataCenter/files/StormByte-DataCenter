@@ -11,11 +11,10 @@ readonly REQUIRE_STORMBYTE_FUNCTIONS_DATACENTER="1.0.0"
 : "${POOL:=StormDataCenter}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly SCRIPT_NAME
-SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
 
 # -----------------------------------------------------------------------------
-# Libraries: script dir first, then /lib/StormByte
+# Libraries
 # -----------------------------------------------------------------------------
 if [[ -f "${SCRIPT_DIR}/functions.sh" ]]; then
 	# shellcheck source=/dev/null
@@ -43,8 +42,6 @@ fi
 require_version "${STORMBYTE_FUNCTIONS_DATACENTER_VERSION}" "${REQUIRE_STORMBYTE_FUNCTIONS_DATACENTER}" "StormByte datacenter helpers"
 
 # -----------------------------------------------------------------------------
-# Privileges: use sudo when not root (do not force the user to re-run the script)
-# -----------------------------------------------------------------------------
 as_root() {
 	if [[ $EUID -eq 0 ]]; then
 		"$@"
@@ -56,7 +53,6 @@ as_root() {
 # -----------------------------------------------------------------------------
 # UI
 # -----------------------------------------------------------------------------
-
 display_header() {
 	local line1="StormByte-DataCenter  v${STORMBYTE_DATACENTER_VERSION}"
 	local line2="Disks · SES LEDs · ZFS · Btrfs"
@@ -69,7 +65,9 @@ display_header() {
 	border_mid="$(printf '═%.0s' $(seq 1 "$inner_w"))"
 
 	_sb_center() {
-		local text="$1" tw=${#text} total=$inner_w
+		local text="$1"
+		local tw=${#text}
+		local total=$inner_w
 		local left=$(( (total - tw) / 2 ))
 		local right=$(( total - tw - left ))
 		printf '%*s%s%*s' "$left" '' "$text" "$right" ''
@@ -109,6 +107,7 @@ SMARTCTL_TIMEOUT=N     smartctl timeout in seconds (default: ${SMARTCTL_TIMEOUT:
 
 ${_CLR_BOLD}DEVICE ARGUMENTS${_CLR_RESET}
 sdX | /dev/sdX
+mpath* | /dev/mapper/mpath*
 wwn-0x… | /dev/disk/by-id/wwn-0x…
 scsi-…  | /dev/disk/by-id/scsi-…
 ata-…   | /dev/disk/by-id/ata-…
@@ -117,7 +116,7 @@ Identity resolves to a stable key; I/O uses the best access path
 (multipath mapper preferred when by-id is blocked).
 
 ${_CLR_BOLD}PRIVILEGES${_CLR_RESET}
-Operations that need elevated rights call ${ _CLR_BOLD}sudo${_CLR_RESET} automatically
+Operations that need elevated rights call ${_CLR_BOLD}sudo${_CLR_RESET} automatically
 when the script is not already running as root. You do not need to
 re-invoke the whole command under sudo.
 
@@ -133,11 +132,14 @@ ${_CLR_BOLD_CYAN}help${_CLR_RESET}
 Show this help.
 
 ${_CLR_BOLD_CYAN}disk list${_CLR_RESET} [-v|--verbose] [device]
-List disks (all sd*), ordered by enclosure/slot when available.
--v adds Enclosure, SMART, Temp, Link, Health, Path (uses smartctl via sudo).
+List disks (all sd* / multipath identities), ordered by enclosure/slot
+when available. -v adds Enclosure, SMART, Temp, Link, Health, Path
+(uses smartctl via sudo).
 
-${_CLR_BOLD_CYAN}disk health${_CLR_RESET} [device]
+${_CLR_BOLD_CYAN}disk health${_CLR_RESET} [-v|--verbose] [device]
 Compact SMART/health summary (smartctl via sudo).
+With -v/--verbose, prints the smartctl health lines that explain
+PASSED / WARN / FAILED / TIMEOUT (and related counters when present).
 
 ${_CLR_BOLD_CYAN}disk info${_CLR_RESET} <device>
 Formatted SMART summary (not a raw dump).
@@ -145,7 +147,7 @@ Formatted SMART summary (not a raw dump).
 ${_CLR_BOLD_CYAN}disk format${_CLR_RESET} <device> [--progress]
 SCSI FORMAT UNIT via sg_format (sg3_utils). Fails if the device cannot
 be formatted that way. Optional --progress shows sg_format progress.
-${ _CLR_DIM}Destructive. Requires confirmation.${_CLR_RESET}
+${_CLR_DIM}Destructive. Requires confirmation (type YES).${_CLR_RESET}
 
 ${_CLR_BOLD_CYAN}disk zfs status${_CLR_RESET} [-v] [pool]
 zpool status (errors if pool does not exist).
@@ -159,7 +161,7 @@ zpool iostat.
 ${_CLR_BOLD_CYAN}disk zfs events${_CLR_RESET}
 zpool events.
 
-${_CLR_BOLD_CYAN}disk zfs scrub${_CLR_RESET} | ${ _CLR_BOLD_CYAN}disk zfs scrub stop${_CLR_RESET}
+${_CLR_BOLD_CYAN}disk zfs scrub${_CLR_RESET} | ${_CLR_BOLD_CYAN}disk zfs scrub stop${_CLR_RESET}
 Start/stop scrub on POOL (via sudo).
 
 ${_CLR_BOLD_CYAN}disk btrfs status|list|df|device${_CLR_RESET} …
@@ -178,36 +180,121 @@ Device mandatory. Default 30s. Uses sudo.
 ${_CLR_BOLD}EXAMPLES${_CLR_RESET}
 ${SCRIPT_NAME} disk list
 ${SCRIPT_NAME} disk list -v
+${SCRIPT_NAME} disk health
+${SCRIPT_NAME} disk health -v
+${SCRIPT_NAME} disk health mpatha -v
 ${SCRIPT_NAME} disk info wwn-0x5000cca03e7ce8f8
 ${SCRIPT_NAME} disk format scsi-35000c500566d10c3 --progress
-${SCRIPT_NAME} led blink sda 15
+${SCRIPT_NAME} led blink mpatha 15
 ${SCRIPT_NAME} disk zfs status -v
 POOL=Other ${SCRIPT_NAME} disk zfs scrub
 EOF
 }
 
 # -----------------------------------------------------------------------------
-# Shared state
+# Table helpers
 # -----------------------------------------------------------------------------
+_dc_trunc() {
+	local s="$1"
+	local w="$2"
+	local n=${#s}
+	if (( n <= w )); then
+		printf '%s' "$s"
+		return
+	fi
+	if (( w <= 1 )); then
+		printf '%s' "${s:0:w}"
+		return
+	fi
+	printf '%s…' "${s:0:$((w - 1))}"
+}
 
+# Display name: prefer multipath leaf
+_dc_display_name() {
+	local id="$1"
+	local sd_raw access kind
+	sd_raw="${WWN_TO_SD[$id]:-}"
+	access="${WWN_TO_ACCESS[$id]:-}"
+	kind="${WWN_TO_PATH_KIND[$id]:-sd}"
+	if [[ "$kind" == "mapper" && -n "$access" ]]; then
+		basename "$access"
+	elif [[ -n "$sd_raw" ]]; then
+		printf '%s' "$sd_raw"
+	else
+		printf '%s' "?"
+	fi
+}
+
+_dc_sort_aliases() {
+	local aliases="${1:-none}"
+	local a sorted="" mpath_a="" wwn_a="" scsi_a="" rest_a=""
+	[[ "$aliases" == "none" || -z "$aliases" ]] && { echo "none"; return; }
+	for a in $aliases; do
+		case "$a" in
+			mpath*) mpath_a+="$a " ;;
+			wwn-*)  wwn_a+="$a " ;;
+			scsi-*) scsi_a+="$a " ;;
+			*)      rest_a+="$a " ;;
+		esac
+	done
+	sorted="${mpath_a}${wwn_a}${scsi_a}${rest_a}"
+	sorted="${sorted%"${sorted##*[![:space:]]}"}"
+	echo "${sorted:-none}"
+}
+
+# -----------------------------------------------------------------------------
 declare -A SMART_CACHE=()
 
 ensure_maps() {
-	if [[ ${#ALL_WWNS[@]:-0} -eq 0 ]]; then
+	if [[ -z "${ALL_WWNS+x}" ]] || [[ ${#ALL_WWNS[@]} -eq 0 ]]; then
 		init_disk_maps
 	fi
 }
 
-# smartctl via access path + sudo when needed + timeout
 _smartctl_a() {
 	local access="$1"
-	local out
-	if command -v timeout >/dev/null 2>&1; then
-		out=$(as_root timeout "${SMARTCTL_TIMEOUT:-10}" smartctl -a "$access" 2>/dev/null || true)
-	else
-		out=$(as_root smartctl -a "$access" 2>/dev/null || true)
+	local id="${2:-}"
+	local sd="" out=""
+
+	_run() {
+		local dev="$1"
+		shift
+		if command -v timeout >/dev/null 2>&1; then
+			as_root timeout "${SMARTCTL_TIMEOUT:-10}" smartctl "$@" -a "$dev" 2>/dev/null || true
+		else
+			as_root smartctl "$@" -a "$dev" 2>/dev/null || true
+		fi
+	}
+
+	_ok() {
+		local text="$1"
+		[[ -n "$text" ]] || return 1
+		grep -qi 'Unable to detect device type' <<<"$text" && return 1
+		grep -qiE 'START OF|SMART Health|SMART overall|Device Model|Product:' <<<"$text"
+	}
+
+	# Prefer underlying sd when known
+	if [[ -n "$id" && -v "WWN_TO_SD[$id]" && -n "${WWN_TO_SD[$id]:-}" ]]; then
+		sd="/dev/${WWN_TO_SD[$id]}"
+		if [[ -b "$sd" ]]; then
+			out="$(_run "$sd")"
+			_ok "$out" && { printf '%s' "$out"; return 0; }
+			out="$(_run "$sd" -d scsi)"
+			_ok "$out" && { printf '%s' "$out"; return 0; }
+		fi
 	fi
-	printf '%s' "$out"
+
+	if [[ "$access" == /dev/mapper/* || "$(basename "$access")" == mpath* ]]; then
+		out="$(_run "$access" -d scsi)"
+		_ok "$out" && { printf '%s' "$out"; return 0; }
+	else
+		out="$(_run "$access")"
+		_ok "$out" && { printf '%s' "$out"; return 0; }
+		out="$(_run "$access" -d scsi)"
+		_ok "$out" && { printf '%s' "$out"; return 0; }
+	fi
+
+	printf '%s' "${out:-}"
 }
 
 get_smart_cached() {
@@ -222,7 +309,7 @@ get_smart_cached() {
 		SMART_CACHE[$key]=""
 		return 1
 	}
-	out="$(_smartctl_a "$access")"
+	out="$(_smartctl_a "$access" "$key")"
 	SMART_CACHE[$key]="$out"
 	printf '%s' "$out"
 }
@@ -238,6 +325,7 @@ ordered_ids() {
 		keys+=("$key|$id")
 	done
 	local line
+	[[ ${#keys[@]} -eq 0 ]] && return 0
 	while IFS= read -r line; do
 		[[ -z "$line" ]] && continue
 		echo "${line##*|}"
@@ -245,8 +333,7 @@ ordered_ids() {
 }
 
 _zpool_exists() {
-	local pool="$1"
-	zpool list -H -o name "$pool" &>/dev/null
+	zpool list -H -o name "$1" &>/dev/null
 }
 
 _is_btrfs_path() {
@@ -273,7 +360,6 @@ _require_btrfs_path() {
 	fi
 }
 
-# Write SES locate with sudo when needed
 _led_write() {
 	local slot_dir="$1"
 	local value="$2"
@@ -305,24 +391,26 @@ _led_set_user() {
 }
 
 # -----------------------------------------------------------------------------
-# disk list / health / info
+# disk list
 # -----------------------------------------------------------------------------
-
 _print_list_header() {
 	local verbose="$1"
 	if [[ "$verbose" -eq 1 ]]; then
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-18s %-8s %-6s %-12s %-8s %-4s %-14s\n" \
 			"Device" "Identifiers" "Vendor" "Model" "FW" "Pool" \
 			"Enclosure" "SMART" "Temp" "Link" "Health" "LED" "Path"
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
-			"--------" "------------------------------------------" "----------" "------------------" \
-			"--------" "------" "------------------" "-------" "-----" "------------" "--------" "----" "--------------"
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-18s %-8s %-6s %-12s %-8s %-4s %-14s\n" \
+			"------------" \
+			"------------------------------------------------------------------------" \
+			"------------" "--------------------" "--------" "----" \
+			"------------------" "--------" "------" "------------" "--------" "----" "--------------"
 	else
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-4s\n" \
 			"Device" "Identifiers" "Vendor" "Model" "FW" "Pool" "LED"
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
-			"--------" "------------------------------------------" "----------" "------------------" \
-			"--------" "------" "----"
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-4s\n" \
+			"------------" \
+			"------------------------------------------------------------------------" \
+			"------------" "--------------------" "--------" "----" "----"
 	fi
 }
 
@@ -331,14 +419,18 @@ _print_one_disk() {
 	local verbose="$2"
 	local pool_status="$3"
 	local lsscsi_out="${4:-}"
-	local sd aliases vendor model firmware line in_pool led
+	local sd_raw display aliases vendor model firmware line in_pool led
 	local enc_slot smart_st temp link health path kind access
 
-	sd="${WWN_TO_SD[$id]:-}"
-	[[ -n "$sd" ]] || return 1
+	sd_raw="${WWN_TO_SD[$id]:-}"
+	[[ -n "$sd_raw" ]] || return 1
 
-	aliases="${WWN_ALIASES[$id]:-none}"
-	line=$(grep -wF "/dev/$sd" <<<"$lsscsi_out" | head -1 || true)
+	access="${WWN_TO_ACCESS[$id]:-/dev/$sd_raw}"
+	kind="${WWN_TO_PATH_KIND[$id]:-sd}"
+	display="$(_dc_display_name "$id")"
+	aliases="$(_dc_sort_aliases "${WWN_ALIASES[$id]:-none}")"
+
+	line=$(grep -wF "/dev/$sd_raw" <<<"$lsscsi_out" | head -1 || true)
 	if [[ -z "$line" ]]; then
 		vendor="?"; model="?"; firmware="?"
 	else
@@ -349,7 +441,7 @@ _print_one_disk() {
 
 	if [[ "$vendor" == "ATA" ]]; then
 		local ata_alias ata_info ata_model
-		ata_alias=$(grep -oE 'ata-[^ ]+' <<<"$aliases" | head -1 || true)
+		ata_alias=$(grep -oE 'ata-[^ ]+' <<<"${WWN_ALIASES[$id]:-}" | head -1 || true)
 		if [[ -n "$ata_alias" ]]; then
 			ata_info="${ata_alias#ata-}"
 			ata_model="${ata_info%_*}"
@@ -357,8 +449,8 @@ _print_one_disk() {
 			model="${ata_model#*_}"
 			model="${model//_/ }"
 		fi
-		if [[ -f "/sys/block/$sd/device/rev" ]]; then
-			firmware=$(<"/sys/block/$sd/device/rev")
+		if [[ -f "/sys/block/$sd_raw/device/rev" ]]; then
+			firmware=$(<"/sys/block/$sd_raw/device/rev")
 			firmware="${firmware#"${firmware%%[![:space:]]*}"}"
 			firmware="${firmware%"${firmware##*[![:space:]]}"}"
 		fi
@@ -367,34 +459,47 @@ _print_one_disk() {
 	in_pool="NO"
 	is_in_pool_status "$id" "$pool_status" && in_pool="YES"
 
-	led=$(led_status "$sd" 2>/dev/null || echo "N/A")
+	led=$(led_status "$sd_raw" 2>/dev/null || echo "N/A")
 	[[ -z "$led" ]] && led="N/A"
 
-	access="${WWN_TO_ACCESS[$id]:-/dev/$sd}"
-	kind="${WWN_TO_PATH_KIND[$id]:-sd}"
 	path="$(basename "$access")"
 	[[ "$kind" == "mapper" ]] && path="mp:${path}"
 
 	if [[ "$verbose" -eq 1 ]]; then
-		enc_slot=$(get_enclosure_slot "$sd")
+		enc_slot=$(get_enclosure_slot "$sd_raw")
 		local sm
 		sm=$(get_smart_cached "$id" || true)
 		if [[ -z "$sm" ]]; then
-			smart_st="TIMEOUT"
-			temp="N/A"
-			health="N/A"
+			smart_st="TIMEOUT"; temp="N/A"; health="N/A"
 		else
 			smart_st=$(smart_status_from_output "$sm")
 			temp=$(smart_temperature_from_output "$sm")
 			health=$(smart_health_from_output "$sm")
 		fi
-		link=$(get_link_speed "$sd")
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-18s %-7s %-5s %-12s %-8s %-4s %-14s\n" \
-			"$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" \
-			"$enc_slot" "$smart_st" "$temp" "$link" "$health" "$led" "$path"
+		link=$(get_link_speed "$sd_raw")
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-18s %-8s %-6s %-12s %-8s %-4s %-14s\n" \
+			"$(_dc_trunc "$display" 12)" \
+			"$(_dc_trunc "$aliases" 72)" \
+			"$(_dc_trunc "$vendor" 12)" \
+			"$(_dc_trunc "$model" 20)" \
+			"$(_dc_trunc "$firmware" 8)" \
+			"$in_pool" \
+			"$(_dc_trunc "$enc_slot" 18)" \
+			"$(_dc_trunc "$smart_st" 8)" \
+			"$(_dc_trunc "$temp" 6)" \
+			"$(_dc_trunc "$link" 12)" \
+			"$(_dc_trunc "$health" 8)" \
+			"$(_dc_trunc "$led" 4)" \
+			"$(_dc_trunc "$path" 14)"
 	else
-		printf "%-8s %-42s %-10s %-18s %-8s %-6s %-4s\n" \
-			"$sd" "$aliases" "$vendor" "$model" "$firmware" "$in_pool" "$led"
+		printf "%-12s %-72s %-12s %-20s %-8s %-4s %-4s\n" \
+			"$(_dc_trunc "$display" 12)" \
+			"$(_dc_trunc "$aliases" 72)" \
+			"$(_dc_trunc "$vendor" 12)" \
+			"$(_dc_trunc "$model" 20)" \
+			"$(_dc_trunc "$firmware" 8)" \
+			"$in_pool" \
+			"$(_dc_trunc "$led" 4)"
 	fi
 }
 
@@ -432,26 +537,85 @@ cmd_disk_list() {
 	ok "Listed $count disk(s)"
 }
 
+# -----------------------------------------------------------------------------
+# disk health
+# -----------------------------------------------------------------------------
 cmd_disk_health() {
 	ensure_maps
-	local device="${1:-}" id sd access sm st hl
+	local device="" verbose=0 arg
+	local id display access kind sm st hl
 
-	printf "%-8s %-14s %-10s %-10s %-s\n" "Device" "Access" "SMART" "Health" "Path kind"
-	printf "%-8s %-14s %-10s %-10s %-s\n" "--------" "--------------" "----------" "----------" "---------"
+	for arg in "$@"; do
+		case "$arg" in
+			-v|--verbose) verbose=1 ;;
+			-*)
+				usage_error "Unknown option: $arg" "disk health [-v|--verbose] [device]"
+				;;
+			*)
+				device="$arg"
+				;;
+		esac
+	done
+
+	printf "%-12s %-28s %-10s %-10s %-10s\n" \
+		"Device" "Access" "SMART" "Health" "Path"
+	printf "%-12s %-28s %-10s %-10s %-10s\n" \
+		"------------" "----------------------------" "----------" "----------" "----------"
+
+	_health_verbose_details() {
+		local sm="$1"
+		local line overall
+
+		if [[ -z "$sm" ]]; then
+			printf "             %s\n" \
+				"${_CLR_DIM}(no smartctl output: timeout, permission, or unsupported)${_CLR_RESET}"
+			return
+		fi
+
+		overall=$(grep -iE 'SMART overall-health|SMART Health Status|SMART available' <<<"$sm" | head -5 || true)
+		if [[ -n "$overall" ]]; then
+			while IFS= read -r line; do
+				[[ -z "$line" ]] && continue
+				printf "             %s\n" "${_CLR_DIM}${line}${_CLR_RESET}"
+			done <<<"$overall"
+		else
+			printf "             %s\n" \
+				"${_CLR_DIM}(no overall-health / Health Status line in smartctl output)${_CLR_RESET}"
+		fi
+
+		line=$(grep -iE \
+			'Elements in grown defect|Reallocated_Sector|Current Drive Temperature|Media Wearout|Percentage Used|Temperature_Celsius|Non-medium error' \
+			<<<"$sm" | head -8 || true)
+		if [[ -n "$line" ]]; then
+			while IFS= read -r line; do
+				[[ -z "$line" ]] && continue
+				printf "             %s\n" "${_CLR_DIM}${line}${_CLR_RESET}"
+			done <<<"$line"
+		fi
+	}
 
 	_one_health() {
 		id="$1"
-		sd="${WWN_TO_SD[$id]:-?}"
+		display="$(_dc_display_name "$id")"
 		access=$(resolve_to_access_dev "$id" 2>/dev/null || echo "?")
+		kind="${WWN_TO_PATH_KIND[$id]:-?}"
 		sm=$(get_smart_cached "$id" || true)
 		if [[ -z "$sm" ]]; then
-			st="TIMEOUT"; hl="N/A"
+			st="TIMEOUT"
+			hl="N/A"
 		else
 			st=$(smart_status_from_output "$sm")
 			hl=$(smart_health_from_output "$sm")
 		fi
-		printf "%-8s %-14s %-10s %-10s %-s\n" \
-			"$sd" "$(basename "$access")" "$st" "$hl" "${WWN_TO_PATH_KIND[$id]:-?}"
+		printf "%-12s %-28s %-10s %-10s %-10s\n" \
+			"$(_dc_trunc "$display" 12)" \
+			"$(_dc_trunc "$(basename "$access")" 28)" \
+			"$(_dc_trunc "$st" 10)" \
+			"$(_dc_trunc "$hl" 10)" \
+			"$(_dc_trunc "$kind" 10)"
+		if [[ "$verbose" -eq 1 ]]; then
+			_health_verbose_details "$sm"
+		fi
 	}
 
 	if [[ -n "$device" ]]; then
@@ -465,29 +629,34 @@ cmd_disk_health() {
 	fi
 }
 
+# -----------------------------------------------------------------------------
+# disk info
+# -----------------------------------------------------------------------------
 cmd_disk_info() {
 	local device="${1:-}"
 	[[ -z "$device" ]] && usage_error "disk info requires a device" "disk info <device>"
 
 	ensure_maps
 
-	local id sd access kind sm aliases pool_status in_pool="NO"
+	local id sd_raw display access kind sm aliases pool_status in_pool="NO"
 	id=$(resolve_to_wwn "$device") || displayError "Cannot resolve: $device"
-	sd="${WWN_TO_SD[$id]:-?}"
+	sd_raw="${WWN_TO_SD[$id]:-?}"
+	display="$(_dc_display_name "$id")"
 	access=$(resolve_to_access_dev "$id") || displayError "No usable access path for $device"
 	kind="${WWN_TO_PATH_KIND[$id]:-unknown}"
-	aliases="${WWN_ALIASES[$id]:-}"
+	aliases="$(_dc_sort_aliases "${WWN_ALIASES[$id]:-none}")"
 	sm=$(get_smart_cached "$id" || true)
 
 	section "Disk info"
-	info "Input" "$device"
-	info "Device" "$sd"
-	info "Identity" "$id"
-	info "Access" "$access ($kind)"
-	info "Aliases" "${aliases:-none}"
-	info "Enclosure" "$(get_enclosure_slot "$sd")"
-	info "Transport" "$(get_transport_type "$sd")"
-	info "LED" "$(led_status "$sd")"
+	info "Input"      "$device"
+	info "Device"     "$display"
+	info "Underlying" "$sd_raw"
+	info "Identity"   "$id"
+	info "Access"     "$access ($kind)"
+	info "Aliases"    "$aliases"
+	info "Enclosure"  "$(get_enclosure_slot "$sd_raw")"
+	info "Transport"  "$(get_transport_type "$sd_raw")"
+	info "LED"        "$(led_status "$sd_raw")"
 
 	pool_status=$(zpool status "$POOL" 2>/dev/null || true)
 	is_in_pool_status "$id" "$pool_status" && in_pool="YES"
@@ -500,10 +669,10 @@ cmd_disk_info() {
 
 	log ""
 	printf "  ${_CLR_BOLD}SMART summary${_CLR_RESET}\n"
-	info "Overall" "$(smart_status_from_output "$sm")"
-	info "Health" "$(smart_health_from_output "$sm")"
-	info "Temperature" "$(smart_temperature_from_output "$sm")"
-	info "Link" "$(get_link_speed "$sd")"
+	info "Overall"      "$(smart_status_from_output "$sm")"
+	info "Health"       "$(smart_health_from_output "$sm")"
+	info "Temperature"  "$(smart_temperature_from_output "$sm")"
+	info "Link"         "$(get_link_speed "$sd_raw")"
 
 	local model serial capacity hours cycles
 	model=$(grep -iE '^(Device Model|Product):' <<<"$sm" | head -1 | sed 's/^[^:]*:[[:space:]]*//')
@@ -531,12 +700,10 @@ cmd_disk_info() {
 }
 
 # -----------------------------------------------------------------------------
-# disk format (sg_format / sg3_utils)
+# disk format
 # -----------------------------------------------------------------------------
-
 cmd_disk_format() {
-	local device="" progress=0 arg
-	local access id sd reply
+	local device="" progress=0 arg access id sd_raw display reply
 
 	for arg in "$@"; do
 		case "$arg" in
@@ -545,25 +712,28 @@ cmd_disk_format() {
 				usage_error "Unknown option: $arg" "disk format <device> [--progress]"
 				;;
 			*)
-				[[ -z "$device" ]] && device="$arg" || usage_error "Unexpected argument: $arg" \
-					"disk format <device> [--progress]"
+				if [[ -z "$device" ]]; then
+					device="$arg"
+				else
+					usage_error "Unexpected argument: $arg" "disk format <device> [--progress]"
+				fi
 				;;
 		esac
 	done
 
 	[[ -n "$device" ]] || usage_error "disk format requires a device" "disk format <device> [--progress]"
-
 	command -v sg_format >/dev/null 2>&1 \
 		|| displayError "sg_format not found (install sys-apps/sg3_utils)"
 
 	ensure_maps
 	id=$(resolve_to_wwn "$device") || displayError "Cannot resolve device: $device"
-	sd="${WWN_TO_SD[$id]:-?}"
+	sd_raw="${WWN_TO_SD[$id]:-?}"
+	display="$(_dc_display_name "$id")"
 	access=$(resolve_to_access_dev "$id") || displayError "No usable access path for $device"
 
 	section "SCSI FORMAT UNIT"
 	info "Input" "$device"
-	info "Device" "$sd"
+	info "Device" "$display"
 	info "Access" "$access"
 	info "Identity" "$id"
 	warn "This will DESTROY all data on the device."
@@ -572,10 +742,7 @@ cmd_disk_format() {
 	[[ "$reply" == "YES" ]] || displayError "Aborted (confirmation not YES)"
 
 	local -a cmd=(sg_format --format --ffmt=0)
-	# --progress: poll and display progress (sg_format long option)
-	if [[ "$progress" -eq 1 ]]; then
-		cmd+=(--progress)
-	fi
+	[[ "$progress" -eq 1 ]] && cmd+=(--progress)
 	cmd+=("$access")
 
 	info "Running" "${cmd[*]}"
@@ -587,9 +754,8 @@ cmd_disk_format() {
 }
 
 # -----------------------------------------------------------------------------
-# disk zfs
+# disk zfs / btrfs
 # -----------------------------------------------------------------------------
-
 cmd_disk_zfs() {
 	local sub="${1:-}"
 	shift || true
@@ -604,9 +770,7 @@ cmd_disk_zfs() {
 					*) pool="$arg" ;;
 				esac
 			done
-			if ! _zpool_exists "$pool"; then
-				displayError "ZFS pool does not exist: $pool"
-			fi
+			_zpool_exists "$pool" || displayError "ZFS pool does not exist: $pool"
 			section "ZFS status ($pool)"
 			if [[ "$verbose" -eq 1 ]]; then
 				zpool status -v "$pool"
@@ -623,9 +787,7 @@ cmd_disk_zfs() {
 			;;
 		iostat)
 			local interval="${1:-1}"
-			if ! _zpool_exists "$POOL"; then
-				displayError "ZFS pool does not exist: $POOL"
-			fi
+			_zpool_exists "$POOL" || displayError "ZFS pool does not exist: $POOL"
 			[[ "$interval" =~ ^[0-9]+$ ]] || displayError "interval must be a positive integer"
 			section "ZFS iostat ($POOL)"
 			zpool iostat -v "$POOL" "$interval"
@@ -635,13 +797,12 @@ cmd_disk_zfs() {
 				displayError "ZFS pool does not exist: $POOL"
 			fi
 			section "ZFS events ($POOL)"
-			zpool events "$POOL" 2>/dev/null || zpool events
+			# Requires elevated privileges on most systems
+			as_root zpool events "$POOL" 2>/dev/null || as_root zpool events
 			;;
 		scrub)
 			local action="${1:-start}"
-			if ! _zpool_exists "$POOL"; then
-				displayError "ZFS pool does not exist: $POOL"
-			fi
+			_zpool_exists "$POOL" || displayError "ZFS pool does not exist: $POOL"
 			case "$action" in
 				""|start)
 					section "ZFS scrub start ($POOL)"
@@ -665,10 +826,6 @@ cmd_disk_zfs() {
 	esac
 }
 
-# -----------------------------------------------------------------------------
-# disk btrfs
-# -----------------------------------------------------------------------------
-
 cmd_disk_btrfs() {
 	local sub="${1:-}"
 	shift || true
@@ -679,9 +836,9 @@ cmd_disk_btrfs() {
 			path="${1:-/}"
 			_require_btrfs_path "$path"
 			section "Btrfs status ($path)"
-			btrfs filesystem show "$path" 2>/dev/null || btrfs filesystem show
+			as_root btrfs filesystem show "$path" 2>/dev/null || btrfs filesystem show
 			log ""
-			btrfs filesystem usage "$path"
+			as_root btrfs filesystem usage "$path"
 			;;
 		list)
 			section "Btrfs filesystems"
@@ -712,13 +869,15 @@ cmd_disk_btrfs() {
 			path="${1:-/}"
 			_require_btrfs_path "$path"
 			section "Btrfs df ($path)"
-			btrfs filesystem df "$path"
+			as_root btrfs filesystem df "$path"
 			;;
 		device)
 			path="${1:-/}"
 			_require_btrfs_path "$path"
 			section "Btrfs device ($path)"
-			btrfs device usage "$path" 2>/dev/null || btrfs filesystem show "$path"
+			as_root btrfs filesystem usage "$path"
+			log ""
+			as_root btrfs device usage "$path"
 			;;
 		scrub)
 			local action="${1:-status}"
@@ -772,7 +931,6 @@ cmd_disk() {
 # -----------------------------------------------------------------------------
 # led
 # -----------------------------------------------------------------------------
-
 cmd_led() {
 	local action="${1:-}"
 	shift || true
@@ -814,7 +972,14 @@ cmd_led() {
 			section "LED status"
 			local -a rows=()
 			local -A seen=()
-			local enc_dir slot_dir slot_sas slot_wwn led_state sd_name scsi_id wwn_id sortk
+			local enc_dir slot_dir slot_sas slot_wwn led_state
+			local sd_name scsi_id wwn_id sortk display
+			local RS=$'\x1e'
+
+			printf "%-12s %-36s %-28s %-4s\n" "Device" "SCSI" "WWN" "LED"
+			printf "%-12s %-36s %-28s %-4s\n" \
+				"------------" "------------------------------------" \
+				"----------------------------" "----"
 
 			if [[ -n "$device" ]]; then
 				local id
@@ -825,9 +990,12 @@ cmd_led() {
 				find_slot_by_wwn_prefix "${id%?}" || displayError "No enclosure slot for $device"
 				led_state=$(led_status "$SLOT_DIR")
 				read -r sd_name scsi_id wwn_id <<<"$(resolve_sas_to_ids "$SLOT_SAS")"
-				printf "%-8s %-36s %-28s %-4s\n" "Device" "SCSI" "WWN" "LED"
-				printf "%-8s %-36s %-28s %-4s\n" "--------" "------------------------------------" "----------------------------" "----"
-				printf "%-8s %-36s %-28s %-4s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_state"
+				display="$(_dc_display_name "$id")"
+				printf "%-12s %-36s %-28s %-4s\n" \
+					"$(_dc_trunc "$display" 12)" \
+					"$(_dc_trunc "$scsi_id" 36)" \
+					"$(_dc_trunc "$wwn_id" 28)" \
+					"$(_dc_trunc "$led_state" 4)"
 			else
 				for enc_dir in /sys/class/enclosure/*/; do
 					[[ -d "$enc_dir" ]] || continue
@@ -839,18 +1007,24 @@ cmd_led() {
 						seen[$slot_wwn]=1
 						led_state=$(led_status "$slot_dir")
 						read -r sd_name scsi_id wwn_id <<<"$(resolve_sas_to_ids "$slot_sas")"
-						sortk="$(enclosure_sort_key "$sd_name")"
-						rows+=("$sortk|$sd_name|$scsi_id|$wwn_id|$led_state")
+						display="$(_dc_display_name "$slot_wwn")"
+						# Sort key must NOT use the same delimiter as fields
+						sortk="$(enclosure_sort_key "$sd_name" | tr '|' ',')"
+						rows+=("${sortk}${RS}${display}${RS}${scsi_id}${RS}${wwn_id}${RS}${led_state}")
 					done
 				done
-				printf "%-8s %-36s %-28s %-4s\n" "Device" "SCSI" "WWN" "LED"
-				printf "%-8s %-36s %-28s %-4s\n" "--------" "------------------------------------" "----------------------------" "----"
 				local row
-				while IFS= read -r row; do
-					[[ -z "$row" ]] && continue
-					IFS='|' read -r _ sd_name scsi_id wwn_id led_state <<<"$row"
-					printf "%-8s %-36s %-28s %-4s\n" "$sd_name" "$scsi_id" "$wwn_id" "$led_state"
-				done < <(printf '%s\n' "${rows[@]}" | LC_ALL=C sort)
+				if [[ ${#rows[@]} -gt 0 ]]; then
+					while IFS= read -r row; do
+						[[ -z "$row" ]] && continue
+						IFS="$RS" read -r _ display scsi_id wwn_id led_state <<<"$row"
+						printf "%-12s %-36s %-28s %-4s\n" \
+							"$(_dc_trunc "$display" 12)" \
+							"$(_dc_trunc "$scsi_id" 36)" \
+							"$(_dc_trunc "$wwn_id" 28)" \
+							"$(_dc_trunc "$led_state" 4)"
+					done < <(printf '%s\n' "${rows[@]}" | LC_ALL=C sort)
+				fi
 			fi
 			;;
 		blink)
@@ -859,11 +1033,23 @@ cmd_led() {
 			section "LED blink"
 			info "Device" "$device"
 			info "Duration" "${seconds}s"
+
+			# Ensure LED is turned OFF if the user hits Ctrl+C / TERM during sleep
+			_blink_cleanup() {
+				_led_set_user "$device" 0 2>/dev/null || true
+				echo
+				warn "Interrupted — LED forced OFF for $device"
+			}
+			trap '_blink_cleanup; trap - INT TERM EXIT; exit 130' INT TERM
+			trap '_led_set_user "$device" 0 2>/dev/null || true; trap - INT TERM EXIT' EXIT
+
 			_led_set_user "$device" 1 || displayError "Failed to turn LED on for $device"
 			ok "LED ON"
 			sleep "$seconds"
 			_led_set_user "$device" 0 || displayError "Failed to turn LED off for $device"
 			ok "LED OFF"
+
+			trap - INT TERM EXIT
 			;;
 		*)
 			usage_error "Missing or unknown led action" "led on|off|show|blink …"
@@ -872,9 +1058,6 @@ cmd_led() {
 }
 
 # -----------------------------------------------------------------------------
-# Main
-# -----------------------------------------------------------------------------
-
 main() {
 	if [[ $# -lt 1 ]]; then
 		display_help
@@ -885,9 +1068,7 @@ main() {
 	shift
 
 	case "$cmd" in
-		help|-h|--help)
-			display_help
-			;;
+		help|-h|--help) display_help ;;
 		disk)
 			display_header
 			cmd_disk "$@"

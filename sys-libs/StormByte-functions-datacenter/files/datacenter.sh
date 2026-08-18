@@ -10,6 +10,11 @@
 #   - ata:<ata-by-id-name> for SATA without WWN
 #   - node:sdX as last resort
 # SES/LED matching applies only to real hex WWNs.
+#
+# Under multipath:
+#   - by-id may point at dm-* (not sd*)
+#   - zpool often uses mpath* leaf names
+#   - access path prefers /dev/mapper/mpath*
 # =============================================================================
 
 [[ -n "${_STORMBYTE_FUNCTIONS_DATACENTER_LOADED:-}" ]] && return
@@ -17,17 +22,16 @@ readonly _STORMBYTE_FUNCTIONS_DATACENTER_LOADED=1
 
 readonly STORMBYTE_FUNCTIONS_DATACENTER_VERSION="1.0.0"
 
-# Default smartctl timeout (seconds). Override with SMARTCTL_TIMEOUT in the environment.
 : "${SMARTCTL_TIMEOUT:=10}"
 
 # -----------------------------------------------------------------------------
 # Globals filled by init_disk_maps
 # -----------------------------------------------------------------------------
 # SD_TO_WWN[sdX]           = identity key (WWN hex | ata:… | node:sdX)
-# WWN_TO_SD[id]            = primary sd name (display)
-# WWN_ALIASES[id]          = space-separated by-id basenames (scsi-*, wwn-*, ata-*)
+# WWN_TO_SD[id]            = primary sd name (display fallback)
+# WWN_ALIASES[id]          = space-separated aliases (scsi-*, wwn-*, ata-*, mpath*)
 # ALIAS_TO_WWN[alias]      = identity key
-# WWN_TO_ACCESS[id]        = best block path for I/O (mapper / by-id / /dev/sdX)
+# WWN_TO_ACCESS[id]        = best block path (mapper / by-id / /dev/sdX)
 # WWN_TO_PATH_KIND[id]     = mapper | by-id | sd
 # ALL_WWNS[]               = list of known identity keys
 # -----------------------------------------------------------------------------
@@ -44,6 +48,8 @@ _dc_normalize_input() {
 
 	if [[ "$input" == /dev/disk/by-id/* ]]; then
 		input="${input#/dev/disk/by-id/}"
+	elif [[ "$input" == /dev/mapper/* ]]; then
+		input="${input#/dev/mapper/}"
 	elif [[ "$input" == /dev/* ]]; then
 		input="${input#/dev/}"
 	fi
@@ -60,7 +66,6 @@ _dc_is_usable_block() {
 	[[ -n "$path" && -b "$path" ]]
 }
 
-# True if identity is a real hex WWN (SES/SAS matching applies)
 _dc_is_real_wwn() {
 	local id="$1"
 	[[ "$id" =~ ^[0-9a-fA-F]{16,}$ ]]
@@ -74,6 +79,13 @@ _dc_mpath_for_sd() {
 		for h in "/sys/block/$sd/holders"/dm-*; do
 			[[ -e "$h" ]] || continue
 			h="$(basename "$h")"
+			for m in /dev/mapper/mpath*; do
+				[[ -b "$m" ]] || continue
+				if [[ "$(readlink -f "$m" 2>/dev/null)" == "/dev/$h" ]]; then
+					printf '%s\n' "$m"
+					return 0
+				fi
+			done
 			for m in /dev/mapper/*; do
 				[[ -b "$m" ]] || continue
 				if [[ "$(readlink -f "$m" 2>/dev/null)" == "/dev/$h" ]]; then
@@ -102,6 +114,15 @@ _dc_pick_access() {
 			return 0
 		fi
 	fi
+
+	for name in $aliases; do
+		[[ "$name" == mpath* ]] || continue
+		path="/dev/mapper/$name"
+		if _dc_is_usable_block "$path"; then
+			printf '%s\nmapper\n' "$path"
+			return 0
+		fi
+	done
 
 	for name in $aliases; do
 		[[ "$name" == wwn-* ]] || continue
@@ -136,7 +157,6 @@ _dc_pick_access() {
 	return 1
 }
 
-# Stable identity when lsblk has no WWN
 _dc_synthetic_id_for_sd() {
 	local sd="$1"
 	local link name target
@@ -162,6 +182,7 @@ _dc_add_alias() {
 	local id="$1"
 	local name="$2"
 
+	[[ -n "$id" && -n "$name" ]] || return 0
 	ALIAS_TO_WWN[$name]="$id"
 	if [[ -v "WWN_ALIASES[$id]" ]]; then
 		[[ " ${WWN_ALIASES[$id]} " == *" $name "* ]] || WWN_ALIASES[$id]+=" $name"
@@ -170,8 +191,112 @@ _dc_add_alias() {
 	fi
 }
 
+# by-id links that resolve to dm-* (typical under multipath)
+_dc_map_byid_via_dm() {
+	local _link _name _target _dm _wwn _id _slave _sd
+
+	shopt -s nullglob
+	for _link in /dev/disk/by-id/*; do
+		[[ -L "$_link" ]] || continue
+		_name=$(basename "$_link")
+		[[ "$_name" == scsi-* || "$_name" == wwn-* || "$_name" == ata-* ]] || continue
+		[[ "$_name" =~ -part[0-9]+$ ]] && continue
+		_target=$(readlink -f "$_link" 2>/dev/null) || continue
+		_dm=$(basename "$_target")
+		[[ "$_dm" =~ ^dm- ]] || continue
+
+		_wwn=$(lsblk -dno WWN "$_target" 2>/dev/null | head -1)
+		if [[ -n "$_wwn" && "$_wwn" != "-" ]]; then
+			_id="${_wwn#0x}"
+			_id="${_id,,}"
+		else
+			_id=""
+			for _slave in /sys/block/"$_dm"/slaves/*; do
+				[[ -e "$_slave" ]] || continue
+				_sd=$(basename "$_slave")
+				[[ -v "SD_TO_WWN[$_sd]" ]] || continue
+				_id="${SD_TO_WWN[$_sd]}"
+				break
+			done
+			[[ -n "$_id" ]] || continue
+		fi
+
+		if [[ ! -v "WWN_TO_SD[$_id]" ]] || [[ -z "${WWN_TO_SD[$_id]:-}" ]]; then
+			for _slave in /sys/block/"$_dm"/slaves/*; do
+				[[ -e "$_slave" ]] || continue
+				_sd=$(basename "$_slave")
+				[[ "$_sd" =~ ^sd[a-z]+$ ]] || continue
+				WWN_TO_SD[$_id]="$_sd"
+				SD_TO_WWN[$_sd]="$_id"
+				break
+			done
+			local found=0
+			local e
+			for e in "${ALL_WWNS[@]:-}"; do
+				[[ "$e" == "$_id" ]] && { found=1; break; }
+			done
+			[[ "$found" -eq 0 ]] && ALL_WWNS+=("$_id")
+		fi
+
+		_dc_add_alias "$_id" "$_name"
+	done
+	shopt -u nullglob
+}
+
+# /dev/mapper/mpath* → slave sd* → identity; mpath name becomes alias + access
+_dc_map_multipath_aliases() {
+	local mpath base dm slaves_dir slave sd id
+
+	shopt -s nullglob
+	for mpath in /dev/mapper/mpath*; do
+		[[ -b "$mpath" ]] || continue
+		base=$(basename "$mpath")
+		dm=$(readlink -f "$mpath" 2>/dev/null) || continue
+		dm=$(basename "$dm")
+		slaves_dir="/sys/block/$dm/slaves"
+		[[ -d "$slaves_dir" ]] || continue
+
+		for slave in "$slaves_dir"/*; do
+			[[ -e "$slave" ]] || continue
+			sd=$(basename "$slave")
+			[[ "$sd" =~ ^sd[a-z]+$ ]] || continue
+
+			if [[ -v "SD_TO_WWN[$sd]" ]]; then
+				id="${SD_TO_WWN[$sd]}"
+			else
+				# Discover WWN from mapper node
+				local _wwn
+				_wwn=$(lsblk -dno WWN "$mpath" 2>/dev/null | head -1)
+				if [[ -n "$_wwn" && "$_wwn" != "-" ]]; then
+					id="${_wwn#0x}"
+					id="${id,,}"
+				else
+					id="$(_dc_synthetic_id_for_sd "$sd")"
+				fi
+				SD_TO_WWN[$sd]="$id"
+				if [[ ! -v "WWN_TO_SD[$id]" ]] || [[ -z "${WWN_TO_SD[$id]:-}" ]]; then
+					WWN_TO_SD[$id]="$sd"
+				fi
+				local found=0 e
+				for e in "${ALL_WWNS[@]:-}"; do
+					[[ "$e" == "$id" ]] && { found=1; break; }
+				done
+				[[ "$found" -eq 0 ]] && ALL_WWNS+=("$id")
+			fi
+
+			_dc_add_alias "$id" "$base"
+
+			if _dc_is_usable_block "$mpath"; then
+				WWN_TO_ACCESS[$id]="$mpath"
+				WWN_TO_PATH_KIND[$id]="mapper"
+			fi
+		done
+	done
+	shopt -u nullglob
+}
+
 # -----------------------------------------------------------------------------
-# init_disk_maps — all sd* (with or without WWN), aliases, access paths
+# init_disk_maps
 # -----------------------------------------------------------------------------
 init_disk_maps() {
 	declare -gA SD_TO_WWN=()
@@ -184,7 +309,7 @@ init_disk_maps() {
 
 	local _line _sd _wwn _id _link _name _target _access _kind _dev
 
-	# Phase 1: every sd* from lsblk (WWN optional → synthetic id if missing)
+	# Phase 1: every sd* from lsblk (WWN optional)
 	while IFS= read -r _line; do
 		[[ -z "$_line" ]] && continue
 		_sd=$(awk '{print $1}' <<< "$_line")
@@ -220,7 +345,7 @@ init_disk_maps() {
 	done
 	shopt -u nullglob
 
-	# Phase 2: by-id aliases (whole disk only)
+	# Phase 2: by-id aliases that still point at sd*
 	for _link in /dev/disk/by-id/*; do
 		[[ -L "$_link" ]] || continue
 		_name=$(basename "$_link")
@@ -241,34 +366,16 @@ init_disk_maps() {
 				fi
 			fi
 			_dc_add_alias "$_id" "$_name"
-		else
-			# dm/mapper target
-			_wwn=$(lsblk -dno WWN "$_target" 2>/dev/null | head -1)
-			if [[ -n "$_wwn" && "$_wwn" != "-" ]]; then
-				_id="${_wwn#0x}"
-				_id="${_id,,}"
-				if [[ ! -v "WWN_TO_SD[$_id]" ]]; then
-					WWN_TO_SD[$_id]="${WWN_TO_SD[$_id]:-}"
-					ALL_WWNS+=("$_id")
-				fi
-				_dc_add_alias "$_id" "$_name"
-			elif [[ "$_name" == ata-* ]]; then
-				_id="ata:$_name"
-				if [[ ! -v "WWN_TO_SD[$_id]" ]]; then
-					WWN_TO_SD[$_id]=""
-					ALL_WWNS+=("$_id")
-				fi
-				_dc_add_alias "$_id" "$_name"
-			fi
 		fi
+		# dm-* targets handled in phase 4
 	done
 
-	# sdX names as aliases
+	# sdX as resolvable aliases
 	for _sd in "${!SD_TO_WWN[@]}"; do
 		ALIAS_TO_WWN[$_sd]="${SD_TO_WWN[$_sd]}"
 	done
 
-	# Phase 3: access path per identity
+	# Phase 3: initial access path per identity
 	for _id in "${ALL_WWNS[@]}"; do
 		_sd="${WWN_TO_SD[$_id]:-}"
 		[[ -n "$_sd" ]] || continue
@@ -280,19 +387,40 @@ init_disk_maps() {
 			WWN_TO_PATH_KIND[$_id]="sd"
 		fi
 	done
+
+	# Phase 4: multipath reality (by-id→dm, mpath↔sd)
+	_dc_map_byid_via_dm
+	_dc_map_multipath_aliases
+
+	# Phase 5: refresh access for anything still on raw sd when mapper exists
+	for _id in "${ALL_WWNS[@]}"; do
+		_sd="${WWN_TO_SD[$_id]:-}"
+		[[ -n "$_sd" ]] || continue
+		if [[ "${WWN_TO_PATH_KIND[$_id]:-}" != "mapper" ]]; then
+			if read -r _access _kind < <(_dc_pick_access "$_id" "$_sd" "${WWN_ALIASES[$_id]:-}"); then
+				WWN_TO_ACCESS[$_id]="$_access"
+				WWN_TO_PATH_KIND[$_id]="$_kind"
+			fi
+		fi
+	done
 }
 
 # -----------------------------------------------------------------------------
 # Resolution API
 # -----------------------------------------------------------------------------
 
-# resolve_to_wwn <user-input> → identity key (WWN hex | ata:… | node:…)
 resolve_to_wwn() {
 	local input
 	input="$(_dc_normalize_input "$1")"
 
 	if [[ "$input" =~ ^sd[a-z]+$ ]]; then
 		[[ -v "SD_TO_WWN[$input]" ]] && { echo "${SD_TO_WWN[$input]}"; return 0; }
+		return 1
+	fi
+
+	# multipath leaf name
+	if [[ "$input" == mpath* ]]; then
+		[[ -v "ALIAS_TO_WWN[$input]" ]] && { echo "${ALIAS_TO_WWN[$input]}"; return 0; }
 		return 1
 	fi
 
@@ -317,7 +445,6 @@ resolve_to_wwn() {
 			echo "${ALIAS_TO_WWN[$input]}"
 			return 0
 		fi
-		# Stable form used as map key
 		echo "ata:$input"
 		return 0
 	fi
@@ -348,7 +475,6 @@ resolve_to_sd() {
 	return 1
 }
 
-# Identity accepted even when by-id node is multipath-blocked; returns usable path
 resolve_to_access_dev() {
 	local input id path sd name
 	input="$(_dc_normalize_input "$1")"
@@ -371,6 +497,10 @@ resolve_to_access_dev() {
 	fi
 
 	for name in ${WWN_ALIASES[$id]:-}; do
+		if [[ "$name" == mpath* ]] && _dc_is_usable_block "/dev/mapper/$name"; then
+			echo "/dev/mapper/$name"
+			return 0
+		fi
 		if _dc_is_usable_block "/dev/disk/by-id/$name"; then
 			echo "/dev/disk/by-id/$name"
 			return 0
@@ -392,7 +522,7 @@ resolve_path_kind() {
 }
 
 # -----------------------------------------------------------------------------
-# SAS address ↔ WWN (real hex WWNs only)
+# SAS ↔ WWN (real hex only)
 # -----------------------------------------------------------------------------
 
 resolve_sas_to_wwn() {
@@ -498,7 +628,6 @@ get_enclosure_slot() {
 		return 0
 	}
 
-	# SATA/USB synthetic identities never map to SES
 	if ! _dc_is_real_wwn "$id"; then
 		echo "N/A"
 		return 0
@@ -521,7 +650,7 @@ enclosure_sort_key() {
 	id=$(resolve_to_wwn "$input" 2>/dev/null || echo "")
 	if [[ "$slot" == "N/A" || -z "$slot" ]]; then
 		printf 'ZZZZ|9999|%s\n' "$id"
-		return
+		return 0
 	fi
 	enc="${slot%%/*}"
 	name="${slot##*Slot}"
@@ -581,12 +710,12 @@ led_set() {
 }
 
 # -----------------------------------------------------------------------------
-# SMART helpers (access device + timeout)
+# SMART helpers
 # -----------------------------------------------------------------------------
 
 smartctl_query() {
 	local input="$1"
-	local access out
+	local access="" sd="" id="" out="" try_dev
 
 	if [[ -b "$input" ]]; then
 		access="$input"
@@ -594,26 +723,92 @@ smartctl_query() {
 		access=$(resolve_to_access_dev "$input") || return 1
 	fi
 
-	if command -v timeout >/dev/null 2>&1; then
-		out=$(timeout "$SMARTCTL_TIMEOUT" smartctl -a "$access" 2>/dev/null || true)
-	else
-		out=$(smartctl -a "$access" 2>/dev/null || true)
+	_dc_smartctl_run() {
+		local dev="$1"
+		shift
+		# "$@" = extra args before device, e.g. -d scsi
+		if command -v timeout >/dev/null 2>&1; then
+			timeout "$SMARTCTL_TIMEOUT" smartctl "$@" -a "$dev" 2>/dev/null || true
+		else
+			smartctl "$@" -a "$dev" 2>/dev/null || true
+		fi
+	}
+
+	_dc_smartctl_ok() {
+		local text="$1"
+		[[ -n "$text" ]] || return 1
+		grep -qi 'Unable to detect device type' <<<"$text" && return 1
+		grep -qiE 'START OF|SMART Health|SMART overall|Device Model|Product:' <<<"$text"
+	}
+
+	# Prefer underlying sd* when maps are available (most reliable under multipath)
+	id=$(resolve_to_wwn "$input" 2>/dev/null) || id=""
+	if [[ -n "$id" && -v "WWN_TO_SD[$id]" && -n "${WWN_TO_SD[$id]:-}" ]]; then
+		sd="/dev/${WWN_TO_SD[$id]}"
+		if [[ -b "$sd" ]]; then
+			out="$(_dc_smartctl_run "$sd")"
+			if _dc_smartctl_ok "$out"; then
+				printf '%s' "$out"
+				return 0
+			fi
+			out="$(_dc_smartctl_run "$sd" -d scsi)"
+			if _dc_smartctl_ok "$out"; then
+				printf '%s' "$out"
+				return 0
+			fi
+		fi
 	fi
-	printf '%s' "$out"
+
+	# Access path: mapper always needs -d scsi
+	try_dev="$access"
+	if [[ "$try_dev" == /dev/mapper/* || "$(basename "$try_dev")" == mpath* ]]; then
+		out="$(_dc_smartctl_run "$try_dev" -d scsi)"
+		if _dc_smartctl_ok "$out"; then
+			printf '%s' "$out"
+			return 0
+		fi
+	else
+		out="$(_dc_smartctl_run "$try_dev")"
+		if _dc_smartctl_ok "$out"; then
+			printf '%s' "$out"
+			return 0
+		fi
+		out="$(_dc_smartctl_run "$try_dev" -d scsi)"
+		if _dc_smartctl_ok "$out"; then
+			printf '%s' "$out"
+			return 0
+		fi
+	fi
+
+	printf '%s' "${out:-}"
+	return 0
 }
 
 smart_status_from_output() {
 	local output="$1"
 	[[ -z "$output" ]] && { echo "N/A"; return; }
-	if grep -qiE 'SMART overall-health.*PASSED|SMART Health Status.*OK' <<<"$output"; then
+
+	if grep -qiE 'SMART overall-health[^\n]*PASSED' <<<"$output"; then
 		echo "PASSED"
-	elif grep -qiE 'SMART overall-health.*FAILED|SMART Health Status.*FAIL' <<<"$output"; then
-		echo "FAILED"
-	elif grep -qi 'SMART' <<<"$output"; then
-		echo "WARN"
-	else
-		echo "N/A"
+		return
 	fi
+	if grep -qiE 'SMART overall-health[^\n]*FAILED' <<<"$output"; then
+		echo "FAILED"
+		return
+	fi
+	if grep -qiE 'SMART Health Status:\s*OK' <<<"$output"; then
+		echo "PASSED"
+		return
+	fi
+	if grep -qiE 'SMART Health Status:\s*(FAILED|FAILURE|CRITICAL)' <<<"$output"; then
+		echo "FAILED"
+		return
+	fi
+	if grep -qiE 'SMART overall-health|SMART Health Status' <<<"$output"; then
+		echo "WARN"
+		return
+	fi
+	echo "N/A"
 }
 
 smart_temperature_from_output() {
@@ -711,17 +906,28 @@ get_link_speed() {
 	echo "N/A"
 }
 
+# Pool membership: by-id aliases AND mpath* names used by zpool
 is_in_pool_status() {
 	local id="$1"
 	local pool_status="$2"
-	local alias
+	local alias access base
 	[[ -z "$pool_status" ]] && return 1
-	[[ -v "WWN_ALIASES[$id]" ]] || return 1
-	for alias in ${WWN_ALIASES[$id]}; do
-		grep -qwF "$alias" <<<"$pool_status" && return 0
-	done
+
+	if [[ -v "WWN_ALIASES[$id]" ]]; then
+		for alias in ${WWN_ALIASES[$id]}; do
+			grep -qwF "$alias" <<<"$pool_status" && return 0
+		done
+	fi
+
+	if [[ -v "WWN_TO_ACCESS[$id]" ]]; then
+		access="${WWN_TO_ACCESS[$id]}"
+		base=$(basename "$access")
+		grep -qwF "$base" <<<"$pool_status" && return 0
+	fi
+
 	if _dc_is_real_wwn "$id"; then
 		grep -qwF "wwn-0x${id}" <<<"$pool_status" && return 0
+		grep -qwF "wwn-${id}" <<<"$pool_status" && return 0
 	fi
 	return 1
 }

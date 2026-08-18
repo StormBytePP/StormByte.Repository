@@ -25,15 +25,20 @@ _StormByte_DataCenter() {
 	led_subs=(on off show blink)
 
 	# -----------------------------------------------------------------------
-	# Device completion
-	# - Path (/dev/..., ~/..., ./...) → completion estilo shell (filenames)
-	# - Id suelto (sd, wwn-, scsi-, ata-) → catálogo real del sistema
+	# Device catalog: mpath*, by-id, sd*
 	# -----------------------------------------------------------------------
 	_sb_dc_devices() {
 		local -a out=()
 		local p d base
 
 		shopt -s nullglob
+
+		for p in /dev/mapper/mpath*; do
+			[[ -b "$p" ]] || continue
+			base="$(basename "$p")"
+			out+=("$base")
+			out+=("$p")
+		done
 
 		for p in /dev/disk/by-id/wwn-* /dev/disk/by-id/scsi-* /dev/disk/by-id/ata-*; do
 			[[ -e "$p" ]] || continue
@@ -54,6 +59,7 @@ _StormByte_DataCenter() {
 		((${#out[@]})) && printf '%s\n' "${out[@]}" | sort -u
 	}
 
+	# Paths → filenames; bare ids → device catalog
 	_sb_complete_device() {
 		local cur="$1"
 
@@ -84,9 +90,6 @@ _StormByte_DataCenter() {
 		return 0
 		;;
 
-	# -----------------------------------------------------------------
-	# disk list|health|info|format|zfs|btrfs
-	# -----------------------------------------------------------------
 	disk)
 		if ((cword == 2)); then
 			mapfile -t COMPREPLY < <(compgen -W "${disk_subs[*]}" -- "$cur")
@@ -103,7 +106,11 @@ _StormByte_DataCenter() {
 			return 0
 			;;
 		health)
-			_sb_complete_device "$cur"
+			if [[ "$cur" == -* ]]; then
+				mapfile -t COMPREPLY < <(compgen -W "-v --verbose" -- "$cur")
+			else
+				_sb_complete_device "$cur"
+			fi
 			return 0
 			;;
 		info)
@@ -111,15 +118,22 @@ _StormByte_DataCenter() {
 			return 0
 			;;
 		format)
-			# disk format <device> [--progress]
 			if [[ "$cur" == -* ]]; then
 				mapfile -t COMPREPLY < <(compgen -W "--progress" -- "$cur")
 				return 0
 			fi
-			# After a device, still offer --progress
+			# device already given → offer --progress
 			if ((cword >= 4)); then
-				mapfile -t COMPREPLY < <(compgen -W "--progress" -- "$cur")
-				return 0
+				local has_dev=0 i
+				for ((i = 3; i < cword; i++)); do
+					[[ "${words[i]}" == -* ]] && continue
+					has_dev=1
+					break
+				done
+				if [[ "$has_dev" -eq 1 ]]; then
+					mapfile -t COMPREPLY < <(compgen -W "--progress" -- "$cur")
+					return 0
+				fi
 			fi
 			_sb_complete_device "$cur"
 			return 0
@@ -183,9 +197,6 @@ _StormByte_DataCenter() {
 		return 0
 		;;
 
-	# -----------------------------------------------------------------
-	# led on|off|show|blink
-	# -----------------------------------------------------------------
 	led)
 		if ((cword == 2)); then
 			mapfile -t COMPREPLY < <(compgen -W "${led_subs[*]}" -- "$cur")
