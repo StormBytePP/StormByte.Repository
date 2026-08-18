@@ -5,66 +5,238 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Shared StormByte helpers (colours, displayError, printOK, …)
+# Version requirements
 # -----------------------------------------------------------------------------
-readonly STORMBYTE_LIB="${STORMBYTE_LIB:-/lib/StormByte/functions.sh}"
-if [[ ! -f "$STORMBYTE_LIB" ]]; then
-	printf 'ERROR: StormByte functions not found at %s\n' "$STORMBYTE_LIB" >&2
-	printf 'Set STORMBYTE_LIB to the correct path if needed.\n' >&2
+readonly STORMBYTE_GITHUB_VERSION="1.0.0"
+readonly REQUIRE_STORMBYTE_FUNCTIONS="1.0.0"
+readonly REQUIRE_STORMBYTE_FUNCTIONS_GIT="1.0.0"
+
+# -----------------------------------------------------------------------------
+# Locate and load libraries
+# -----------------------------------------------------------------------------
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -f "${SCRIPT_DIR}/functions.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "${SCRIPT_DIR}/functions.sh"
+elif [[ -f "/lib/StormByte/functions.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "/lib/StormByte/functions.sh"
+else
+	printf 'ERROR: StormByte functions.sh not found\n' >&2
 	exit 1
 fi
-# shellcheck source=/lib/StormByte/functions.sh
-source "$STORMBYTE_LIB"
+
+require_version "${STORMBYTE_FUNCTIONS_VERSION}" "${REQUIRE_STORMBYTE_FUNCTIONS}" "StormByte functions"
+
+if [[ -f "${SCRIPT_DIR}/git.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "${SCRIPT_DIR}/git.sh"
+elif [[ -f "/lib/StormByte/git.sh" ]]; then
+	# shellcheck source=/dev/null
+	source "/lib/StormByte/git.sh"
+else
+	displayError "StormByte git.sh not found"
+fi
+
+require_version "${STORMBYTE_FUNCTIONS_GIT_VERSION}" "${REQUIRE_STORMBYTE_FUNCTIONS_GIT}" "StormByte git helpers"
 
 # -----------------------------------------------------------------------------
-# Version & identity
+# Identity
 # -----------------------------------------------------------------------------
-readonly VERSION="1.0.0"
-readonly OWNER="StormBytePP"
 readonly SCRIPT_NAME="$(basename "${BASH_SOURCE[0]}")"
+readonly CONFIG_FILE="${HOME}/.StormByte-GitHub.conf"
 
-# Runtime options (env overrides)
 DRY_RUN="${DRY_RUN:-0}"
-ROOT="$(pwd)"
 PAGE_LIMIT="${PAGE_LIMIT:-100}"
 MAX_PAGES="${MAX_PAGES:-0}"
 RUN_LIMIT="${RUN_LIMIT:-0}"
 ONLY_FAILED="${ONLY_FAILED:-0}"
 
-# Per-callback results (read by foreach_repo)
+_ENV_ROOT="${ROOT-}"
+_ENV_OUT="${OUT-}"
+_ENV_OWNER="${OWNER-}"
+_ENV_FORK_ROOT="${FORK_ROOT-}"
+
+ROOT=""
+OUT=""
+OWNER=""
+FORK_ROOT=""
+
 LAST_COUNT=0
 LAST_BYTES=0
 
 # -----------------------------------------------------------------------------
-# Logging
+# Configuration
 # -----------------------------------------------------------------------------
 
-log() {
-	printf '%s\n' "$*"
+prompt_config() {
+	local input default_root
+
+	default_root="/home/$(id -un 2>/dev/null || echo user)"
+
+	_normalize_path_input() {
+		local p="$1"
+		p="${p#"${p%%[![:space:]]*}"}"
+		p="${p%"${p##*[![:space:]]}"}"
+		case "$p" in
+			"~")   p="$HOME" ;;
+			"~/"*) p="$HOME/${p:2}" ;;
+		esac
+		while [[ "$p" == */ ]]; do
+			p="${p%/}"
+		done
+		printf '%s\n' "$p"
+	}
+
+	printf '  %s┌──────────────────────────────────────────────────────┐%s\n' "${_CLR_BOLD_BLUE}" "${_CLR_RESET}"
+	printf '  %s│%s  First-run configuration                             %s│%s\n' \
+		"${_CLR_BOLD_BLUE}" "${_CLR_RESET}" "${_CLR_BOLD_BLUE}" "${_CLR_RESET}"
+	printf '  %s└──────────────────────────────────────────────────────┘%s\n' "${_CLR_BOLD_BLUE}" "${_CLR_RESET}"
+	echo
+	printf '  %sConfig file:%s  %s\n' "${_CLR_DIM}" "${_CLR_RESET}" "$CONFIG_FILE"
+	printf '  %sTip:%s  You can override ROOT, OUT, OWNER, FORK_ROOT via environment for a single run.\n' \
+		"${_CLR_DIM}" "${_CLR_RESET}"
+	echo
+
+	# ----- OWNER -----
+	printf '  %s┌─ OWNER ──────────────────────────────────────────────┐%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s GitHub username that owns the repositories.          %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Used to verify origin remotes and for clone-all.     %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s└──────────────────────────────────────────────────────┘%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	while true; do
+		read -r -p "  OWNER [SomeGitHubUser]: " input
+		input="${input:-}"
+		if [[ -z "$input" ]]; then
+			echo "  → Please enter a GitHub username (e.g. SomeGitHubUser)."
+			continue
+		fi
+		if [[ "$input" =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ ]]; then
+			OWNER="$input"
+			break
+		fi
+		echo "  → Invalid GitHub username."
+	done
+	echo
+
+	# ----- ROOT -----
+	printf '  %s┌─ ROOT ───────────────────────────────────────────────┐%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Directory that contains your local repository clones.%s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Used by most commands when no explicit path is given %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s ("all repositories" mode).                           %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s└──────────────────────────────────────────────────────┘%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	while true; do
+		read -e -r -p "  ROOT [${default_root}]: " input
+		input="$(_normalize_path_input "${input:-$default_root}")"
+		if [[ -d "$input" ]]; then
+			ROOT="$(cd "$input" && pwd)"
+			break
+		fi
+		echo "  → Directory does not exist: $input"
+	done
+	echo
+
+	# ----- OUT -----
+	printf '  %s┌─ OUT ────────────────────────────────────────────────┐%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Output directory for repos dump.                     %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Created automatically if it does not exist.          %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s└──────────────────────────────────────────────────────┘%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	while true; do
+		read -e -r -p "  OUT [/tmp]: " input
+		input="$(_normalize_path_input "${input:-/tmp}")"
+		if [[ -d "$input" ]]; then
+			OUT="$(cd "$input" && pwd)"
+			break
+		fi
+		if mkdir -p "$input" 2>/dev/null; then
+			OUT="$(cd "$input" && pwd)"
+			break
+		fi
+		echo "  → Cannot create directory: $input"
+	done
+	echo
+
+	# ----- FORK_ROOT (optional) -----
+	printf '  %s┌─ FORK_ROOT (optional) ───────────────────────────────┐%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Separate root used ONLY by the "fork" commands.      %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Leave empty to use ROOT for forks as well.           %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s│%s Useful if your forks live in a different folder.     %s│%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}" "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	printf '  %s└──────────────────────────────────────────────────────┘%s\n' "${_CLR_BOLD_CYAN}" "${_CLR_RESET}"
+	while true; do
+		read -e -r -p "  FORK_ROOT []: " input
+		input="${input:-}"
+		if [[ -z "$input" ]]; then
+			FORK_ROOT=""
+			break
+		fi
+		input="$(_normalize_path_input "$input")"
+		if [[ -d "$input" ]]; then
+			FORK_ROOT="$(cd "$input" && pwd)"
+			break
+		fi
+		echo "  → Directory does not exist: $input"
+	done
+	echo
+
+	{
+		echo "# StormByte-GitHub configuration"
+		echo "# Generated on $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+		echo
+		echo "OWNER=$OWNER"
+		echo "ROOT=$ROOT"
+		echo "OUT=$OUT"
+		if [[ -n "$FORK_ROOT" ]]; then
+			echo "FORK_ROOT=$FORK_ROOT"
+		fi
+	} > "$CONFIG_FILE"
+
+	ok "Configuration written to $CONFIG_FILE"
+	echo
 }
 
-ok() {
-	printf "  ${_CLR_BOLD_GREEN}✓  OK${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$*"
+load_or_create_config() {
+	if [[ ! -f "$CONFIG_FILE" ]]; then
+		prompt_config
+	fi
+
+	load_safe_config "$CONFIG_FILE" OWNER ROOT OUT FORK_ROOT
+
+	[[ -n "$_ENV_ROOT"      ]] && ROOT="$_ENV_ROOT"
+	[[ -n "$_ENV_OUT"       ]] && OUT="$_ENV_OUT"
+	[[ -n "$_ENV_OWNER"     ]] && OWNER="$_ENV_OWNER"
+	[[ -n "$_ENV_FORK_ROOT" ]] && FORK_ROOT="$_ENV_FORK_ROOT"
+
+	[[ -n "$OWNER" ]] || displayError "OWNER is not set in $CONFIG_FILE (or OWNER env)"
+	[[ -n "$ROOT"  ]] || displayError "ROOT is not set in $CONFIG_FILE (or ROOT env)"
+	[[ -n "$OUT"   ]] || displayError "OUT is not set in $CONFIG_FILE (or OUT env)"
+
+	if [[ -d "$ROOT" ]]; then
+		ROOT="$(cd "$ROOT" && pwd)"
+	fi
+	if [[ ! -d "$ROOT" ]]; then
+		displayError "ROOT directory does not exist: $ROOT"
+	fi
+
+	ensure_dir "$OUT"
+	if [[ -d "$OUT" ]]; then
+		OUT="$(cd "$OUT" && pwd)"
+	fi
+
+	if [[ -n "$FORK_ROOT" ]]; then
+		if [[ -d "$FORK_ROOT" ]]; then
+			FORK_ROOT="$(cd "$FORK_ROOT" && pwd)"
+		else
+			displayError "FORK_ROOT directory does not exist: $FORK_ROOT"
+		fi
+	fi
 }
 
-warn() {
-	printf "  ${_CLR_BOLD_YELLOW}⚠  WARNING${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$*"
-}
-
-err() {
-	printf "  ${_CLR_BOLD_RED}✗  ERROR${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$*" >&2
-}
-
-die() {
-	displayError "$1"
-}
-
-section() {
-	printf '\n  %s━━ %s ━━%s\n' "${_CLR_BOLD_CYAN}" "$*" "${_CLR_RESET}"
-}
-
-info() {
-	printf "  ${_CLR_DIM}%-14s${_CLR_RESET} %s\n" "$1" "$2"
+fork_effective_root() {
+	if [[ -n "$FORK_ROOT" ]]; then
+		printf '%s\n' "$FORK_ROOT"
+	else
+		printf '%s\n' "$ROOT"
+	fi
 }
 
 # -----------------------------------------------------------------------------
@@ -72,7 +244,7 @@ info() {
 # -----------------------------------------------------------------------------
 
 display_header() {
-	local line1="StormByte-GitHub  v${VERSION}"
+	local line1="StormByte-GitHub  v${STORMBYTE_GITHUB_VERSION}"
 	local line2="Actions · Git · Submodules · Source dump"
 	local inner_w border_mid
 
@@ -107,131 +279,144 @@ display_header() {
 }
 
 display_help() {
-	display_header
 	cat <<EOF
 ${_CLR_BOLD}USAGE${_CLR_RESET}
 ${SCRIPT_NAME} <command> [subcommand] [arguments…]
 
+${_CLR_BOLD}CONFIGURATION${_CLR_RESET}
+File: ${CONFIG_FILE}
+OWNER       GitHub username
+ROOT        Working root directory (most commands)
+OUT         Output directory (repos dump)
+FORK_ROOT   Optional root used only by \"fork\" commands
+			(if unset, fork uses ROOT)
+
 ${_CLR_BOLD}GLOBAL ENVIRONMENT${_CLR_RESET}
-DRY_RUN=1          List actions without applying them
-PAGE_LIMIT=N       Items per API page (default: 100)
-MAX_PAGES=N        Max cache delete passes; 0 = until empty (default: 0)
-RUN_LIMIT=N        Max workflows to re-run on start/restart; 0 = all (default: 0)
-ONLY_FAILED=1      Re-run only failed/cancelled/timed_out workflow runs
-STORMBYTE_LIB=path Override path to functions.sh
+DRY_RUN=1              Simulate actions without applying them
+ROOT=/path             Override ROOT from config for this run
+OUT=/path              Override OUT from config for this run
+OWNER=name             Override OWNER from config for this run
+FORK_ROOT=/path        Override FORK_ROOT from config for this run
+PAGE_LIMIT=N           Items per API page (default: 100)
+MAX_PAGES=N            Max cache delete passes; 0 = until empty
+RUN_LIMIT=N            Max workflows to re-run; 0 = all
+ONLY_FAILED=1          (legacy) same as --failed
+
+${_CLR_BOLD}DIRECTORY SELECTION${_CLR_RESET}
+(none)                   All git repositories under the effective root
+<dir>                    Only that directory (absolute, relative, ~/… or under root)
+!<name>                  All under root except that directory name
+!<name1>+!<name2>+...    All under root except the listed names
+
+Notes:
+• A concrete path (~/…, /…, ./…, foo/bar) is used as-is.
+• A simple name is resolved as <root>/<name>.
+• The root is ROOT for most commands, and FORK_ROOT (or ROOT) for fork.
+• The argument is always a local directory (clone path), not the GitHub repo name.
 
 ${_CLR_BOLD}COMMANDS${_CLR_RESET}
 
 ${_CLR_BOLD_CYAN}help${_CLR_RESET}
 	Show this help.
 
-${_CLR_BOLD_CYAN}cache show${_CLR_RESET}    [repo-dir]
-	List each cache (size, id, key) per repo, repo total, then global totals.
+${_CLR_BOLD_CYAN}cache show|list|delete${_CLR_RESET}  [dir-spec]
+	Manage Actions caches.
 
-${_CLR_BOLD_CYAN}cache list${_CLR_RESET}    [repo-dir]
-	Per repo: entry count + size (or "No caches"). Final totals across repos.
+${_CLR_BOLD_CYAN}ci stop|start|restart|status${_CLR_RESET}  [dir-spec] [--failed]
+	Manage workflow runs.
+	--failed   Only re-run failed/cancelled/timed_out runs
 
-${_CLR_BOLD_CYAN}cache delete${_CLR_RESET}  [repo-dir]
-	Delete ALL Actions caches (paginated until none remain).
+${_CLR_BOLD_CYAN}submodules init|deinit|update${_CLR_RESET}  [dir-spec]
+	Submodule operations (update respects dependency order).
 
-${_CLR_BOLD_CYAN}runners stop${_CLR_RESET}     [repo-dir]
-	Cancel active workflow runs on the current branch (all jobs in each run).
+${_CLR_BOLD_CYAN}git reset|pull|sync${_CLR_RESET}  [dir-spec]
+	git reset   → hard reset + clean
+	git pull    → fetch + pull --rebase
+	git sync    → alias for pull (no submodules)
 
-${_CLR_BOLD_CYAN}runners start${_CLR_RESET}    [repo-dir]
-	Re-run the latest run of each workflow on HEAD (GitHub "Re-run all jobs").
+${_CLR_BOLD_CYAN}repos list${_CLR_RESET}
+	List non-recursive folders under \$ROOT showing:
+	folder name, remote repo, latest tag (or commit hash), current branch.
 
-${_CLR_BOLD_CYAN}runners restart${_CLR_RESET}  [repo-dir]
-	Full stop, then start.
+${_CLR_BOLD_CYAN}repos dump${_CLR_RESET}  <directory> [chunk_size_kb] [type=c++|type=cmake]
+	Dump sources into \$OUT.
 
-${_CLR_BOLD_CYAN}submodules init${_CLR_RESET}    [repo-dir]
-	Initialize and checkout submodules (git submodule update --init --recursive).
+${_CLR_BOLD_CYAN}clone-all${_CLR_RESET}
+	Clone all public repositories of \$OWNER that are missing under \$ROOT.
 
-${_CLR_BOLD_CYAN}submodules deinit${_CLR_RESET}  [repo-dir]
-	Deinitialize all submodules (git submodule deinit --all -f).
+${_CLR_BOLD_CYAN}search <text>${_CLR_RESET}  [dir-spec]
+	Search text in the code of the selected directories.
 
-${_CLR_BOLD_CYAN}submodules update${_CLR_RESET}  [repo-dir]
-	Clean, fetch, update --remote, commit & push if needed (dependency order).
-
-${_CLR_BOLD_CYAN}reset${_CLR_RESET}  [repo-dir]
-${_CLR_BOLD_CYAN}pull${_CLR_RESET}   [repo-dir]
-${_CLR_BOLD_CYAN}dump${_CLR_RESET}   <directory> [chunk_size_kb] [type=c++|type=cmake]
+${_CLR_BOLD_CYAN}fork status|sync${_CLR_RESET}  [dir-spec]
+	Uses FORK_ROOT if set, otherwise ROOT.
+	status  → shows \"X commits behind, Y commits ahead\"
+	sync    → updates ONLY master if behind upstream
+			(safe stash + checkout + sync + restore)
 
 ${_CLR_BOLD}EXAMPLES${_CLR_RESET}
-${SCRIPT_NAME} cache show
-DRY_RUN=1 ${SCRIPT_NAME} cache delete database
-${SCRIPT_NAME} runners stop database
-${SCRIPT_NAME} runners start database
-ONLY_FAILED=1 ${SCRIPT_NAME} runners start
-${SCRIPT_NAME} submodules init
-${SCRIPT_NAME} submodules deinit
-${SCRIPT_NAME} submodules update
-${SCRIPT_NAME} dump ./base type=cmake 200
+${SCRIPT_NAME} cache delete !multimedia
+${SCRIPT_NAME} ci start --failed
+${SCRIPT_NAME} repos list
+${SCRIPT_NAME} repos dump ./base type=cmake 200
+ROOT=~/Software ${SCRIPT_NAME} git sync
+FORK_ROOT=~/Forks ${SCRIPT_NAME} fork status
+FORK_ROOT=~/Forks ${SCRIPT_NAME} fork sync
+${SCRIPT_NAME} search \"mimalloc\"
+${SCRIPT_NAME} clone-all
 
 ${_CLR_BOLD}NOTES${_CLR_RESET}
-• Repo dirs must be git checkouts whose origin owner is ${OWNER}.
-• Omitting [repo-dir] walks every immediate subdirectory of \$PWD.
-• Cancel/re-run is per workflow run; GitHub cancels/restarts all jobs in that run.
+• Repositories must belong to the configured OWNER (or OWNER env override).
+• Omitting the dir-spec walks every immediate subdirectory of the effective root.
 • Running with no arguments shows this help.
 EOF
 }
 
-# -----------------------------------------------------------------------------
-# Shared prerequisites & repo resolution
-# -----------------------------------------------------------------------------
-
-require_tools() {
-	local need_gh="${1:-0}"
-	if [[ "$need_gh" == "1" ]] && ! command -v gh >/dev/null 2>&1; then
-		die "gh CLI not found"
-	fi
-	if ! command -v git >/dev/null 2>&1; then
-		die "git not found"
-	fi
+usage_error() {
+	err "$1"
+	echo
+	echo "Accepted: $2"
+	echo "Use '${SCRIPT_NAME} help' for full help."
+	exit 1
 }
 
-resolve_repo() {
-	local dir="$1"
-	local remote_url repo short remote_owner
+# -----------------------------------------------------------------------------
+# Path / selection helpers
+# -----------------------------------------------------------------------------
 
-	if [[ ! -d "$dir" ]]; then
-		err "Not a directory: $dir"
-		return 1
-	fi
-	if [[ ! -d "$dir/.git" && ! -f "$dir/.git" ]]; then
-		err "Not a git repository: $dir"
-		return 1
-	fi
+resolve_repo_dir() {
+	local spec="$1"
+	local base_root="${2:-$ROOT}"
 
-	repo=""
-	if remote_url="$(git -C "$dir" remote get-url origin 2>/dev/null)"; then
-		repo="$(printf '%s' "$remote_url" \
-			| sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#')"
-	fi
-	if [[ -z "$repo" ]]; then
-		err "No origin remote in $dir"
-		return 1
+	while [[ "$spec" == */ ]]; do
+		spec="${spec%/}"
+	done
+
+	if [[ "$spec" == "~" ]]; then
+		spec="$HOME"
+	elif [[ "$spec" == "~/"* ]]; then
+		spec="$HOME/${spec:2}"
 	fi
 
-	remote_owner="${repo%%/*}"
-	short="${repo##*/}"
-	if [[ "${remote_owner,,}" != "${OWNER,,}" ]]; then
-		err "Origin owner is '${remote_owner}', expected '${OWNER}': $dir"
-		return 1
-	fi
-	printf '%s\n' "${OWNER}/${short}"
-}
-
-resolve_target_path() {
-	local target="$1"
-	if [[ -z "$target" ]]; then
-		printf ''
+	if [[ "$spec" == /* ]]; then
+		printf '%s\n' "$spec"
 		return 0
 	fi
-	if [[ "$target" != /* ]]; then
-		target="$ROOT/$target"
+
+	if [[ "$spec" == */* || "$spec" == ./* || "$spec" == ../* ]]; then
+		if [[ -d "$spec" ]]; then
+			(cd "$spec" && pwd)
+		else
+			printf '%s\n' "$spec"
+		fi
+		return 0
 	fi
-	printf '%s\n' "$target"
+
+	printf '%s\n' "$base_root/$spec"
 }
+
+# -----------------------------------------------------------------------------
+# Shared walk helper
+# -----------------------------------------------------------------------------
 
 __walk_repos=0
 __walk_total=0
@@ -240,16 +425,19 @@ __walk_bytes=0
 foreach_repo() {
 	local callback="$1"
 	local target="${2:-}"
+	local walk_root="${3:-$ROOT}"
 	local dir name repo path
 
 	__walk_repos=0
 	__walk_total=0
 	__walk_bytes=0
 
-	if [[ -n "$target" ]]; then
-		dir="$(resolve_target_path "$target")"
+	parse_selection_spec "$target"
+
+	if [[ ${#INCLUDE_ITEMS[@]} -eq 1 && ${#EXCLUDE_ITEMS[@]} -eq 0 ]]; then
+		dir="$(resolve_repo_dir "${INCLUDE_ITEMS[0]}" "$walk_root")"
 		section "$(basename "$dir")"
-		repo="$(resolve_repo "$dir")" || die "Target must be a ${OWNER} git repository"
+		repo="$(git_resolve_repo "$dir" "$OWNER")" || displayError "Target must be a ${OWNER} git repository: $dir"
 		LAST_COUNT=0
 		LAST_BYTES=0
 		"$callback" "$dir" "$repo"
@@ -260,15 +448,18 @@ foreach_repo() {
 	fi
 
 	shopt -s nullglob
-	for path in "$ROOT"/*/; do
+	for path in "$walk_root"/*/; do
 		dir="${path%/}"
 		name="$(basename "$dir")"
+
+		should_process_item "$name" || continue
+
 		section "$name"
 		if [[ ! -d "$dir/.git" && ! -f "$dir/.git" ]]; then
 			warn "Not a git repo — skip"
 			continue
 		fi
-		if ! repo="$(resolve_repo "$dir" 2>/dev/null)"; then
+		if ! repo="$(git_resolve_repo "$dir" "$OWNER" 2>/dev/null)"; then
 			warn "Skip (not a usable ${OWNER} repo)"
 			continue
 		fi
@@ -304,20 +495,6 @@ print_summary_sized() {
 	log ""
 }
 
-human_size() {
-	local b="${1:-0}"
-	[[ "$b" =~ ^[0-9]+$ ]] || b=0
-	if [[ "$b" -lt 1024 ]]; then
-		printf '%s B' "$b"
-	elif [[ "$b" -lt $((1024 * 1024)) ]]; then
-		printf '%s KiB' "$(( (b + 512) / 1024 ))"
-	elif [[ "$b" -lt $((1024 * 1024 * 1024)) ]]; then
-		printf '%s MiB' "$(awk -v b="$b" 'BEGIN { printf "%.1f", b / (1024*1024) }')"
-	else
-		printf '%s GiB' "$(awk -v b="$b" 'BEGIN { printf "%.2f", b / (1024*1024*1024) }')"
-	fi
-}
-
 # -----------------------------------------------------------------------------
 # cache
 # -----------------------------------------------------------------------------
@@ -331,8 +508,7 @@ _cache_list_rows() {
 }
 
 cmd_cache_show_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 	local count=0 bytes=0 id size key entry rest hsz
 	local -a entries=()
 
@@ -360,10 +536,6 @@ cmd_cache_show_one() {
 		bytes=$((bytes + size))
 	done
 
-	if [[ "$count" -eq "$PAGE_LIMIT" ]]; then
-		warn "List may be truncated at PAGE_LIMIT=$PAGE_LIMIT (gh has no cache cursor)"
-	fi
-
 	info "Repo total" "$count cache(s), $(human_size "$bytes")"
 	ok "Listed $count cache(s)"
 	LAST_COUNT=$count
@@ -371,8 +543,7 @@ cmd_cache_show_one() {
 }
 
 cmd_cache_list_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 	local count=0 bytes=0 id size key entry rest
 	local -a entries=()
 
@@ -397,18 +568,13 @@ cmd_cache_list_one() {
 		bytes=$((bytes + size))
 	done
 
-	if [[ "$count" -eq "$PAGE_LIMIT" ]]; then
-		warn "List may be truncated at PAGE_LIMIT=$PAGE_LIMIT"
-	fi
-
 	ok "$count cache(s), $(human_size "$bytes")"
 	LAST_COUNT=$count
 	LAST_BYTES=$bytes
 }
 
 cmd_cache_delete_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 	local deleted=0 page=0 batch id key entry
 	local -a entries=()
 
@@ -456,9 +622,7 @@ cmd_cache_delete_one() {
 			fi
 		done
 
-		if [[ "$DRY_RUN" == "1" ]]; then
-			break
-		fi
+		[[ "$DRY_RUN" == "1" ]] && break
 	done
 
 	ok "Deleted $deleted cache(s)"
@@ -469,15 +633,6 @@ cmd_cache_delete_one() {
 cmd_cache() {
 	local sub="${1:-}"
 	local target="${2:-}"
-	require_tools 1
-
-	if [[ -z "$sub" ]]; then
-		err "Missing cache subcommand"
-		log "Use: ${SCRIPT_NAME} cache show|list|delete [repo-dir]"
-		log ""
-		display_help
-		exit 1
-	fi
 
 	case "$sub" in
 		show)
@@ -493,27 +648,19 @@ cmd_cache() {
 			print_summary "caches deleted" "$__walk_total"
 			;;
 		*)
-			err "Unknown cache subcommand: $sub"
-			log "Use: ${SCRIPT_NAME} cache show|list|delete [repo-dir]"
-			log ""
-			display_help
-			exit 1
+			usage_error "Missing or unknown cache subcommand" "cache show|list|delete [dir-spec]"
 			;;
 	esac
 }
 
 # -----------------------------------------------------------------------------
-# runners (workflow runs only — no per-job API calls)
+# CI
 # -----------------------------------------------------------------------------
 
-## Lines: id \t status \t conclusion \t headSha \t workflowName \t title
 _list_runs_for_start() {
-	local repo="$1"
-	local branch="$2"
-	local sha="$3"
+	local repo="$1" branch="$2" sha="$3"
 	local out=""
 
-	# Prefer exact commit (HEAD). Full path --workflow is unreliable on gh CLI.
 	out="$(
 		gh run list -R "$repo" --commit "$sha" --limit "$PAGE_LIMIT" \
 			--json databaseId,status,conclusion,headSha,displayTitle,workflowName \
@@ -525,43 +672,26 @@ _list_runs_for_start() {
 		return 0
 	fi
 
-	# Fallback: branch tip (e.g. SHA not on remote yet / API lag)
 	gh run list -R "$repo" --branch "$branch" --limit "$PAGE_LIMIT" \
 		--json databaseId,status,conclusion,headSha,displayTitle,workflowName \
 		--jq '.[] | "\(.databaseId)\t\(.status)\t\(.conclusion // "-")\t\(.headSha // "")\t\(.workflowName // "-")\t\(.displayTitle // "")"' \
 		2>/dev/null || true
 }
 
-## Cancel each active run on the branch. One API call per unique run; GitHub cancels all jobs.
-cmd_runners_stop_one() {
-	local dir="$1"
-	local repo="$2"
-	local branch
-	local cancelled=0
+cmd_ci_stop_one() {
+	local dir="$1" repo="$2"
+	local branch cancelled=0
 	local id status workflow title entry rest st
 	local -a entries=()
 	local -A seen_id=()
-	local -a unique_ids=()
-	local max_passes=3
-	local pass=0
 
 	LAST_COUNT=0
-	LAST_BYTES=0
-
 	info "Remote" "$repo"
 
-	if ! branch="$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null)"; then
-		err "Cannot resolve current branch in $dir"
-		return 1
-	fi
+	branch="$(git_current_branch "$dir")"
+	[[ -z "$branch" ]] && { err "Cannot resolve current branch"; return 1; }
 	info "Branch" "$branch"
-	info "Action" "Cancel active workflow runs (all jobs in each run)"
 
-	# ------------------------------------------------------------------
-	# 1) Collect unique active run IDs (one shot)
-	# ------------------------------------------------------------------
-	entries=()
-	seen_id=()
 	for st in in_progress queued pending waiting requested; do
 		while IFS= read -r entry; do
 			[[ -z "$entry" ]] && continue
@@ -569,7 +699,6 @@ cmd_runners_stop_one() {
 			[[ -z "$id" || -n "${seen_id[$id]+x}" ]] && continue
 			seen_id["$id"]=1
 			entries+=("$entry")
-			unique_ids+=("$id")
 		done < <(
 			gh run list -R "$repo" --branch "$branch" --status "$st" --limit "$PAGE_LIMIT" \
 				--json databaseId,status,displayTitle,workflowName \
@@ -578,17 +707,13 @@ cmd_runners_stop_one() {
 		)
 	done
 
-	if [[ ${#unique_ids[@]} -eq 0 ]]; then
+	if [[ ${#entries[@]} -eq 0 ]]; then
 		ok "No active runs on $branch"
-		LAST_COUNT=0
 		return 0
 	fi
 
-	info "Found" "${#unique_ids[@]} unique active run(s)"
+	info "Found" "${#entries[@]} unique active run(s)"
 
-	# ------------------------------------------------------------------
-	# 2) Cancel each unique run exactly once
-	# ------------------------------------------------------------------
 	for entry in "${entries[@]}"; do
 		id="${entry%%$'\t'*}"
 		rest="${entry#*$'\t'}"
@@ -598,90 +723,48 @@ cmd_runners_stop_one() {
 		title="${rest#*$'\t'}"
 
 		if [[ "$DRY_RUN" == "1" ]]; then
-			log "  [dry-run] would cancel: $workflow id=$id status=$status title=$title"
+			log "  [dry-run] would cancel: $workflow id=$id"
 			cancelled=$((cancelled + 1))
 			continue
 		fi
-
-		log "  cancel: $workflow id=$id status=$status title=$title"
+		log "  cancel: $workflow id=$id"
 		if gh run cancel "$id" -R "$repo" 2>/dev/null; then
 			cancelled=$((cancelled + 1))
 		else
-			warn "cancel failed for id=$id (may already be terminal)"
+			warn "cancel failed for id=$id"
 		fi
 	done
 
-	# ------------------------------------------------------------------
-	# 3) Optional quick second check (rarely needed)
-	# ------------------------------------------------------------------
-	if [[ "$DRY_RUN" != "1" && "$cancelled" -gt 0 ]]; then
-		sleep 3
-		local still_active=0
-		for st in in_progress queued pending waiting requested; do
-			still_active=$(( still_active + $(
-				gh run list -R "$repo" --branch "$branch" --status "$st" --limit 5 \
-					--json databaseId --jq 'length' 2>/dev/null || echo 0
-			) ))
-		done
-		if [[ "$still_active" -gt 0 ]]; then
-			warn "$still_active run(s) still appearing as active (GitHub lag) — they should finish cancelling shortly"
-		fi
-	fi
-
 	LAST_COUNT=$cancelled
-	LAST_BYTES=0
-
-	if [[ "$cancelled" -eq 0 ]]; then
-		ok "Cancelled 0 workflow run(s)"
-	else
-		ok "Cancelled $cancelled unique workflow run(s)"
-	fi
+	ok "Cancelled $cancelled unique workflow run(s)"
 }
 
-## Re-run latest finished run per workflow for HEAD (fallback: branch). No job counting.
-cmd_runners_start_one() {
-	local dir="$1"
-	local repo="$2"
-	local branch sha
-	local rerun=0 skipped=0
+cmd_ci_start_one() {
+	local dir="$1" repo="$2"
+	local branch sha rerun=0 skipped=0
 	local id status conclusion head_sha workflow title entry rest
 	local -a entries=()
 	local -A seen_workflow=()
 
 	LAST_COUNT=0
-	LAST_BYTES=0
-
 	info "Remote" "$repo"
 
-	if ! branch="$(git -C "$dir" rev-parse --abbrev-ref HEAD 2>/dev/null)"; then
-		err "Cannot resolve current branch in $dir"
-		return 1
-	fi
-	if ! sha="$(git -C "$dir" rev-parse HEAD 2>/dev/null)"; then
-		err "Cannot resolve HEAD in $dir"
-		return 1
-	fi
+	branch="$(git_current_branch "$dir")"
+	sha="$(git_head_sha_full "$dir")"
+	[[ -z "$branch" || -z "$sha" ]] && { err "Cannot resolve branch/HEAD"; return 1; }
 
 	info "Branch" "$branch"
 	info "HEAD" "$sha"
-	info "Action" "Re-run all jobs — latest run per workflow on this commit/branch"
-
-	if [[ "$ONLY_FAILED" == "1" ]]; then
-		info "Filter" "ONLY_FAILED"
-	fi
-	if [[ "$RUN_LIMIT" -gt 0 ]]; then
-		info "Cap" "RUN_LIMIT=$RUN_LIMIT"
-	fi
+	[[ "$ONLY_FAILED" == "1" ]] && info "Filter" "--failed"
 
 	mapfile -t entries < <(_list_runs_for_start "$repo" "$branch" "$sha")
 
 	if [[ ${#entries[@]} -eq 0 ]]; then
-		warn "No workflow runs found for commit $sha (or branch $branch)"
+		warn "No workflow runs found"
 		ok "No workflows re-run"
 		return 0
 	fi
 
-	# gh lists newest first → first time we see a workflowName is the latest run
 	for entry in "${entries[@]}"; do
 		id="${entry%%$'\t'*}"
 		rest="${entry#*$'\t'}"
@@ -695,18 +778,14 @@ cmd_runners_start_one() {
 		title="${rest#*$'\t'}"
 		[[ -z "$id" ]] && continue
 
-		if [[ -n "$workflow" && -n "${seen_workflow[$workflow]+x}" ]]; then
-			continue
-		fi
+		[[ -n "$workflow" && -n "${seen_workflow[$workflow]+x}" ]] && continue
 		[[ -n "$workflow" ]] && seen_workflow["$workflow"]=1
 
-		if [[ "$RUN_LIMIT" -gt 0 && "$rerun" -ge "$RUN_LIMIT" ]]; then
-			break
-		fi
+		[[ "$RUN_LIMIT" -gt 0 && "$rerun" -ge "$RUN_LIMIT" ]] && break
 
 		case "$status" in
 			in_progress|queued|pending|waiting|requested)
-				log "  skip (already active): $workflow id=$id"
+				log "  skip (already active): $workflow"
 				skipped=$((skipped + 1))
 				continue
 				;;
@@ -715,97 +794,118 @@ cmd_runners_start_one() {
 		if [[ "$ONLY_FAILED" == "1" ]]; then
 			case "$conclusion" in
 				failure|cancelled|timed_out|startup_failure) ;;
-				*)
-					skipped=$((skipped + 1))
-					continue
-					;;
+				*) skipped=$((skipped + 1)); continue ;;
 			esac
 		fi
 
-		if [[ -n "$head_sha" && "$head_sha" != "$sha" ]]; then
-			warn "Run SHA ($head_sha) ≠ local HEAD ($sha) for $workflow — re-running anyway"
-		fi
-
 		if [[ "$DRY_RUN" == "1" ]]; then
-			log "  [dry-run] Re-run all jobs: $workflow id=$id conclusion=$conclusion title=$title"
+			log "  [dry-run] Re-run: $workflow id=$id"
 			rerun=$((rerun + 1))
 			continue
 		fi
 
-		log "  Re-run all jobs: $workflow id=$id conclusion=$conclusion title=$title"
+		log "  Re-run: $workflow id=$id"
 		if gh run rerun "$id" -R "$repo" 2>/dev/null; then
 			rerun=$((rerun + 1))
 		else
-			warn "rerun failed for id=$id ($workflow)"
+			warn "rerun failed for id=$id"
 		fi
 	done
 
 	LAST_COUNT=$rerun
-	LAST_BYTES=0
-
-	if [[ "$rerun" -eq 0 ]]; then
-		ok "No workflows re-run (skipped=$skipped)"
-	else
-		ok "Re-run $rerun workflow(s) (skipped=$skipped)"
-	fi
+	ok "Re-run $rerun workflow(s) (skipped=$skipped)"
 }
 
-cmd_runners_restart_one() {
-	local dir="$1"
-	local repo="$2"
-
-	cmd_runners_stop_one "$dir" "$repo"
-	if [[ "$DRY_RUN" != "1" ]]; then
-		sleep 2
-	fi
-	cmd_runners_start_one "$dir" "$repo"
+cmd_ci_restart_one() {
+	cmd_ci_stop_one "$1" "$2"
+	[[ "$DRY_RUN" != "1" ]] && sleep 2
+	cmd_ci_start_one "$1" "$2"
 }
 
-cmd_runners() {
+cmd_ci_status_one() {
+	local dir="$1" repo="$2"
+	local branch
+	local -a entries=()
+	local id status conclusion workflow title entry rest
+
+	LAST_COUNT=0
+	info "Remote" "$repo"
+
+	branch="$(git_current_branch "$dir")"
+	[[ -z "$branch" ]] && { err "Cannot resolve current branch"; return 1; }
+	info "Branch" "$branch"
+
+	mapfile -t entries < <(
+		gh run list -R "$repo" --branch "$branch" --limit 15 \
+			--json databaseId,status,conclusion,displayTitle,workflowName \
+			--jq '.[] | "\(.databaseId)\t\(.status)\t\(.conclusion // "-")\t\(.workflowName // "-")\t\(.displayTitle // "")"' \
+			2>/dev/null || true
+	)
+
+	if [[ ${#entries[@]} -eq 0 ]]; then
+		ok "No recent runs"
+		return 0
+	fi
+
+	printf "  ${_CLR_DIM}%-12s  %-12s  %-20s  %s${_CLR_RESET}\n" "STATUS" "CONCLUSION" "WORKFLOW" "TITLE"
+	for entry in "${entries[@]}"; do
+		id="${entry%%$'\t'*}"
+		rest="${entry#*$'\t'}"
+		status="${rest%%$'\t'*}"
+		rest="${rest#*$'\t'}"
+		conclusion="${rest%%$'\t'*}"
+		rest="${rest#*$'\t'}"
+		workflow="${rest%%$'\t'*}"
+		title="${rest#*$'\t'}"
+		printf "  %-12s  %-12s  %-20s  %s\n" "$status" "$conclusion" "$workflow" "$title"
+		LAST_COUNT=$((LAST_COUNT + 1))
+	done
+	ok "Listed recent runs"
+}
+
+cmd_ci() {
 	local sub="${1:-}"
-	local target="${2:-}"
-	require_tools 1
+	shift || true
+	local target="" arg
 
-	if [[ -z "$sub" ]]; then
-		err "Missing runners subcommand"
-		log "Use: ${SCRIPT_NAME} runners stop|start|restart [repo-dir]"
-		log ""
-		display_help
-		exit 1
-	fi
+	for arg in "$@"; do
+		case "$arg" in
+			--failed) ONLY_FAILED=1 ;;
+			*) [[ -z "$target" ]] && target="$arg" ;;
+		esac
+	done
 
 	case "$sub" in
 		stop)
-			foreach_repo cmd_runners_stop_one "$target"
+			foreach_repo cmd_ci_stop_one "$target"
 			print_summary "runs cancelled" "$__walk_total"
 			;;
 		start)
-			foreach_repo cmd_runners_start_one "$target"
+			foreach_repo cmd_ci_start_one "$target"
 			print_summary "workflows re-run" "$__walk_total"
 			;;
 		restart)
-			foreach_repo cmd_runners_restart_one "$target"
+			foreach_repo cmd_ci_restart_one "$target"
 			print_summary "workflows re-run" "$__walk_total"
 			;;
+		status)
+			foreach_repo cmd_ci_status_one "$target"
+			print_summary "repos checked" "$__walk_repos"
+			;;
 		*)
-			err "Unknown runners subcommand: $sub"
-			log "Use: ${SCRIPT_NAME} runners stop|start|restart [repo-dir]"
-			log ""
-			display_help
-			exit 1
+			usage_error "Missing or unknown ci subcommand" "ci stop|start|restart|status [dir-spec] [--failed]"
 			;;
 	esac
 }
 
 # -----------------------------------------------------------------------------
-# Submodule dependency graph
+# Submodule dependency helpers
 # -----------------------------------------------------------------------------
 
 canonical_repo_id() {
 	local url="$1"
 	local id
-	id="$(printf '%s' "$url" \
-		| sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#')"
+	id="$(printf '%s' "$url" | sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#')"
 	[[ -z "$id" || "$id" != */* ]] && return 1
 	printf '%s\n' "${id,,}"
 }
@@ -834,13 +934,10 @@ collect_dep_ids_from() {
 }
 
 build_update_order() {
-	local dir name repo_disp id dep_id d cur child n seen folder
-	local -a ids=() zero=() queue=() result_ids=() result=()
-	local -A id_to_folder=()
-	local -A folder_to_id=()
+	local dir name repo_disp id
+	local -a nodes=()
 	local -A deps=()
-	local -A indeg=()
-	local -A children=()
+	local -A id_to_folder=()
 
 	shopt -s nullglob
 	for dir in "$ROOT"/*/; do
@@ -848,7 +945,7 @@ build_update_order() {
 		if [[ ! -d "$dir/.git" && ! -f "$dir/.git" ]]; then
 			continue
 		fi
-		if ! repo_disp="$(resolve_repo "$dir" 2>/dev/null)"; then
+		if ! repo_disp="$(git_resolve_repo "$dir" "$OWNER" 2>/dev/null)"; then
 			continue
 		fi
 		if ! id="$(canonical_repo_id "https://github.com/${repo_disp}.git")"; then
@@ -856,23 +953,18 @@ build_update_order() {
 		fi
 		name="$(basename "$dir")"
 		if [[ -n "${id_to_folder[$id]+x}" ]]; then
-			warn "Duplicate clone of $id: '${id_to_folder[$id]}' and '$name' — keeping first"
+			warn "Duplicate clone of $id — keeping first"
 			continue
 		fi
 		id_to_folder["$id"]="$name"
-		folder_to_id["$name"]="$id"
-		ids+=("$id")
-		indeg["$id"]=0
+		nodes+=("$id")
 		deps["$id"]=""
 	done
 
-	if [[ ${#ids[@]} -eq 0 ]]; then
-		return 0
-	fi
+	[[ ${#nodes[@]} -eq 0 ]] && return 0
 
-	for id in "${ids[@]}"; do
-		folder="${id_to_folder[$id]}"
-		dir="$ROOT/$folder"
+	for id in "${nodes[@]}"; do
+		dir="$ROOT/${id_to_folder[$id]}"
 		while IFS= read -r dep_id; do
 			[[ -z "$dep_id" || "$dep_id" == "$id" ]] && continue
 			if [[ -n "${id_to_folder[$dep_id]+x}" ]]; then
@@ -884,58 +976,12 @@ build_update_order() {
 		done < <(collect_dep_ids_from "$dir" | sort -u)
 	done
 
-	for id in "${ids[@]}"; do
-		for d in ${deps[$id]:-}; do
-			[[ -z "$d" ]] && continue
-			children["$d"]="${children[$d]:+${children[$d]} }$id"
-			indeg["$id"]=$(( ${indeg[$id]:-0} + 1 ))
-		done
-	done
+	local -a ordered_ids
+	mapfile -t ordered_ids < <(topological_sort nodes deps)
 
-	for id in "${ids[@]}"; do
-		if [[ ${indeg[$id]:-0} -eq 0 ]]; then
-			zero+=("$id")
-		fi
+	for id in "${ordered_ids[@]}"; do
+		printf '%s\n' "${id_to_folder[$id]}"
 	done
-	if [[ ${#zero[@]} -gt 0 ]]; then
-		mapfile -t zero < <(
-			for id in "${zero[@]}"; do
-				printf '%s\t%s\n' "${id_to_folder[$id]}" "$id"
-			done | sort | cut -f2
-		)
-		queue=("${zero[@]}")
-	fi
-
-	while [[ ${#queue[@]} -gt 0 ]]; do
-		cur="${queue[0]}"
-		queue=("${queue[@]:1}")
-		result_ids+=("$cur")
-		for child in ${children[$cur]:-}; do
-			[[ -z "$child" ]] && continue
-			indeg["$child"]=$(( ${indeg[$child]:-0} - 1 ))
-			if [[ ${indeg[$child]:-0} -eq 0 ]]; then
-				queue+=("$child")
-			fi
-		done
-	done
-
-	if [[ ${#result_ids[@]} -lt ${#ids[@]} ]]; then
-		warn "Dependency cycle or unresolved edges — appending remaining repos"
-		for id in "${ids[@]}"; do
-			seen=0
-			for n in "${result_ids[@]}"; do
-				[[ "$n" == "$id" ]] && seen=1 && break
-			done
-			if [[ "$seen" -eq 0 ]]; then
-				result_ids+=("$id")
-			fi
-		done
-	fi
-
-	for id in "${result_ids[@]}"; do
-		result+=("${id_to_folder[$id]}")
-	done
-	printf '%s\n' "${result[@]}"
 }
 
 # -----------------------------------------------------------------------------
@@ -958,21 +1004,18 @@ run_q() {
 }
 
 cmd_submodules_init_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 
 	info "Path" "$dir"
 	if [[ ! -f "$dir/.gitmodules" ]]; then
 		ok "No .gitmodules — nothing to init"
 		LAST_COUNT=0
-		LAST_BYTES=0
 		return 0
 	fi
 
 	if [[ "$DRY_RUN" == "1" ]]; then
 		log "  [dry-run] would: git submodule update --init --recursive"
 		LAST_COUNT=1
-		LAST_BYTES=0
 		return 0
 	fi
 
@@ -983,25 +1026,21 @@ cmd_submodules_init_one() {
 		warn "init failed"
 		LAST_COUNT=0
 	fi
-	LAST_BYTES=0
 }
 
 cmd_submodules_deinit_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 
 	info "Path" "$dir"
 	if [[ ! -f "$dir/.gitmodules" ]]; then
 		ok "No .gitmodules — nothing to deinit"
 		LAST_COUNT=0
-		LAST_BYTES=0
 		return 0
 	fi
 
 	if [[ "$DRY_RUN" == "1" ]]; then
 		log "  [dry-run] would: git submodule deinit --all -f"
 		LAST_COUNT=1
-		LAST_BYTES=0
 		return 0
 	fi
 
@@ -1012,7 +1051,6 @@ cmd_submodules_deinit_one() {
 		warn "deinit failed"
 		LAST_COUNT=0
 	fi
-	LAST_BYTES=0
 }
 
 commit_submodules_if_needed() {
@@ -1020,7 +1058,6 @@ commit_submodules_if_needed() {
 	local name
 	name="$(basename "$dir")"
 
-	# Return 0 = something was (or would be) committed; 1 = nothing to update
 	if [[ -z "$(git -C "$dir" status --porcelain)" ]]; then
 		ok "No changes"
 		return 1
@@ -1048,22 +1085,18 @@ commit_submodules_if_needed() {
 		err "git push failed in $name"
 		return 1
 	fi
-	ok "Commit + push ($(git -C "$dir" rev-parse --short HEAD))"
+	ok "Commit + push ($(git_head_sha "$dir"))"
 	return 0
 }
 
 cmd_submodules_update_one() {
-	local dir="$1"
-	local repo="$2"
+	local dir="$1" repo="$2"
 
 	info "Path" "$dir"
 	LAST_COUNT=0
-	LAST_BYTES=0
 
 	if [[ "$DRY_RUN" == "1" ]]; then
 		log "  [dry-run] would clean, fetch, submodule update --remote, commit if needed"
-		# Count only if the worktree would have changes after a real update is unknown;
-		# dry-run of the full pipeline still reports "would process" as 0 unless porcelain is dirty.
 		if [[ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ]]; then
 			LAST_COUNT=1
 		fi
@@ -1089,7 +1122,6 @@ cmd_submodules_update_one() {
 	else
 		LAST_COUNT=0
 	fi
-	LAST_BYTES=0
 }
 
 cmd_submodules() {
@@ -1098,14 +1130,8 @@ cmd_submodules() {
 	local name dir repo
 	local -a ordered=()
 
-	require_tools 0
-
 	if [[ -z "$sub" ]]; then
-		err "Missing submodules subcommand"
-		log "Use: ${SCRIPT_NAME} submodules init|deinit|update [repo-dir]"
-		log ""
-		display_help
-		exit 1
+		usage_error "Missing submodules subcommand" "submodules init|deinit|update [dir-spec]"
 	fi
 
 	case "$sub" in
@@ -1133,16 +1159,14 @@ cmd_submodules() {
 				info "Update order" "$(IFS=','; echo "${ordered[*]}")"
 				__walk_repos=0
 				__walk_total=0
-				__walk_bytes=0
 				for name in "${ordered[@]}"; do
 					dir="$ROOT/$name"
 					section "$name"
-					if ! repo="$(resolve_repo "$dir" 2>/dev/null)"; then
+					if ! repo="$(git_resolve_repo "$dir" "$OWNER" 2>/dev/null)"; then
 						warn "Skip (not a usable ${OWNER} repo)"
 						continue
 					fi
 					LAST_COUNT=0
-					LAST_BYTES=0
 					cmd_submodules_update_one "$dir" "$repo" || true
 					__walk_total=$((__walk_total + ${LAST_COUNT:-0}))
 					__walk_repos=$((__walk_repos + 1))
@@ -1151,28 +1175,21 @@ cmd_submodules() {
 			fi
 			;;
 		*)
-			err "Unknown submodules subcommand: $sub"
-			log "Use: ${SCRIPT_NAME} submodules init|deinit|update [repo-dir]"
-			log ""
-			display_help
-			exit 1
+			usage_error "Unknown submodules subcommand: $sub" "submodules init|deinit|update [dir-spec]"
 			;;
 	esac
 }
 
 # -----------------------------------------------------------------------------
-# reset / pull
+# git (reset | pull | sync)
 # -----------------------------------------------------------------------------
 
-cmd_reset_one() {
+cmd_git_reset_one() {
 	local dir="$1"
-	local repo="$2"
-
 	info "Path" "$dir"
 	if [[ "$DRY_RUN" == "1" ]]; then
 		log "  [dry-run] would: git reset --hard && git clean -fd"
 		LAST_COUNT=1
-		LAST_BYTES=0
 		return 0
 	fi
 	if git -C "$dir" reset --hard && git -C "$dir" clean -fd; then
@@ -1182,47 +1199,97 @@ cmd_reset_one() {
 		warn "Reset failed"
 		LAST_COUNT=0
 	fi
-	LAST_BYTES=0
 }
 
-cmd_pull_one() {
+cmd_git_pull_one() {
 	local dir="$1"
-	local repo="$2"
-
 	info "Path" "$dir"
 	if [[ "$DRY_RUN" == "1" ]]; then
 		log "  [dry-run] would: git fetch origin && git pull --rebase"
 		LAST_COUNT=1
-		LAST_BYTES=0
 		return 0
 	fi
 	if git -C "$dir" fetch origin && git -C "$dir" pull --rebase; then
-		ok "Pull complete ($(git -C "$dir" rev-parse --short HEAD))"
+		ok "Pull complete ($(git_head_sha "$dir"))"
 		LAST_COUNT=1
 	else
 		warn "Pull failed"
 		LAST_COUNT=0
 	fi
-	LAST_BYTES=0
 }
 
-cmd_reset() {
-	local target="${1:-}"
-	require_tools 0
-	foreach_repo cmd_reset_one "$target"
-	print_summary "repos reset" "$__walk_total"
+cmd_git_sync_one() {
+	cmd_git_pull_one "$@"
 }
 
-cmd_pull() {
-	local target="${1:-}"
-	require_tools 0
-	foreach_repo cmd_pull_one "$target"
-	print_summary "repos pulled" "$__walk_total"
+cmd_git() {
+	local sub="${1:-}"
+	local target="${2:-}"
+
+	case "$sub" in
+		reset)
+			foreach_repo cmd_git_reset_one "$target"
+			print_summary "repos reset" "$__walk_total"
+			;;
+		pull)
+			foreach_repo cmd_git_pull_one "$target"
+			print_summary "repos pulled" "$__walk_total"
+			;;
+		sync)
+			foreach_repo cmd_git_sync_one "$target"
+			print_summary "repos synced" "$__walk_total"
+			;;
+		*)
+			usage_error "Missing or unknown git subcommand" "git reset|pull|sync [dir-spec]"
+			;;
+	esac
 }
 
 # -----------------------------------------------------------------------------
-# dump
+# repos (list | dump)
 # -----------------------------------------------------------------------------
+
+cmd_repos_list() {
+	local dir name repo branch tag_or_hash path count=0
+
+	info "Root" "$ROOT"
+	log ""
+	printf "  ${_CLR_DIM}%-28s  %-36s  %-22s  %s${_CLR_RESET}\n" \
+		"FOLDER" "REMOTE" "TAG / COMMIT" "BRANCH"
+
+	shopt -s nullglob
+	for path in "$ROOT"/*/; do
+		dir="${path%/}"
+		name="$(basename "$dir")"
+
+		if [[ ! -d "$dir/.git" && ! -f "$dir/.git" ]]; then
+			printf "  %-28s  %-36s  %-22s  %s\n" "$name" "-" "-" "-"
+			count=$((count + 1))
+			continue
+		fi
+
+		if ! repo="$(git_resolve_repo "$dir" "$OWNER" 2>/dev/null)"; then
+			repo="$(git_remote_repo "$dir" 2>/dev/null || echo "?")"
+		fi
+
+		branch="$(git_current_branch "$dir")"
+		[[ -z "$branch" ]] && branch="-"
+
+		# Latest tag by creator date; fallback to short HEAD hash
+		tag_or_hash="$(git -C "$dir" tag -l --sort=-creatordate 2>/dev/null | head -n1 || true)"
+		if [[ -z "$tag_or_hash" ]]; then
+			tag_or_hash="$(git -C "$dir" rev-parse --short HEAD 2>/dev/null || echo "-")"
+		fi
+
+		printf "  %-28s  %-36s  %-22s  %s\n" "$name" "$repo" "$tag_or_hash" "$branch"
+		count=$((count + 1))
+	done
+	shopt -u nullglob
+
+	__walk_repos=$count
+	__walk_total=$count
+	print_summary "folders listed" "$count"
+}
 
 print_size() {
 	local file="$1"
@@ -1318,7 +1385,7 @@ split_file() {
 	done
 }
 
-cmd_dump() {
+cmd_repos_dump() {
 	local dir="" chunk_size_kb="" type="c++"
 	local arg project out out_test
 
@@ -1330,57 +1397,44 @@ cmd_dump() {
 		elif [[ -z "$dir" ]]; then
 			dir="$arg"
 		else
-			err "Unexpected argument: $arg"
-			log "Use: ${SCRIPT_NAME} dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
-			log ""
-			display_help
-			exit 1
+			usage_error "Unexpected argument: $arg" "repos dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
 		fi
 	done
 
 	if [[ -z "$dir" ]]; then
-		err "dump requires a directory"
-		log "Use: ${SCRIPT_NAME} dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
-		log ""
-		display_help
-		exit 1
+		usage_error "repos dump requires a directory" "repos dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
 	fi
 
 	case "$type" in
 		c++|cmake) ;;
 		*)
-			err "Invalid type='$type' (use type=c++ or type=cmake)"
-			log "Use: ${SCRIPT_NAME} dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
-			log ""
-			display_help
-			exit 1
+			usage_error "Invalid type='$type'" "repos dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
 			;;
 	esac
 
 	if [[ -n "$chunk_size_kb" ]]; then
 		if ! [[ "$chunk_size_kb" =~ ^[0-9]+$ ]] || [[ "$chunk_size_kb" -le 0 ]]; then
-			err "chunk_size_kb must be a positive integer"
-			exit 1
+			displayError "chunk_size_kb must be a positive integer"
 		fi
 	fi
 
 	if [[ ! -d "$dir" ]]; then
-		err "Not a directory: $dir"
-		exit 1
+		displayError "Not a directory: $dir"
 	fi
 
 	dir="$(cd "$dir" && pwd)"
 	project="$(basename "$dir")"
-	out="/tmp/project_${project}.txt"
-	out_test="/tmp/project_${project}_test.txt"
+	out="${OUT}/project_${project}.txt"
+	out_test="${OUT}/project_${project}_test.txt"
 
 	rm -f "$out" "$out_test"
-	rm -f /tmp/project_${project}_part_*.txt
-	rm -f /tmp/project_${project}_test_part_*.txt
+	rm -f "${OUT}/project_${project}_part_"*.txt
+	rm -f "${OUT}/project_${project}_test_part_"*.txt
 
 	info "Project" "$project"
 	info "Type" "$type"
 	info "Source dir" "$dir"
+	info "OUT" "$OUT"
 
 	if [[ "$type" == "cmake" ]]; then
 		dump_files_cmake "$dir" "$out" "$dir"
@@ -1405,13 +1459,200 @@ cmd_dump() {
 	if [[ -n "$chunk_size_kb" ]]; then
 		log ""
 		log "=== Splitting sources into ~${chunk_size_kb} KB chunks ==="
-		split_file "$out" "/tmp/project_${project}_part_" "$chunk_size_kb"
+		split_file "$out" "${OUT}/project_${project}_part_" "$chunk_size_kb"
 		if [[ "$type" == "c++" ]]; then
 			log ""
 			log "=== Splitting tests into ~${chunk_size_kb} KB chunks ==="
-			split_file "$out_test" "/tmp/project_${project}_test_part_" "$chunk_size_kb"
+			split_file "$out_test" "${OUT}/project_${project}_test_part_" "$chunk_size_kb"
 		fi
 	fi
+}
+
+cmd_repos() {
+	local sub="${1:-}"
+	shift || true
+
+	case "$sub" in
+		list)
+			cmd_repos_list
+			;;
+		dump)
+			cmd_repos_dump "$@"
+			;;
+		*)
+			usage_error "Missing or unknown repos subcommand" \
+				"repos list | repos dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
+			;;
+	esac
+}
+
+# -----------------------------------------------------------------------------
+# clone-all
+# -----------------------------------------------------------------------------
+
+cmd_clone_all() {
+	local repos name dir cloned=0 skipped=0
+
+	info "Owner" "$OWNER"
+	info "Target" "$ROOT"
+
+	mapfile -t repos < <(
+		gh repo list "$OWNER" --limit 1000 --json name,isPrivate \
+			--jq '.[] | select(.isPrivate == false) | .name' 2>/dev/null || true
+	)
+
+	if [[ ${#repos[@]} -eq 0 ]]; then
+		warn "No public repositories found for $OWNER"
+		return 0
+	fi
+
+	for name in "${repos[@]}"; do
+		dir="$ROOT/$name"
+		if [[ -d "$dir" ]]; then
+			log "  skip (exists): $name"
+			skipped=$((skipped + 1))
+			continue
+		fi
+		if [[ "$DRY_RUN" == "1" ]]; then
+			log "  [dry-run] would clone $OWNER/$name"
+			cloned=$((cloned + 1))
+			continue
+		fi
+		log "  cloning $OWNER/$name ..."
+		if gh repo clone "$OWNER/$name" "$dir" 2>/dev/null; then
+			ok "Cloned $name"
+			cloned=$((cloned + 1))
+		else
+			warn "Failed to clone $name"
+		fi
+	done
+
+	print_summary "cloned" "$cloned"
+	info "Skipped (already present)" "$skipped"
+}
+
+# -----------------------------------------------------------------------------
+# search
+# -----------------------------------------------------------------------------
+
+cmd_search() {
+	local query="${1:-}"
+	local target="${2:-}"
+
+	[[ -z "$query" ]] && usage_error "search requires a text query" "search <text> [dir-spec]"
+
+	SEARCH_QUERY="$query"
+
+	cmd_search_one() {
+		local dir="$1" repo="$2"
+		info "Remote" "$repo"
+		info "Query" "$SEARCH_QUERY"
+
+		if command -v rg >/dev/null 2>&1; then
+			rg -n --color always -S "$SEARCH_QUERY" "$dir" \
+				--glob '!.git/*' --glob '!build/*' --glob '!thirdparty/*' --glob '!dist/*' \
+				2>/dev/null || true
+		else
+			grep -RIn --color=always \
+				--exclude-dir=.git --exclude-dir=build --exclude-dir=thirdparty --exclude-dir=dist \
+				"$SEARCH_QUERY" "$dir" 2>/dev/null || true
+		fi
+		ok "Search finished"
+		LAST_COUNT=1
+	}
+
+	foreach_repo cmd_search_one "$target"
+	print_summary "repos searched" "$__walk_repos"
+}
+
+# -----------------------------------------------------------------------------
+# fork
+# -----------------------------------------------------------------------------
+
+cmd_fork_status_one() {
+	local dir="$1" repo="$2"
+	local behind ahead
+
+	info "Remote" "$repo"
+
+	if ! git_is_fork "$repo"; then
+		err "Not a fork: $repo"
+		return 1
+	fi
+
+	if behind_ahead="$(git_fork_compare "$repo")"; then
+		behind="${behind_ahead%% *}"
+		ahead="${behind_ahead##* }"
+		info "Upstream" "$(git_fork_parent "$repo")"
+		ok "$behind commits behind, $ahead commits ahead"
+	else
+		warn "Could not compute behind/ahead"
+	fi
+	LAST_COUNT=1
+}
+
+cmd_fork_sync_one() {
+	local dir="$1" repo="$2"
+	local behind ahead
+
+	info "Remote" "$repo"
+
+	if ! git_is_fork "$repo"; then
+		err "Not a fork: $repo — refusing to sync"
+		return 1
+	fi
+
+	behind=0
+	ahead=0
+	if behind_ahead="$(git_fork_compare "$repo" 2>/dev/null)"; then
+		behind="${behind_ahead%% *}"
+		ahead="${behind_ahead##* }"
+		[[ "$behind" =~ ^[0-9]+$ ]] || behind=0
+		[[ "$ahead"  =~ ^[0-9]+$ ]] || ahead=0
+	fi
+
+	if [[ "$behind" -eq 0 ]]; then
+		ok "Already up to date with upstream (behind=$behind, ahead=$ahead) — skip"
+		LAST_COUNT=0
+		return 0
+	fi
+
+	if [[ "$DRY_RUN" == "1" ]]; then
+		log "  [dry-run] would sync ONLY master ($behind commits behind, $ahead ahead)"
+		LAST_COUNT=1
+		return 0
+	fi
+
+	if git_fork_sync_master "$dir" "$repo"; then
+		ok "master synced with upstream (was $behind behind)"
+		LAST_COUNT=1
+	else
+		warn "fork sync failed"
+		LAST_COUNT=0
+	fi
+}
+
+cmd_fork() {
+	local sub="${1:-}"
+	local target="${2:-}"
+	local effective
+
+	effective="$(fork_effective_root)"
+	info "Fork root" "$effective"
+
+	case "$sub" in
+		status)
+			foreach_repo cmd_fork_status_one "$target" "$effective"
+			print_summary "forks checked" "$__walk_total"
+			;;
+		sync)
+			foreach_repo cmd_fork_sync_one "$target" "$effective"
+			print_summary "forks synced" "$__walk_total"
+			;;
+		*)
+			usage_error "Missing or unknown fork subcommand" "fork status|sync [dir-spec]"
+			;;
+	esac
 }
 
 # -----------------------------------------------------------------------------
@@ -1419,6 +1660,10 @@ cmd_dump() {
 # -----------------------------------------------------------------------------
 
 main() {
+	display_header
+
+	load_or_create_config
+
 	if [[ $# -lt 1 ]]; then
 		display_help
 		exit 0
@@ -1432,39 +1677,38 @@ main() {
 			display_help
 			;;
 		cache)
-			display_header
-			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN (no changes)"
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
 			cmd_cache "$@"
 			;;
-		runners)
-			display_header
-			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN (no changes)"
-			cmd_runners "$@"
+		ci)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			cmd_ci "$@"
 			;;
 		submodules)
-			display_header
-			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN (no changes)"
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
 			cmd_submodules "$@"
 			;;
-		reset)
-			display_header
-			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN (no changes)"
-			cmd_reset "$@"
+		git)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			cmd_git "$@"
 			;;
-		pull)
-			display_header
-			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN (no changes)"
-			cmd_pull "$@"
+		repos)
+			cmd_repos "$@"
 			;;
-		dump)
-			display_header
-			cmd_dump "$@"
+		clone-all)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			cmd_clone_all
+			;;
+		search)
+			cmd_search "$@"
+			;;
+		fork)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			cmd_fork "$@"
 			;;
 		*)
-			err "Unknown command: $cmd"
-			log ""
-			display_help
-			exit 1
+			usage_error "Unknown command: $cmd" \
+				"help | cache | ci | submodules | git | repos | clone-all | search | fork"
 			;;
 	esac
 }

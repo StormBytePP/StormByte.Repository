@@ -1,68 +1,273 @@
 .TH STORMBYTE-GITHUB 1 "August 2026" "StormByte" "User Commands"
 .SH NAME
-StormByte-GitHub \- helper script for managing StormByte GitHub repositories and submodules
+StormByte-GitHub \- unified CLI for managing StormByte GitHub repositories, Actions caches, CI runs, submodules and source dumps
 .SH SYNOPSIS
 .B StormByte-GitHub
-[\fIOPTIONS\fR] \fICOMMAND\fR [\fIARGS\fR...]
+[\fICOMMAND\fR] [\fISUBCOMMAND\fR] [\fIARGS\fR...]
 .SH DESCRIPTION
 .B StormByte-GitHub
 is a convenience wrapper around common Git and GitHub operations used in the StormByte project ecosystem.
-It provides a consistent interface for cloning, updating, managing submodules and performing other
-repository-related tasks across Linux, macOS and Windows (via Git Bash / MSYS2).
+It provides a consistent interface for managing Actions caches, CI workflow runs, submodules, repository synchronisation, forks, local repository listings and source code dumps across multiple local clones.
 
-The script is designed to be quiet by default and only show detailed output when something fails
-or when verbose mode is explicitly requested.
+The script requires a mandatory configuration file
+.I ~/.StormByte-GitHub.conf
+containing at least the variables
+.BR OWNER ,
+.BR ROOT
+and
+.BR OUT .
+.B FORK_ROOT
+is optional.
+If the file does not exist on first run, the script interactively prompts for the values (with short explanations and path completion where applicable), validates them and writes the configuration.
+Empty optional values (such as
+.BR FORK_ROOT )
+are omitted from the file.
 
-.SH OPTIONS
+.SH CONFIGURATION
 .TP
-.BR \-h ", " \-\-help
-Show the general help message and exit.
+.I ~/.StormByte-GitHub.conf
+Configuration file. Supported variables:
+.RS
 .TP
-.BR \-v ", " \-\-verbose
-Enable verbose output (equivalent to setting BUILDMASTER_VERBOSE or similar debug flags).
+.B OWNER
+GitHub username that owns the repositories. Used to verify origin remotes and for
+.BR clone-all .
 .TP
-.BR \-\-version
-Print the version of the script and exit.
+.B ROOT
+Working root directory that contains local repository clones. Used by most commands when no explicit path is given, and by
+.BR "repos list" .
+.TP
+.B OUT
+Output directory used by
+.B repos dump
+(created automatically if missing).
+.TP
+.B FORK_ROOT
+Optional root used
+.B only
+by the
+.B fork
+commands. If unset, fork uses
+.BR ROOT .
+.RE
+
+.SH GLOBAL ENVIRONMENT VARIABLES
+Any of the configuration values can be overridden for a single run via the environment (same idea as
+.BR DRY_RUN ):
+.TP
+.B DRY_RUN=1
+Simulate actions without applying any changes.
+.TP
+.B ROOT=\fI/path\fR
+Override
+.B ROOT
+from the config file for this run.
+.TP
+.B OUT=\fI/path\fR
+Override
+.B OUT
+from the config file for this run.
+.TP
+.B OWNER=\fIname\fR
+Override
+.B OWNER
+from the config file for this run.
+.TP
+.B FORK_ROOT=\fI/path\fR
+Override
+.B FORK_ROOT
+from the config file for this run.
+.TP
+.B PAGE_LIMIT=\fIN\fR
+Items per API page (default: 100).
+.TP
+.B MAX_PAGES=\fIN\fR
+Maximum number of cache-delete passes (0 = until empty).
+.TP
+.B RUN_LIMIT=\fIN\fR
+Maximum number of workflows to re-run (0 = all).
+.TP
+.B ONLY_FAILED=1
+Legacy equivalent of the
+.B --failed
+flag.
+
+.SH DIRECTORY SELECTION
+Most commands accept an optional directory specification. The argument is always a
+.B local directory
+(where the repository is cloned), not the GitHub repository name.
+.TP
+(no argument)
+Operate on every immediate subdirectory of the effective root
+.RB ( ROOT
+for most commands;
+.B FORK_ROOT
+or
+.B ROOT
+for
+.BR fork ).
+.TP
+.B <dir>
+Operate only on that directory. May be absolute, relative,
+.BR ~/... ,
+or a simple name resolved as
+.IR <root>/<name> .
+.TP
+.B !<name>
+Operate on all directories under the effective root except the named one.
+.TP
+.B !<name1>+!<name2>+...
+Operate on all directories under the effective root except the listed names.
 
 .SH COMMANDS
-.SS Repository management
+.SS help
 .TP
-.B clone \fI<repo>\fR [\fIdest\fR]
-Clone a StormByte repository (shortcut for the full GitHub URL).
-.TP
-.B update [\fIrepo\fR...]
-Fetch and pull the latest changes for the current repository or the specified ones.
+.B help
+Show the built-in help message and exit.
 
-.SS Submodules
+.SS cache
 .TP
-.B submodules init
-Initialize and update all submodules recursively
-(\fBgit submodule update --init --recursive\fR).
-This is the recommended first step after cloning a repository that uses submodules.
+.B cache show\fR [\fIdir-spec\fR]
+List each Actions cache (size, id, key) per repository together with totals.
 .TP
-.B submodules update
-Update already initialized submodules to the commits recorded in the superproject.
+.B cache list\fR [\fIdir-spec\fR]
+Show a compact summary of cache count and size per repository.
 .TP
-.B submodules status
-Show the status of all submodules.
+.B cache delete\fR [\fIdir-spec\fR]
+Delete all Actions caches (paginated until none remain). Respects
+.BR DRY_RUN .
 
-.SS Other
+.SS ci
 .TP
-.B help [\fIcommand\fR]
-Show help for a specific command (or the general help if no command is given).
+.B ci stop\fR [\fIdir-spec\fR]
+Cancel all active workflow runs on the current branch.
+.TP
+.B ci start\fR [\fIdir-spec\fR] [\fB--failed\fR]
+Re-run the latest finished run of each workflow. With
+.B --failed
+only failed / cancelled / timed-out runs are re-launched.
+.TP
+.B ci restart\fR [\fIdir-spec\fR] [\fB--failed\fR]
+Equivalent to
+.B ci stop
+followed by
+.BR "ci start" .
+.TP
+.B ci status\fR [\fIdir-spec\fR]
+Show a summary of recent workflow runs.
+
+.SS submodules
+.TP
+.B submodules init\fR [\fIdir-spec\fR]
+Initialize and checkout submodules recursively.
+.TP
+.B submodules deinit\fR [\fIdir-spec\fR]
+Deinitialize all submodules.
+.TP
+.B submodules update\fR [\fIdir-spec\fR]
+Clean, fetch, update submodules to the remote tip and commit/push if necessary.
+When no directory is specified the update is performed in dependency order
+(using a topological sort over
+.BR ROOT ).
+
+.SS git
+.TP
+.B git reset\fR [\fIdir-spec\fR]
+Hard-reset and clean the working tree of the selected directories.
+.TP
+.B git pull\fR [\fIdir-spec\fR]
+Fetch and pull with rebase (does not touch submodules).
+.TP
+.B git sync\fR [\fIdir-spec\fR]
+Alias for
+.BR "git pull" .
+
+.SS repos
+.TP
+.B repos list
+List every immediate subdirectory of
+.B ROOT
+(non-recursive). For each folder the following columns are shown:
+.RS
+.IP \(bu 2
+folder name
+.IP \(bu 2
+remote repository (
+.IR owner/name )
+.IP \(bu 2
+latest tag (by creation date), or short commit hash if there are no tags
+.IP \(bu 2
+current branch
+.RE
+Non-git directories are listed with placeholders.
+.TP
+.B repos dump \fI<directory>\fR [\fIchunk_size_kb\fR] [\fBtype=c++\fR|\fBtype=cmake\fR]
+Concatenate source files of a project into one or more text files under
+.BR OUT .
+Optionally split the result into chunks of the given size.
+
+.SS Other commands
+.TP
+.B clone-all
+Clone every public repository belonging to
+.B OWNER
+that is not already present under
+.BR ROOT .
+.TP
+.B search \fI<text>\fR [\fIdir-spec\fR]
+Search for the given text inside the selected directories. Matching terms are highlighted when the terminal supports colour.
+.TP
+.B fork status\fR [\fIdir-spec\fR]
+Uses
+.B FORK_ROOT
+if set, otherwise
+.BR ROOT .
+Show whether a repository is a fork and, if so, how many commits it is behind / ahead of its upstream.
+.TP
+.B fork sync\fR [\fIdir-spec\fR]
+Uses
+.B FORK_ROOT
+if set, otherwise
+.BR ROOT .
+Synchronise
+.B only the master branch
+with the upstream repository when the fork is behind (equivalent to the GitHub web “Sync repository” button followed by a local pull --rebase). Forks that are already up to date are skipped. The current branch is preserved and any local changes are safely stashed.
 
 .SH EXAMPLES
 .nf
-# Clone a repository
-StormByte-GitHub clone StormByte/BuildMaster
+# First run – interactive configuration
+StormByte-GitHub help
 
-# Initialize submodules after cloning
-cd BuildMaster
-StormByte-GitHub submodules init
+# List local clones under ROOT
+StormByte-GitHub repos list
 
-# Update everything
-StormByte-GitHub update
+# List all caches under ROOT
+StormByte-GitHub cache list
+
+# Delete every cache except one directory name under ROOT
+StormByte-GitHub cache delete !multimedia
+
+# Re-run only failed workflows
+StormByte-GitHub ci start --failed
+
+# Synchronise all repositories under a temporary ROOT
+ROOT=~/Software StormByte-GitHub git sync
+
+# Fork operations under a dedicated forks directory
+FORK_ROOT=~/Forks StormByte-GitHub fork status
+FORK_ROOT=~/Forks StormByte-GitHub fork sync
+
+# Explicit path (does not depend on ROOT)
+StormByte-GitHub git reset ~/Software/my-repo
+
+# Update submodules in dependency order
 StormByte-GitHub submodules update
+
+# Search for a symbol
+StormByte-GitHub search "mimalloc"
+
+# Dump a CMake project into 200 KiB chunks
+StormByte-GitHub repos dump ./base type=cmake 200
 .fi
 
 .SH EXIT STATUS
@@ -71,33 +276,51 @@ StormByte-GitHub submodules update
 Success
 .TP
 .B 1
-General error (invalid arguments, git failure, etc.)
-.TP
-.B 2
-Missing required tools (git, etc.)
-
-.SH ENVIRONMENT
-.TP
-.B STORMBYTE_GITHUB_VERBOSE
-If set to a non-empty value, enables verbose output (same as \fB\-\-verbose\fR).
+General error (invalid arguments, missing configuration, git/gh failure, etc.)
 
 .SH FILES
 .TP
-.I ~/.config/StormByte/GitHub.conf
-Optional configuration file (future use).
+.I ~/.StormByte-GitHub.conf
+Configuration file (OWNER, ROOT, OUT; optional FORK_ROOT).
+
+.TP
+.I functions.sh
+Shared generic helpers (logging, SEMVER, topological sort, \ldots).
+Looked up first in the same directory as the script, then in
+.IR /lib/StormByte/functions.sh .
+
+.TP
+.I git.sh
+Git- and repository-specific helpers.
+Looked up first in the same directory as the script, then in
+.IR /lib/StormByte/git.sh .
 
 .SH NOTES
-- The script is intended to be used from the root of a StormByte repository or from anywhere when using the
-  \fBclone\fR command.
-- Submodule operations are recursive by default when using \fBsubmodules init\fR.
-- On Windows the script expects a POSIX-compatible shell (Git Bash, MSYS2, WSL, etc.).
+- All repositories operated on must belong to the configured
+  .B OWNER
+  (or the
+  .B OWNER
+  environment override).
+- The
+  .B fork
+  commands use
+  .B FORK_ROOT
+  when set; otherwise they fall back to
+  .BR ROOT .
+- The
+  .B fork sync
+  command deliberately touches only the
+  .B master
+  branch, skips forks that are not behind upstream, and never creates commits or pushes.
+- On Windows the script expects a POSIX-compatible environment (Git Bash, MSYS2, WSL, \ldots).
 
 .SH SEE ALSO
 .BR git (1),
+.BR gh (1),
 .BR git-submodule (1)
 
 .SH AUTHOR
-StormByte Project <https://github.com/StormByte>
+StormByte Project <https://github.com/StormBytePP>
 .SH COPYRIGHT
 Copyright \(co 2024-2026 StormByte.
 Licensed under the terms of the project license.

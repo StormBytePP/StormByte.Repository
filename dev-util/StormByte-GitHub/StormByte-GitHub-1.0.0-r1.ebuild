@@ -15,9 +15,10 @@ KEYWORDS="~amd64 ~arm64"
 S="${WORKDIR}"
 
 RDEPEND="
+	app-misc/jq
 	dev-util/github-cli
-	dev-vcs/git
-	sys-libs/StormByte-functions
+	sys-libs/StormByte-functions-bash
+	sys-libs/StormByte-functions-git
 "
 DEPEND="${RDEPEND}"
 

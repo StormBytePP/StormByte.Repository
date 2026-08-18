@@ -23,7 +23,7 @@ RDEPEND="
 	net-misc/curl
 	sys-apps/coreutils
 	sys-apps/pv
-	>=sys-libs/StormByte-functions-4.2.1[bash]
+	sys-libs/StormByte-functions-bash
 	sys-fs/e2fsprogs
 "
 

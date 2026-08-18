@@ -1,45 +1,156 @@
 # StormByte-GitHub.bash-completion
 # Bash completion for StormByte-GitHub
 #
-# Installed as:
+# Install as:
 #   /usr/share/bash-completion/completions/StormByte-GitHub
+#   or
+#   /etc/bash_completion.d/StormByte-GitHub
 #
-# Keep in sync with StormByte-GitHub CLI (cache show|list|delete, …).
+# Keep in sync with StormByte-GitHub CLI
 
 _StormByte_GitHub() {
 	local cur prev cword cmd sub
 	local -a words
-	local -a top_cmds cache_subs runners_subs submodules_subs dump_extra
+	local -a top_cmds cache_subs ci_subs submodules_subs git_subs repos_subs fork_subs dump_extra
 
 	COMPREPLY=()
 
-	# Manual word setup — more reliable than _init_completion for this CLI
 	cur="${COMP_WORDS[COMP_CWORD]}"
 	prev="${COMP_WORDS[COMP_CWORD - 1]}"
 	cword=$COMP_CWORD
 	words=("${COMP_WORDS[@]}")
 
-	top_cmds=(help cache runners submodules reset pull dump)
+	top_cmds=(
+		help
+		cache
+		ci
+		submodules
+		git
+		repos
+		clone-all
+		search
+		fork
+	)
+
 	cache_subs=(show list delete)
-	runners_subs=(stop start restart)
-	submodules_subs=(deinit update init)
+	ci_subs=(stop start restart status)
+	submodules_subs=(init deinit update)
+	git_subs=(reset pull sync)
+	repos_subs=(list dump)
+	fork_subs=(status sync)
 	dump_extra=('type=c++' 'type=cmake' 50 100 200 500)
 
-	# Immediate subdirs of $PWD that look like git checkouts
-	_sb_github_repo_dirs() {
+	# -------------------------------------------------------------------------
+	# Config: ROOT / FORK_ROOT from env or ~/.StormByte-GitHub.conf
+	# -------------------------------------------------------------------------
+	_sb_github_load_roots() {
+		SB_GH_ROOT="${ROOT:-}"
+		SB_GH_FORK_ROOT="${FORK_ROOT:-}"
+
+		local conf="${HOME}/.StormByte-GitHub.conf"
+		if [[ -f "$conf" ]]; then
+			local line key val
+			while IFS= read -r line || [[ -n "$line" ]]; do
+				[[ "$line" =~ ^[[:space:]]*# ]] && continue
+				[[ "$line" =~ ^[[:space:]]*$ ]] && continue
+				if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+					key="${BASH_REMATCH[1]}"
+					val="${BASH_REMATCH[2]}"
+					val="${val#\"}"
+					val="${val%\"}"
+					val="${val#\'}"
+					val="${val%\'}"
+					case "$key" in
+						ROOT)
+							[[ -z "$SB_GH_ROOT" ]] && SB_GH_ROOT="$val"
+							;;
+						FORK_ROOT)
+							[[ -z "$SB_GH_FORK_ROOT" ]] && SB_GH_FORK_ROOT="$val"
+							;;
+					esac
+				fi
+			done < "$conf"
+		fi
+
+		# Expand leading ~
+		[[ "$SB_GH_ROOT" == ~* ]] && SB_GH_ROOT="${SB_GH_ROOT/#\~/$HOME}"
+		[[ "$SB_GH_FORK_ROOT" == ~* ]] && SB_GH_FORK_ROOT="${SB_GH_FORK_ROOT/#\~/$HOME}"
+
+		[[ -z "$SB_GH_ROOT" ]] && SB_GH_ROOT="$PWD"
+		[[ -z "$SB_GH_FORK_ROOT" ]] && SB_GH_FORK_ROOT="$SB_GH_ROOT"
+	}
+
+	# List git repo directory names under a root (basenames only)
+	_sb_github_repo_dirs_in() {
+		local root="$1"
 		local d
 		local -a out=()
+		[[ -d "$root" ]] || return 0
 		shopt -s nullglob
-		for d in ./*/; do
+		for d in "$root"/*/; do
 			d="${d%/}"
-			d="${d#./}"
 			if [[ -d "$d/.git" || -f "$d/.git" ]]; then
-				out+=("$d")
+				out+=("$(basename "$d")")
 			fi
 		done
 		shopt -u nullglob
 		((${#out[@]})) && printf '%s\n' "${out[@]}"
 	}
+
+	# All immediate subdir basenames under root (for dump, etc.)
+	_sb_github_subdirs_in() {
+		local root="$1"
+		local d
+		local -a out=()
+		[[ -d "$root" ]] || return 0
+		shopt -s nullglob
+		for d in "$root"/*/; do
+			out+=("$(basename "${d%/}")")
+		done
+		shopt -u nullglob
+		((${#out[@]})) && printf '%s\n' "${out[@]}"
+	}
+
+	# Complete dir-spec: path-style OR basenames under $2 (root)
+	_sb_complete_repo_spec() {
+		local cur="$1"
+		local root="$2"
+
+		if [[ "$cur" == ~* || "$cur" == /* || "$cur" == ./* || "$cur" == ../* ]]; then
+			compopt -o filenames 2>/dev/null
+			mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+			# Ensure trailing slash for directories when unique
+			local i
+			for i in "${!COMPREPLY[@]}"; do
+				[[ -d "${COMPREPLY[i]}" && "${COMPREPLY[i]}" != */ ]] && COMPREPLY[i]+="/"
+			done
+			return 0
+		fi
+
+		local -a repos candidates=()
+		mapfile -t repos < <(_sb_github_repo_dirs_in "$root")
+
+		if [[ "$cur" == '!'* ]]; then
+			local r
+			for r in "${repos[@]}"; do
+				candidates+=("!$r")
+			done
+			if [[ "$cur" == *'+'* ]]; then
+				for r in "${repos[@]}"; do
+					candidates+=("${cur}!$r")
+				done
+			fi
+		else
+			candidates=("${repos[@]}")
+			for r in "${repos[@]}"; do
+				candidates+=("!$r")
+			done
+		fi
+
+		mapfile -t COMPREPLY < <(compgen -W "${candidates[*]}" -- "$cur")
+	}
+
+	_sb_github_load_roots
 
 	# ----- position 1: top-level command -----
 	if ((cword == 1)); then
@@ -55,7 +166,6 @@ _StormByte_GitHub() {
 		;;
 
 	cache)
-		# cache <show|list|delete> [repo-dir]
 		if ((cword == 2)); then
 			mapfile -t COMPREPLY < <(compgen -W "${cache_subs[*]}" -- "$cur")
 			return 0
@@ -63,25 +173,24 @@ _StormByte_GitHub() {
 		sub="${words[2]-}"
 		case "$sub" in
 		show | list | delete)
-			if ((cword == 3)); then
-				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
-			fi
+			_sb_complete_repo_spec "$cur" "$SB_GH_ROOT"
 			;;
 		esac
 		return 0
 		;;
 
-	runners)
-		# runners <stop|start|restart> [repo-dir]
+	ci)
 		if ((cword == 2)); then
-			mapfile -t COMPREPLY < <(compgen -W "${runners_subs[*]}" -- "$cur")
+			mapfile -t COMPREPLY < <(compgen -W "${ci_subs[*]}" -- "$cur")
 			return 0
 		fi
 		sub="${words[2]-}"
 		case "$sub" in
-		stop | start | restart)
-			if ((cword == 3)); then
-				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+		stop | start | restart | status)
+			if [[ "$cur" == -* ]]; then
+				mapfile -t COMPREPLY < <(compgen -W "--failed" -- "$cur")
+			else
+				_sb_complete_repo_spec "$cur" "$SB_GH_ROOT"
 			fi
 			;;
 		esac
@@ -89,41 +198,98 @@ _StormByte_GitHub() {
 		;;
 
 	submodules)
-		# submodules <deinit|update|init> [repo-dir]
 		if ((cword == 2)); then
 			mapfile -t COMPREPLY < <(compgen -W "${submodules_subs[*]}" -- "$cur")
 			return 0
 		fi
 		sub="${words[2]-}"
 		case "$sub" in
-		deinit | update | init)
-			if ((cword == 3)); then
-				mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
-			fi
+		init | deinit | update)
+			_sb_complete_repo_spec "$cur" "$SB_GH_ROOT"
 			;;
 		esac
 		return 0
 		;;
 
-	reset | pull)
-		# reset|pull [repo-dir]
+	git)
 		if ((cword == 2)); then
-			mapfile -t COMPREPLY < <(compgen -W "$(_sb_github_repo_dirs)" -- "$cur")
+			mapfile -t COMPREPLY < <(compgen -W "${git_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		reset | pull | sync)
+			_sb_complete_repo_spec "$cur" "$SB_GH_ROOT"
+			;;
+		esac
+		return 0
+		;;
+
+	repos)
+		if ((cword == 2)); then
+			mapfile -t COMPREPLY < <(compgen -W "${repos_subs[*]}" -- "$cur")
+			return 0
+		fi
+		sub="${words[2]-}"
+		case "$sub" in
+		list)
+			return 0
+			;;
+		dump)
+			# repos dump <dir-under-ROOT|path> [chunk] [type=...]
+			if ((cword == 3)); then
+				if [[ "$cur" == ~* || "$cur" == /* || "$cur" == ./* || "$cur" == ../* ]]; then
+					compopt -o filenames 2>/dev/null
+					mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+					local i
+					for i in "${!COMPREPLY[@]}"; do
+						[[ -d "${COMPREPLY[i]}" && "${COMPREPLY[i]}" != */ ]] && COMPREPLY[i]+="/"
+					done
+				else
+					# basenames under ROOT (crypto, network, …)
+					mapfile -t COMPREPLY < <(
+						compgen -W "$(_sb_github_subdirs_in "$SB_GH_ROOT")" -- "$cur"
+					)
+				fi
+				return 0
+			fi
+			if [[ "$cur" == type=* || "$cur" == type ]]; then
+				mapfile -t COMPREPLY < <(compgen -W 'type=c++ type=cmake' -- "$cur")
+				return 0
+			fi
+			mapfile -t COMPREPLY < <(compgen -W "${dump_extra[*]}" -- "$cur")
+			return 0
+			;;
+		esac
+		return 0
+		;;
+
+	clone-all)
+		return 0
+		;;
+
+	search)
+		if ((cword == 2)); then
+			return 0
+		fi
+		if ((cword >= 3)); then
+			_sb_complete_repo_spec "$cur" "$SB_GH_ROOT"
 		fi
 		return 0
 		;;
 
-	dump)
-		# dump <directory> [chunk_size_kb] [type=c++|type=cmake]
+	fork)
 		if ((cword == 2)); then
-			mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+			mapfile -t COMPREPLY < <(compgen -W "${fork_subs[*]}" -- "$cur")
 			return 0
 		fi
-		if [[ "$cur" == type=* || "$cur" == type ]]; then
-			mapfile -t COMPREPLY < <(compgen -W 'type=c++ type=cmake' -- "$cur")
-			return 0
-		fi
-		mapfile -t COMPREPLY < <(compgen -W "${dump_extra[*]}" -- "$cur")
+		sub="${words[2]-}"
+		case "$sub" in
+		status | sync)
+			# Forks live under FORK_ROOT (fallback ROOT)
+			_sb_complete_repo_spec "$cur" "$SB_GH_FORK_ROOT"
+			;;
+		esac
 		return 0
 		;;
 	esac

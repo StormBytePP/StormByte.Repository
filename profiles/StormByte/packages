@@ -15,7 +15,7 @@
 *dev-vcs/git
 *sec-keys/openpgp-keys-gentoo-developers
 *sys-apps/dmidecode
-*sys-apps/StormByte-meta
+*sys-libs/StormByte-functions
 *sys-block/io-scheduler-udev-rules
 *sys-boot/grub
 *sys-boot/mokutil

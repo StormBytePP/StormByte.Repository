@@ -9,19 +9,14 @@ SRC_URI=""
 
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="bash datacenter portage"
+IUSE=""
 
 RDEPEND="app-shells/bash"
 DEPEND="${RDEPEND}"
 
-src_unpack() {
-	# Since there are no downloaded files, this is dummy to prevent folder not exist error
-	mkdir "${S}"
-}
+S="${WORKDIR}"
 
 src_install() {
 	insinto "/lib/StormByte"
-	use bash && doins "${FILESDIR}/functions.sh"
-	use datacenter && doins "${FILESDIR}/datacenter.sh"
-	use portage && doins "${FILESDIR}/portage.sh"
+	doins "${FILESDIR}/functions.sh"
 }

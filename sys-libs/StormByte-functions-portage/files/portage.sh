@@ -1,8 +1,11 @@
 #! /bin/bash
 
-# Version 4.1.0
+[[ -n "${_STORMBYTE_FUNCTIONS_PORTAGE_LOADED:-}" ]] && return
+readonly _STORMBYTE_FUNCTIONS_PORTAGE_LOADED=1
 
-function list_contains() { [[ "$1" =~ (^|[[:space:]])"$2"($|[[:space:]]) ]]; }
+readonly STORMBYTE_FUNCTIONS_PORTAGE_VERSION="1.0.0"
+
+source /lib/StormByte/functions.sh
 
 function force_binutils_vars() {
 	local binutils_prefix="$(binutils-config -B)"

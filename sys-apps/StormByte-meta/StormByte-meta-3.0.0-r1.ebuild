@@ -12,7 +12,7 @@ KEYWORDS="amd64 x86"
 IUSE="portageconfig stagemanager utils videoconvert"
 
 RDEPEND="
-	sys-libs/StormByte-functions
+	sys-libs/StormByte-functions-bash
 	portageconfig? ( app-portage/StormByte-portageconfig )
 	stagemanager? ( sys-apps/StormByte-StageManager )
 	utils? ( sys-apps/StormByte-utils )

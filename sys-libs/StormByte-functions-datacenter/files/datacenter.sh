@@ -1,6 +1,9 @@
 #! /bin/bash
 
-# Version 3.1.0
+[[ -n "${_STORMBYTE_FUNCTIONS_DATACENTER_LOADED:-}" ]] && return
+readonly _STORMBYTE_FUNCTIONS_DATACENTER_LOADED=1
+
+readonly STORMBYTE_FUNCTIONS_DATACENTER_VERSION="1.0.0"
 
 init_disk_maps() {
     declare -gA SD_TO_WWN
