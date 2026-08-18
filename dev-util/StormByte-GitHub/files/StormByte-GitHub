@@ -289,7 +289,7 @@ OWNER       GitHub username
 ROOT        Working root directory (most commands)
 OUT         Output directory (repos dump)
 FORK_ROOT   Optional root used only by \"fork\" commands
-			(if unset, fork uses ROOT)
+            (if unset, fork uses ROOT)
 
 ${_CLR_BOLD}GLOBAL ENVIRONMENT${_CLR_RESET}
 DRY_RUN=1              Simulate actions without applying them
@@ -313,51 +313,80 @@ Notes:
 • A simple name is resolved as <root>/<name>.
 • The root is ROOT for most commands, and FORK_ROOT (or ROOT) for fork.
 • The argument is always a local directory (clone path), not the GitHub repo name.
+• When using ! exclusions from an interactive shell, quote them with single quotes
+  (e.g. '!multimedia') to avoid Bash history expansion.
 
 ${_CLR_BOLD}COMMANDS${_CLR_RESET}
 
 ${_CLR_BOLD_CYAN}help${_CLR_RESET}
-	Show this help.
+    Show this help.
 
 ${_CLR_BOLD_CYAN}cache show|list|delete${_CLR_RESET}  [dir-spec]
-	Manage Actions caches.
+    Manage Actions caches.
 
 ${_CLR_BOLD_CYAN}ci stop|start|restart|status${_CLR_RESET}  [dir-spec] [--failed]
-	Manage workflow runs.
-	--failed   Only re-run failed/cancelled/timed_out runs
+    Manage workflow runs.
+    --failed   Only re-run failed/cancelled/timed_out runs
 
-${_CLR_BOLD_CYAN}submodules init|deinit|update${_CLR_RESET}  [dir-spec]
-	Submodule operations (update respects dependency order).
+${_CLR_BOLD_CYAN}submodules init|deinit|update|list${_CLR_RESET}  [dir-spec]
+    Submodule operations (update respects dependency order).
+    list   Show name, path and URL from .gitmodules (or "none").
+
+${_CLR_BOLD_CYAN}submodules add${_CLR_RESET}  <dir> <URL> <path> --name <name>
+    Add a submodule (no init/update after). --name anywhere; path relative, no '..'.
+
+${_CLR_BOLD_CYAN}submodules delete${_CLR_RESET}  <dir> (--name <name> | --url <url> | --path <path>)
+    Remove submodule + delete folder. Exactly one selector. No commit/push.
 
 ${_CLR_BOLD_CYAN}git reset|pull|sync${_CLR_RESET}  [dir-spec]
-	git reset   → hard reset + clean
-	git pull    → fetch + pull --rebase
-	git sync    → alias for pull (no submodules)
+    git reset   → hard reset + clean
+    git pull    → fetch + pull --rebase
+    git sync    → alias for pull (no submodules)
 
 ${_CLR_BOLD_CYAN}repos list${_CLR_RESET}
-	List non-recursive folders under \$ROOT showing:
-	folder name, remote repo, latest tag (or commit hash), current branch.
+    List non-recursive folders under \$ROOT showing:
+    folder name, remote repo, latest tag (or commit hash), current branch.
 
 ${_CLR_BOLD_CYAN}repos dump${_CLR_RESET}  <directory> [chunk_size_kb] [type=c++|type=cmake]
-	Dump sources into \$OUT.
+    Dump sources into \$OUT.
+
+${_CLR_BOLD_CYAN}repos status${_CLR_RESET}  [dir-spec]
+    Working tree + upstream: OK, DIRTY, UNPUSHED, or DIRTY+UNPUSHED.
+
+${_CLR_BOLD_CYAN}repos push${_CLR_RESET}  [dir-spec]
+    git push (no --force). Skips if no upstream. DRY_RUN supported.
+
+${_CLR_BOLD_CYAN}repos release${_CLR_RESET}  <dir> <version>
+    Tag, push and create a GitHub Release for one repository.
+    Requires a clean working tree, an OWNER-owned remote, and CHANGELOG.md
+    with a non-empty section for that version (e.g. ## [1.0.0] - YYYY-MM-DD).
+    Release notes are taken from that CHANGELOG section.
+    Fails if CHANGELOG.md is missing, the version section is missing/empty,
+    or the tag/release already exists. DRY_RUN supported.
 
 ${_CLR_BOLD_CYAN}clone-all${_CLR_RESET}
-	Clone all public repositories of \$OWNER that are missing under \$ROOT.
+    Clone all public repositories of \$OWNER that are missing under \$ROOT.
 
 ${_CLR_BOLD_CYAN}search <text>${_CLR_RESET}  [dir-spec]
-	Search text in the code of the selected directories.
+    Search text in the code of the selected repositories.
 
-${_CLR_BOLD_CYAN}fork status|sync${_CLR_RESET}  [dir-spec]
-	Uses FORK_ROOT if set, otherwise ROOT.
-	status  → shows \"X commits behind, Y commits ahead\"
-	sync    → updates ONLY master if behind upstream
-			(safe stash + checkout + sync + restore)
+${_CLR_BOLD_CYAN}fork status|sync|branch-status${_CLR_RESET}  [dir-spec]
+    Uses FORK_ROOT if set, otherwise ROOT.
+    status         → behind/ahead vs upstream (forks)
+    sync           → update ONLY master if behind upstream
+    branch-status  → local branches ≠ master: CLEAN/CONFLICTS vs merge into master
+                     (merge-tree; NOTE: local-only if not pushed; neutral if none)
 
 ${_CLR_BOLD}EXAMPLES${_CLR_RESET}
-${SCRIPT_NAME} cache delete !multimedia
+${SCRIPT_NAME} cache delete '!multimedia'
 ${SCRIPT_NAME} ci start --failed
 ${SCRIPT_NAME} repos list
 ${SCRIPT_NAME} repos dump ./base type=cmake 200
+${SCRIPT_NAME} repos status
+${SCRIPT_NAME} repos push '!multimedia'
+${SCRIPT_NAME} repos release database 1.0.0
+DRY_RUN=1 ${SCRIPT_NAME} repos release database 1.0.0
+${SCRIPT_NAME} repos branch-status crypto
 ROOT=~/Software ${SCRIPT_NAME} git sync
 FORK_ROOT=~/Forks ${SCRIPT_NAME} fork status
 FORK_ROOT=~/Forks ${SCRIPT_NAME} fork sync
@@ -1058,7 +1087,7 @@ commit_submodules_if_needed() {
 	local name
 	name="$(basename "$dir")"
 
-	if [[ -z "$(git -C "$dir" status --porcelain)" ]]; then
+	if ! git_is_dirty "$dir"; then
 		ok "No changes"
 		return 1
 	fi
@@ -1089,49 +1118,297 @@ commit_submodules_if_needed() {
 	return 0
 }
 
+# Update submodules to remote branch tips; protect parent worktree with stash.
+# Parent: stash if dirty → restore after; never hard-reset/clean the parent.
+# Submodules: git_submodules_force_all_to_remote (safe with spaces/() in names;
+#             resolves branch: .gitmodules → current → origin/HEAD → main → master).
+# Then commit+push new submodule pointers if needed (via commit_submodules_if_needed).
 cmd_submodules_update_one() {
 	local dir="$1" repo="$2"
+	local stashed=0
+	local line
 
 	info "Path" "$dir"
 	LAST_COUNT=0
 
 	if [[ "$DRY_RUN" == "1" ]]; then
-		log "  [dry-run] would clean, fetch, submodule update --remote, commit if needed"
-		if [[ -n "$(git -C "$dir" status --porcelain 2>/dev/null)" ]]; then
+		log "  [dry-run] would stash parent (if dirty), force each submodule to origin/<branch>, commit if needed, stash pop"
+		if git_is_dirty "$dir"; then
 			LAST_COUNT=1
 		fi
 		return 0
 	fi
 
-	if [[ -f "$dir/.gitmodules" ]]; then
-		run_q git -C "$dir" submodule foreach --recursive git clean -fd
-		run_q git -C "$dir" submodule foreach --recursive git reset --hard
-	fi
-	run_q git -C "$dir" clean -fd
-	run_q git -C "$dir" reset --hard
-
-	if [[ -f "$dir/.gitmodules" ]]; then
-		run_q git -C "$dir" fetch --recurse-submodules origin
-		run_q git -C "$dir" submodule update --init --remote
-		run_q git -C "$dir" submodule foreach --recursive \
-			git submodule update --init --recursive
+	# 1. Stash parent only (helper returns 0 only if a stash was created)
+	if git_stash_if_dirty "$dir" "StormByte-GitHub auto-stash before submodules update"; then
+		stashed=1
+		ok "Parent changes stashed"
 	fi
 
+	# 2. Force every submodule (recursive) to its remote branch tip
+	if [[ -f "$dir/.gitmodules" ]]; then
+		while IFS= read -r line; do
+			[[ -n "$line" ]] && log "  $line"
+		done < <(git_submodules_force_all_to_remote "$dir")
+	fi
+
+	# 3. Commit new gitlinks in parent if any submodule moved
 	if commit_submodules_if_needed "$dir"; then
 		LAST_COUNT=1
 	else
 		LAST_COUNT=0
 	fi
+
+	# 4. Restore parent stash
+	if [[ "$stashed" -eq 1 ]]; then
+		log "  Restoring parent stash..."
+		if git_stash_pop_safe "$dir"; then
+			ok "Parent stash restored"
+		else
+			warn "stash pop had conflicts. Parent changes remain in the stash (git stash list)."
+			warn "Resolve them, then: git stash drop"
+		fi
+	fi
+}
+
+# Resolve a single repo directory for submodules add/delete.
+# Bare name → $ROOT/<name>; absolute, ~/, ./, ../ kept as real paths (may be outside ROOT).
+_sb_resolve_single_repo_dir() {
+	local raw="$1"
+	local candidate
+
+	if [[ "$raw" == ~* ]]; then
+		raw="${raw/#\~/$HOME}"
+	fi
+	if [[ "$raw" == /* || "$raw" == ./* || "$raw" == ../* ]]; then
+		candidate="$raw"
+	else
+		candidate="${ROOT%/}/$raw"
+	fi
+	if [[ ! -d "$candidate" ]]; then
+		displayError "Not a directory: $1 (tried: $candidate)"
+	fi
+	(cd "$candidate" && pwd)
+}
+
+cmd_submodules_list_one() {
+	local dir="$1" repo="$2"
+	local name path url count=0
+
+	info "Path" "$dir"
+	info "Remote" "$repo"
+
+	if ! git_has_submodules "$dir"; then
+		info "Submodules" "none"
+		LAST_COUNT=0
+		return 0
+	fi
+
+	printf "  ${_CLR_DIM}%-36s  %-40s  %s${_CLR_RESET}\n" "NAME" "PATH" "URL"
+	while IFS=$'\t' read -r name path url; do
+		[[ -z "$name" ]] && continue
+		printf "  %-36s  %-40s  %s\n" "$name" "$path" "$url"
+		count=$((count + 1))
+	done < <(git_gitmodules_list "$dir")
+
+	info "Count" "$count"
+	ok "Listed $count submodule(s)"
+	LAST_COUNT=$count
+}
+
+cmd_submodules_add() {
+	local name="" dir="" url="" path=""
+	local -a pos=()
+	local repo
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			--name)
+				shift
+				[[ $# -gt 0 ]] || usage_error "--name requires a value" \
+					"submodules add <dir> <URL> <path> --name <name>"
+				name="$1"
+				shift
+				;;
+			--name=*)
+				name="${1#--name=}"
+				shift
+				;;
+			-*)
+				usage_error "Unknown option: $1" \
+					"submodules add <dir> <URL> <path> --name <name>"
+				;;
+			*)
+				pos+=("$1")
+				shift
+				;;
+		esac
+	done
+
+	[[ -n "$name" ]] || usage_error "Missing required --name" \
+		"submodules add <dir> <URL> <path> --name <name>"
+
+	if [[ ${#pos[@]} -ne 3 ]]; then
+		usage_error "Expected <dir> <URL> <path> (got ${#pos[@]} positional args)" \
+			"submodules add <dir> <URL> <path> --name <name>"
+	fi
+
+	dir="$(_sb_resolve_single_repo_dir "${pos[0]}")"
+	url="${pos[1]}"
+	path="${pos[2]}"
+
+	repo="$(git_resolve_repo "$dir" "$OWNER")" \
+		|| displayError "Target must be a ${OWNER} git repository: $dir"
+
+	if ! git_submodule_path_is_safe "$path"; then
+		displayError "Invalid path '$path' (must be relative to the repo and must not contain '..')"
+	fi
+
+	section "$(basename "$dir")"
+	info "Path" "$dir"
+	info "Remote" "$repo"
+	info "Name" "$name"
+	info "URL" "$url"
+	info "Submodule path" "$path"
+
+	if [[ "$DRY_RUN" == "1" ]]; then
+		log "  [dry-run] would: git -C \"$dir\" submodule add --name \"$name\" \"$url\" \"$path\""
+		log "  [dry-run] (no init / no update)"
+		return 0
+	fi
+
+	if git -C "$dir" submodule add --name "$name" "$url" "$path"; then
+		ok "Submodule added (not initialized)"
+	else
+		displayError "git submodule add failed"
+	fi
+}
+
+cmd_submodules_delete() {
+	local name_sel="" url_sel="" path_sel="" dir=""
+	local -a pos=()
+	local repo line sm_name sm_path sm_url abs_path selectors=0
+
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			--name)
+				shift
+				[[ $# -gt 0 ]] || usage_error "--name requires a value" \
+					"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+				name_sel="$1"
+				shift
+				;;
+			--name=*)
+				name_sel="${1#--name=}"
+				shift
+				;;
+			--url)
+				shift
+				[[ $# -gt 0 ]] || usage_error "--url requires a value" \
+					"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+				url_sel="$1"
+				shift
+				;;
+			--url=*)
+				url_sel="${1#--url=}"
+				shift
+				;;
+			--path)
+				shift
+				[[ $# -gt 0 ]] || usage_error "--path requires a value" \
+					"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+				path_sel="$1"
+				shift
+				;;
+			--path=*)
+				path_sel="${1#--path=}"
+				shift
+				;;
+			-*)
+				usage_error "Unknown option: $1" \
+					"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+				;;
+			*)
+				pos+=("$1")
+				shift
+				;;
+		esac
+	done
+
+	[[ ${#pos[@]} -eq 1 ]] || usage_error "Expected exactly one <dir> (got ${#pos[@]})" \
+		"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+
+	dir="$(_sb_resolve_single_repo_dir "${pos[0]}")"
+	repo="$(git_resolve_repo "$dir" "$OWNER")" \
+		|| displayError "Target must be a ${OWNER} git repository: $dir"
+
+	[[ -n "$name_sel" ]] && selectors=$((selectors + 1))
+	[[ -n "$url_sel"  ]] && selectors=$((selectors + 1))
+	[[ -n "$path_sel" ]] && selectors=$((selectors + 1))
+
+	if [[ "$selectors" -ne 1 ]]; then
+		usage_error "Exactly one of --name, --url or --path is required" \
+			"submodules delete <dir> (--name <name> | --url <url> | --path <path>)"
+	fi
+
+	if [[ -n "$path_sel" ]] && ! git_submodule_path_is_safe "$path_sel"; then
+		displayError "Invalid --path '$path_sel' (must be relative to the repo and must not contain '..')"
+	fi
+
+	if [[ -n "$name_sel" ]]; then
+		line="$(git_gitmodules_find_by_name "$dir" "$name_sel")" \
+			|| displayError "No submodule named '$name_sel' in $dir"
+	elif [[ -n "$url_sel" ]]; then
+		line="$(git_gitmodules_find_by_url "$dir" "$url_sel")" \
+			|| displayError "No submodule with URL '$url_sel' in $dir"
+	else
+		line="$(git_gitmodules_find_by_path "$dir" "$path_sel")" \
+			|| displayError "No submodule with path '$path_sel' in $dir"
+	fi
+
+	IFS=$'\t' read -r sm_name sm_path sm_url <<<"$line"
+
+	section "$(basename "$dir")"
+	info "Path" "$dir"
+	info "Remote" "$repo"
+	info "Name" "$sm_name"
+	info "Submodule path" "$sm_path"
+	info "URL" "$sm_url"
+
+	abs_path="$dir/$sm_path"
+
+	if [[ "$DRY_RUN" == "1" ]]; then
+		log "  [dry-run] would deinit/remove submodule '$sm_name' at $sm_path"
+		log "  [dry-run] would delete folder: $abs_path"
+		log "  [dry-run] no commit, no push"
+		return 0
+	fi
+
+	git -C "$dir" submodule deinit -f -- "$sm_path" 2>/dev/null || true
+	git -C "$dir" rm -f -- "$sm_path" 2>/dev/null || true
+	git -C "$dir" config -f .gitmodules --remove-section "submodule.$sm_name" 2>/dev/null || true
+	# Drop empty .gitmodules if no sections left
+	if [[ -f "$dir/.gitmodules" ]] && ! git_has_submodules "$dir"; then
+		git -C "$dir" rm -f -- .gitmodules 2>/dev/null || rm -f "$dir/.gitmodules"
+	else
+		git -C "$dir" add .gitmodules 2>/dev/null || true
+	fi
+	rm -rf "$dir/.git/modules/$sm_path" 2>/dev/null || true
+	rm -rf "$abs_path" 2>/dev/null || true
+
+	ok "Submodule removed (folder deleted; no commit, no push)"
 }
 
 cmd_submodules() {
 	local sub="${1:-}"
-	local target="${2:-}"
+	shift || true
+	local target="${1:-}"
 	local name dir repo
 	local -a ordered=()
 
 	if [[ -z "$sub" ]]; then
-		usage_error "Missing submodules subcommand" "submodules init|deinit|update [dir-spec]"
+		usage_error "Missing submodules subcommand" \
+			"submodules init|deinit|update|list [dir-spec] | add … | delete …"
 	fi
 
 	case "$sub" in
@@ -1174,8 +1451,19 @@ cmd_submodules() {
 				print_summary "repos updated" "$__walk_total"
 			fi
 			;;
+		list)
+			foreach_repo cmd_submodules_list_one "$target"
+			print_summary "submodules listed" "$__walk_total"
+			;;
+		add)
+			cmd_submodules_add "$@"
+			;;
+		delete)
+			cmd_submodules_delete "$@"
+			;;
 		*)
-			usage_error "Unknown submodules subcommand: $sub" "submodules init|deinit|update [dir-spec]"
+			usage_error "Unknown submodules subcommand: $sub" \
+				"submodules init|deinit|update|list [dir-spec] | add … | delete …"
 			;;
 	esac
 }
@@ -1387,7 +1675,7 @@ split_file() {
 
 cmd_repos_dump() {
 	local dir="" chunk_size_kb="" type="c++"
-	local arg project out out_test
+	local arg project out out_test candidate
 
 	for arg in "$@"; do
 		if [[ "$arg" == type=* ]]; then
@@ -1418,11 +1706,23 @@ cmd_repos_dump() {
 		fi
 	fi
 
-	if [[ ! -d "$dir" ]]; then
-		displayError "Not a directory: $dir"
+	# Resolve directory:
+	#   ~/…  ./…  ../…  /abs  → as given
+	#   bare name (crypto)    → $ROOT/crypto
+	if [[ "$dir" == ~* ]]; then
+		dir="${dir/#\~/$HOME}"
+	fi
+	if [[ "$dir" == /* || "$dir" == ./* || "$dir" == ../* ]]; then
+		candidate="$dir"
+	else
+		candidate="${ROOT%/}/$dir"
 	fi
 
-	dir="$(cd "$dir" && pwd)"
+	if [[ ! -d "$candidate" ]]; then
+		displayError "Not a directory: $dir (tried: $candidate)"
+	fi
+
+	dir="$(cd "$candidate" && pwd)"
 	project="$(basename "$dir")"
 	out="${OUT}/project_${project}.txt"
 	out_test="${OUT}/project_${project}_test.txt"
@@ -1468,9 +1768,275 @@ cmd_repos_dump() {
 	fi
 }
 
+cmd_repos_status_one() {
+	local dir="$1" repo="$2"
+	local branch upstream ahead=0 behind=0 ab dirty=0 unpushed=0 status_label
+
+	info "Path" "$dir"
+	info "Remote" "$repo"
+
+	branch="$(git_current_branch "$dir")"
+	[[ -z "$branch" ]] && branch="?"
+	info "Branch" "$branch"
+
+	if git_is_dirty "$dir"; then
+		dirty=1
+		info "Working" "dirty"
+	else
+		info "Working" "clean"
+	fi
+
+	if upstream="$(git_upstream_ref "$dir")"; then
+		info "Upstream" "$upstream"
+		if ab="$(git_ahead_behind "$dir")"; then
+			ahead="${ab%% *}"
+			behind="${ab##* }"
+			[[ "$ahead" =~ ^[0-9]+$ ]] || ahead=0
+			[[ "$behind" =~ ^[0-9]+$ ]] || behind=0
+			info "Ahead/Behind" "$ahead / $behind"
+			[[ "$ahead" -gt 0 ]] && unpushed=1
+		else
+			info "Ahead/Behind" "?"
+			unpushed=1
+		fi
+	else
+		info "Upstream" "none"
+		unpushed=1
+	fi
+
+	if [[ "$dirty" -eq 1 && "$unpushed" -eq 1 ]]; then
+		status_label="DIRTY+UNPUSHED"
+		warn "Status $status_label"
+	elif [[ "$dirty" -eq 1 ]]; then
+		status_label="DIRTY"
+		warn "Status $status_label"
+	elif [[ "$unpushed" -eq 1 ]]; then
+		status_label="UNPUSHED"
+		warn "Status $status_label"
+	else
+		status_label="OK"
+		ok "Status $status_label"
+	fi
+
+	LAST_COUNT=1
+}
+
+cmd_repos_push_one() {
+	local dir="$1" repo="$2"
+	local branch upstream
+
+	info "Path" "$dir"
+	info "Remote" "$repo"
+
+	branch="$(git_current_branch "$dir")"
+	info "Branch" "${branch:-?}"
+
+	if ! upstream="$(git_upstream_ref "$dir")"; then
+		warn "No upstream configured — skip push"
+		LAST_COUNT=0
+		return 0
+	fi
+	info "Upstream" "$upstream"
+
+	if [[ "$DRY_RUN" == "1" ]]; then
+		log "  [dry-run] would: git -C \"$dir\" push"
+		LAST_COUNT=1
+		return 0
+	fi
+
+	if git -C "$dir" push; then
+		ok "Push succeeded"
+		LAST_COUNT=1
+	else
+		warn "Push failed"
+		LAST_COUNT=0
+	fi
+}
+
+# -----------------------------------------------------------------------------
+# Extract release notes for VERSION from CHANGELOG.md
+# Accepts headers: ## [1.0.0], ## [1.0.0] - date, ## 1.0.0, ## v1.0.0
+# Prints body only (no header line). Returns 1 if section missing/empty.
+# -----------------------------------------------------------------------------
+changelog_extract_notes() {
+	local changelog="$1"
+	local version="$2"
+	local ver="${version#v}"
+	local tmp body
+
+	[[ -f "$changelog" ]] || return 1
+
+	tmp="$(mktemp)"
+	awk -v ver="$ver" '
+		BEGIN { want = 0; found = 0 }
+		/^##[ \t]+/ {
+			hdr = $0
+			sub(/^##[ \t]+/, "", hdr)
+			# strip optional leading "v" and brackets
+			gsub(/^\[/, "", hdr)
+			# take token before space or " - "
+			split(hdr, a, /[ \t]|\]/)
+			token = a[1]
+			sub(/^v/, "", token)
+			if (token == ver) {
+				want = 1
+				found = 1
+				next
+			}
+			if (want == 1) {
+				exit
+			}
+			next
+		}
+		want == 1 { print }
+		END { exit(found ? 0 : 1) }
+	' "$changelog" > "$tmp"
+	local rc=$?
+
+	if [[ "$rc" -ne 0 ]]; then
+		rm -f "$tmp"
+		return 1
+	fi
+
+	# Trim leading/trailing blank lines; require non-empty body
+	body="$(sed -e '/./,$!d' "$tmp" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
+	rm -f "$tmp"
+
+	if [[ -z "${body//[:space:]/}" ]]; then
+		return 1
+	fi
+
+	printf '%s\n' "$body"
+	return 0
+}
+
+cmd_repos_release() {
+	local spec="${1:-}"
+	local version="${2:-}"
+	local dir repo branch changelog notes_file existing_tag
+
+	if [[ -z "$spec" || -z "$version" ]]; then
+		usage_error "repos release requires <dir> and <version>" \
+			"repos release <dir> <version>   e.g. repos release database 1.0.0"
+	fi
+
+	if [[ ! "$version" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+		displayError "Invalid version string: $version (expected e.g. 1.0.0 or v1.0.0)"
+	fi
+
+	# Normalize: store tag as given; match CHANGELOG without optional leading v
+	local ver_plain="${version#v}"
+
+	dir="$(resolve_repo_dir "$spec" "$ROOT")"
+	if [[ ! -d "$dir" ]]; then
+		displayError "Directory does not exist: $dir"
+	fi
+	if [[ ! -d "$dir/.git" && ! -f "$dir/.git" ]]; then
+		displayError "Not a git repository: $dir"
+	fi
+
+	repo="$(git_resolve_repo "$dir" "$OWNER")" \
+		|| displayError "Target must be a ${OWNER} git repository: $dir"
+
+	section "$(basename "$dir")"
+	info "Path" "$dir"
+	info "Remote" "$repo"
+	info "Version" "$version"
+
+	if git_is_dirty "$dir"; then
+		displayError "Working tree is not clean — commit or stash before release"
+	fi
+
+	branch="$(git_current_branch "$dir")"
+	[[ -n "$branch" ]] || displayError "Cannot resolve current branch"
+	info "Branch" "$branch"
+
+	changelog="$dir/CHANGELOG.md"
+	if [[ ! -f "$changelog" ]]; then
+		displayError "CHANGELOG.md not found in $dir — create it first (Keep a Changelog style, section ## [$ver_plain])"
+	fi
+
+	notes_file="$(mktemp)"
+	if ! changelog_extract_notes "$changelog" "$ver_plain" > "$notes_file"; then
+		rm -f "$notes_file"
+		displayError "CHANGELOG.md has no non-empty section for version $ver_plain (expected header like ## [$ver_plain] - YYYY-MM-DD)"
+	fi
+	info "Notes" "extracted from CHANGELOG.md ($(wc -l < "$notes_file" | tr -d ' ') lines)"
+
+	# Refuse if tag already exists locally or on origin
+	if git -C "$dir" rev-parse -q --verify "refs/tags/$version" >/dev/null 2>&1; then
+		rm -f "$notes_file"
+		displayError "Tag already exists locally: $version"
+	fi
+	if git -C "$dir" ls-remote --tags origin "refs/tags/$version" 2>/dev/null | grep -q .; then
+		rm -f "$notes_file"
+		displayError "Tag already exists on origin: $version"
+	fi
+
+	# Optional: GitHub release already present
+	if gh release view "$version" -R "$repo" >/dev/null 2>&1; then
+		rm -f "$notes_file"
+		displayError "GitHub release already exists: $version ($repo)"
+	fi
+
+	if [[ "$DRY_RUN" == "1" ]]; then
+		log "  [dry-run] would: git pull --rebase"
+		log "  [dry-run] would: git tag -a $version -m \"Version $ver_plain released\""
+		log "  [dry-run] would: git push origin $branch && git push origin $version"
+		log "  [dry-run] would: gh release create $version -R $repo --title \"Version $ver_plain\" --notes-file <CHANGELOG section>"
+		log "  --- notes preview ---"
+		sed 's/^/  /' "$notes_file"
+		rm -f "$notes_file"
+		ok "Dry-run complete"
+		LAST_COUNT=1
+		return 0
+	fi
+
+	info "Sync" "pull --rebase"
+	if ! git -C "$dir" fetch origin || ! git -C "$dir" pull --rebase; then
+		rm -f "$notes_file"
+		displayError "git pull --rebase failed"
+	fi
+
+	if git_is_dirty "$dir"; then
+		rm -f "$notes_file"
+		displayError "Working tree dirty after pull — resolve before release"
+	fi
+
+	info "Tag" "$version"
+	if ! git -C "$dir" tag -a "$version" -m "Version $ver_plain released"; then
+		rm -f "$notes_file"
+		displayError "git tag failed"
+	fi
+
+	info "Push" "branch + tag"
+	if ! git -C "$dir" push origin "$branch"; then
+		git -C "$dir" tag -d "$version" >/dev/null 2>&1 || true
+		rm -f "$notes_file"
+		displayError "git push origin $branch failed (local tag removed)"
+	fi
+	if ! git -C "$dir" push origin "$version"; then
+		rm -f "$notes_file"
+		displayError "git push origin $version failed — tag exists locally; push or delete manually"
+	fi
+
+	info "GitHub Release" "$version"
+	if ! gh release create "$version" -R "$repo" \
+		--title "Version $ver_plain" \
+		--notes-file "$notes_file"; then
+		rm -f "$notes_file"
+		displayError "gh release create failed (tag was pushed; create the release manually if needed)"
+	fi
+
+	rm -f "$notes_file"
+	ok "Released $version on $repo"
+	LAST_COUNT=1
+}
+
 cmd_repos() {
 	local sub="${1:-}"
 	shift || true
+	local target="${1:-}"
 
 	case "$sub" in
 		list)
@@ -1479,9 +2045,23 @@ cmd_repos() {
 		dump)
 			cmd_repos_dump "$@"
 			;;
+		status)
+			foreach_repo cmd_repos_status_one "$target"
+			print_summary "repos checked" "$__walk_repos"
+			;;
+		push)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			foreach_repo cmd_repos_push_one "$target"
+			print_summary "repos pushed" "$__walk_total"
+			;;
+		release)
+			[[ "$DRY_RUN" == "1" ]] && info "Mode" "DRY_RUN"
+			# release is single-repo: <dir> <version>
+			cmd_repos_release "$@"
+			;;
 		*)
 			usage_error "Missing or unknown repos subcommand" \
-				"repos list | repos dump <directory> [chunk_size_kb] [type=c++|type=cmake]"
+				"repos list | dump | status [dir-spec] | push [dir-spec] | release <dir> <version>"
 			;;
 	esac
 }
@@ -1569,26 +2149,70 @@ cmd_search() {
 # fork
 # -----------------------------------------------------------------------------
 
-cmd_fork_status_one() {
+cmd_fork_branch_status_one() {
 	local dir="$1" repo="$2"
-	local behind ahead
+	local branch count=0 note tip merge_label
+	local -a branches=()
 
+	info "Path" "$dir"
 	info "Remote" "$repo"
 
-	if ! git_is_fork "$repo"; then
-		err "Not a fork: $repo"
-		return 1
+	if ! git -C "$dir" rev-parse --verify master^{commit} >/dev/null 2>&1; then
+		warn "No local master branch — cannot check mergeability"
+		LAST_COUNT=0
+		return 0
 	fi
 
-	if behind_ahead="$(git_fork_compare "$repo")"; then
-		behind="${behind_ahead%% *}"
-		ahead="${behind_ahead##* }"
-		info "Upstream" "$(git_fork_parent "$repo")"
-		ok "$behind commits behind, $ahead commits ahead"
-	else
-		warn "Could not compute behind/ahead"
+	mapfile -t branches < <(
+		git -C "$dir" for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null \
+			| grep -vx 'master' || true
+	)
+
+	if [[ ${#branches[@]} -eq 0 ]]; then
+		info "Branches" "no branches other than master"
+		ok "Nothing to check"
+		LAST_COUNT=0
+		return 0
 	fi
-	LAST_COUNT=1
+
+	printf "  ${_CLR_DIM}%-36s  %-12s  %s${_CLR_RESET}\n" "BRANCH" "MERGE→master" "NOTE"
+	for branch in "${branches[@]}"; do
+		[[ -z "$branch" ]] && continue
+		note=""
+		tip="$branch"
+
+		# Prefer origin/<branch> for PR-like mergeability when it exists
+		if git -C "$dir" show-ref --verify --quiet "refs/remotes/origin/${branch}" 2>/dev/null; then
+			tip="origin/${branch}"
+			# Local tip differs from what is on origin (common source of false CONFLICTS)
+			if ! git -C "$dir" rev-parse --verify "$branch^{commit}" >/dev/null 2>&1; then
+				note="no local tip"
+			elif [[ "$(git -C "$dir" rev-parse "$branch^{commit}")" != "$(git -C "$dir" rev-parse "origin/${branch}^{commit}")" ]]; then
+				note="local differs from origin"
+			fi
+		else
+			# Any other remote/*/branch?
+			if git -C "$dir" for-each-ref --format='%(refname)' "refs/remotes/*/${branch}" 2>/dev/null | grep -q .; then
+				tip="$(git -C "$dir" for-each-ref --format='%(refname:short)' "refs/remotes/*/${branch}" 2>/dev/null | head -n1)"
+			else
+				note="local-only (not pushed)"
+				tip="$branch"
+			fi
+		fi
+
+		if git_merge_tree_clean "$dir" "master" "$tip"; then
+			merge_label="CLEAN"
+		else
+			merge_label="CONFLICTS"
+		fi
+
+		printf "  %-36s  %-12s  %s\n" "$branch" "$merge_label" "$note"
+		count=$((count + 1))
+	done
+
+	info "Checked" "$count branch(es)"
+	ok "Branch status done"
+	LAST_COUNT=$count
 }
 
 cmd_fork_sync_one() {
@@ -1649,8 +2273,13 @@ cmd_fork() {
 			foreach_repo cmd_fork_sync_one "$target" "$effective"
 			print_summary "forks synced" "$__walk_total"
 			;;
+		branch-status)
+			foreach_repo cmd_fork_branch_status_one "$target" "$effective"
+			print_summary "branches checked" "$__walk_total"
+			;;
 		*)
-			usage_error "Missing or unknown fork subcommand" "fork status|sync [dir-spec]"
+			usage_error "Missing or unknown fork subcommand" \
+				"fork status|sync|branch-status [dir-spec]"
 			;;
 	esac
 }

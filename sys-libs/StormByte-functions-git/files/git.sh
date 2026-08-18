@@ -13,6 +13,24 @@ readonly _STORMBYTE_FUNCTIONS_GIT_LOADED=1
 readonly STORMBYTE_FUNCTIONS_GIT_VERSION="1.0.0"
 
 # -----------------------------------------------------------------------------
+# Force English/C locale for every git invocation (this script + sourced libs).
+# Keeps messages consistent regardless of the user's LANG/LC_MESSAGES.
+# -----------------------------------------------------------------------------
+git() {
+	LC_ALL=C LANG=C command git "$@"
+}
+
+# -----------------------------------------------------------------------------
+# Shell safety
+# -----------------------------------------------------------------------------
+
+# Quote a string so it is safe to embed in a shell command line (spaces, (), etc.).
+# Usage: q="$(git_shell_quote "$name")"; eval "echo $q"   # prefer variables over eval
+git_shell_quote() {
+	printf '%q' "$1"
+}
+
+# -----------------------------------------------------------------------------
 # Basic git information helpers
 # -----------------------------------------------------------------------------
 
@@ -276,4 +294,287 @@ git_fork_sync_master() {
 	fi
 
 	return 0
+}
+
+# -----------------------------------------------------------------------------
+# .gitmodules / submodule helpers
+# -----------------------------------------------------------------------------
+
+# Return 0 if a submodule checkout path is safe for "git submodule add".
+# Must be relative to the repository root: no absolute path, no ".." anywhere.
+# Usage: git_submodule_path_is_safe "thirdparty/foo" || echo bad
+git_submodule_path_is_safe() {
+	local path="$1"
+
+	[[ -n "$path" ]] || return 1
+	[[ "$path" == /* ]] && return 1
+	[[ "$path" == *..* ]] && return 1
+	return 0
+}
+
+# True if dir/.gitmodules defines at least one submodule URL.
+# Usage: git_has_submodules "/path/to/repo"
+git_has_submodules() {
+	local dir="${1:-.}"
+	local file="$dir/.gitmodules"
+
+	[[ -f "$file" ]] || return 1
+	git config --file "$file" --get-regexp '^submodule\..*\.url$' >/dev/null 2>&1
+}
+
+# List entries from dir/.gitmodules.
+# Prints one line per submodule: name<TAB>path<TAB>url
+# Missing or empty file → no output, exit 0.
+# Usage: git_gitmodules_list "/path/to/repo"
+git_gitmodules_list() {
+	local dir="${1:-.}"
+	local file="$dir/.gitmodules"
+	local names name path url
+
+	[[ -f "$file" ]] || return 0
+
+	mapfile -t names < <(
+		git config --file "$file" --name-only --get-regexp '^submodule\..*\.path$' 2>/dev/null \
+			| sed -E 's/^submodule\.(.*)\.path$/\1/' \
+			|| true
+	)
+
+	for name in "${names[@]:-}"; do
+		[[ -z "$name" ]] && continue
+		path="$(git config --file "$file" --get "submodule.${name}.path" 2>/dev/null || true)"
+		url="$(git config --file "$file" --get "submodule.${name}.url" 2>/dev/null || true)"
+		printf '%s\t%s\t%s\n' "$name" "${path:-}" "${url:-}"
+	done
+}
+
+# Find a submodule by exact name in .gitmodules.
+# Prints: name<TAB>path<TAB>url  — returns 1 if not found.
+# Usage: git_gitmodules_find_by_name "/path/to/repo" "Bzip2"
+git_gitmodules_find_by_name() {
+	local dir="${1:-.}"
+	local want="$2"
+	local name path url
+
+	[[ -n "$want" ]] || return 1
+
+	while IFS=$'\t' read -r name path url; do
+		[[ -z "$name" ]] && continue
+		if [[ "$name" == "$want" ]]; then
+			printf '%s\t%s\t%s\n' "$name" "$path" "$url"
+			return 0
+		fi
+	done < <(git_gitmodules_list "$dir")
+
+	return 1
+}
+
+# Find a submodule by exact URL in .gitmodules.
+# Prints: name<TAB>path<TAB>url  — returns 1 if not found.
+# Usage: git_gitmodules_find_by_url "/path/to/repo" "https://github.com/org/repo.git"
+git_gitmodules_find_by_url() {
+	local dir="${1:-.}"
+	local want="$2"
+	local name path url
+
+	[[ -n "$want" ]] || return 1
+
+	while IFS=$'\t' read -r name path url; do
+		[[ -z "$name" ]] && continue
+		if [[ "$url" == "$want" ]]; then
+			printf '%s\t%s\t%s\n' "$name" "$path" "$url"
+			return 0
+		fi
+	done < <(git_gitmodules_list "$dir")
+
+	return 1
+}
+
+# Find a submodule by exact path in .gitmodules.
+# Path must already be safe (relative, no ".."); comparison is string-exact
+# against the path stored in .gitmodules.
+# Prints: name<TAB>path<TAB>url  — returns 1 if not found.
+# Usage: git_gitmodules_find_by_path "/path/to/repo" "thirdparty/Bzip2/src"
+git_gitmodules_find_by_path() {
+	local dir="${1:-.}"
+	local want="$2"
+	local name path url
+
+	[[ -n "$want" ]] || return 1
+	git_submodule_path_is_safe "$want" || return 1
+
+	while IFS=$'\t' read -r name path url; do
+		[[ -z "$name" ]] && continue
+		if [[ "$path" == "$want" ]]; then
+			printf '%s\t%s\t%s\n' "$name" "$path" "$url"
+			return 0
+		fi
+	done < <(git_gitmodules_list "$dir")
+
+	return 1
+}
+
+# Resolve which branch a submodule should track.
+# Order: preferred (e.g. from .gitmodules) → current branch → origin/HEAD
+#        → origin/main → origin/master.
+# Prints the branch name; returns 1 if none can be resolved.
+# Usage: git_submodule_resolve_branch "/abs/path/to/submodule" ["preferred"]
+git_submodule_resolve_branch() {
+	local sm_dir="$1"
+	local preferred="${2:-}"
+	local branch=""
+
+	[[ -d "$sm_dir" ]] || return 1
+
+	if [[ -n "$preferred" ]]; then
+		branch="$preferred"
+	fi
+
+	if [[ -z "$branch" || "$branch" == "HEAD" ]]; then
+		branch="$(git -C "$sm_dir" symbolic-ref -q --short HEAD 2>/dev/null || true)"
+	fi
+
+	if [[ -z "$branch" || "$branch" == "HEAD" ]]; then
+		branch="$(
+			git -C "$sm_dir" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null \
+				| sed 's#^origin/##' || true
+		)"
+	fi
+
+	if [[ -z "$branch" || "$branch" == "HEAD" ]]; then
+		if git -C "$sm_dir" rev-parse --verify refs/remotes/origin/main >/dev/null 2>&1; then
+			branch=main
+		elif git -C "$sm_dir" rev-parse --verify refs/remotes/origin/master >/dev/null 2>&1; then
+			branch=master
+		else
+			return 1
+		fi
+	fi
+
+	printf '%s\n' "$branch"
+}
+
+# Force one submodule checkout to the tip of origin/<branch>.
+# Discards local commits in that submodule (force-push recovery).
+# preferred_branch may be empty (auto-resolve). Soft-fail: returns 1 on skip/error.
+# Usage: git_submodule_force_to_remote_tip "/abs/sm" ["master"]
+git_submodule_force_to_remote_tip() {
+	local sm_dir="$1"
+	local preferred="${2:-}"
+	local branch
+
+	[[ -d "$sm_dir" ]] || return 1
+
+	if ! git -C "$sm_dir" remote get-url origin >/dev/null 2>&1; then
+		return 1
+	fi
+
+	if ! git -C "$sm_dir" fetch origin --prune --force >/dev/null 2>&1; then
+		return 1
+	fi
+
+	branch="$(git_submodule_resolve_branch "$sm_dir" "$preferred")" || return 1
+
+	# After fetch, preferred might still be missing — re-probe main/master
+	if ! git -C "$sm_dir" rev-parse --verify "refs/remotes/origin/${branch}" >/dev/null 2>&1; then
+		branch="$(git_submodule_resolve_branch "$sm_dir" "")" || return 1
+	fi
+
+	if ! git -C "$sm_dir" rev-parse --verify "refs/remotes/origin/${branch}" >/dev/null 2>&1; then
+		return 1
+	fi
+
+	git -C "$sm_dir" checkout -B "$branch" "refs/remotes/origin/${branch}" >/dev/null 2>&1 || return 1
+	git -C "$sm_dir" reset --hard "refs/remotes/origin/${branch}" >/dev/null 2>&1 || return 1
+	git -C "$sm_dir" clean -fd >/dev/null 2>&1 || true
+	return 0
+}
+
+# Force all submodules (recursive) under a superproject to their remote branch tips.
+# Names with spaces/() are safe: we never embed them in an eval'd foreach script;
+# we only pass paths and optional branch hints as bash variables.
+# Prints progress lines to stdout: "→ <name>: ok|skip (reason)"
+# Usage: git_submodules_force_all_to_remote "/path/to/superproject"
+git_submodules_force_all_to_remote() {
+	local dir="${1:-.}"
+	local toplevel name sm_abs preferred rc
+
+	[[ -f "$dir/.gitmodules" ]] || return 0
+
+	# Ensure checkouts exist
+	git -C "$dir" submodule update --init --recursive >/dev/null 2>&1 || true
+
+	# One record per submodule: superproject TAB name TAB absolute path
+	# (name may contain spaces/(); tabs/newlines in names are not supported)
+	while IFS=$'\t' read -r toplevel name sm_abs; do
+		[[ -z "$sm_abs" || ! -d "$sm_abs" ]] && continue
+
+		preferred=""
+		if [[ -n "$toplevel" && -f "$toplevel/.gitmodules" && -n "$name" ]]; then
+			preferred="$(
+				git config -f "$toplevel/.gitmodules" --get "submodule.${name}.branch" 2>/dev/null || true
+			)"
+		fi
+
+		if git_submodule_force_to_remote_tip "$sm_abs" "$preferred"; then
+			printf '→ %s: ok\n' "${name:-$sm_abs}"
+		else
+			printf '→ %s: skip\n' "${name:-$sm_abs}"
+		fi
+	done < <(
+		git -C "$dir" submodule foreach --recursive --quiet \
+			'printf "%s\t%s\t%s\n" "$toplevel" "$name" "$(pwd)"' 2>/dev/null || true
+	)
+
+	return 0
+}
+
+# -----------------------------------------------------------------------------
+# Local tracking / mergeability helpers
+# -----------------------------------------------------------------------------
+
+# Print the upstream tracking ref of the current branch (e.g. origin/master).
+# Empty output and non-zero status if there is no upstream.
+# Usage: git_upstream_ref "/path/to/repo"
+git_upstream_ref() {
+	local dir="${1:-.}"
+	local up
+
+	up="$(git -C "$dir" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null)" || return 1
+	[[ -n "$up" ]] || return 1
+	printf '%s\n' "$up"
+}
+
+# Print local ahead/behind counts relative to the current branch upstream.
+# Output format: "ahead behind" (two integers).
+# Returns non-zero if there is no upstream or the counts cannot be computed.
+# Usage: git_ahead_behind "/path/to/repo"
+git_ahead_behind() {
+	local dir="${1:-.}"
+	local counts ahead behind
+
+	git_upstream_ref "$dir" >/dev/null || return 1
+
+	counts="$(git -C "$dir" rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null)" || return 1
+	# rev-list --left-right --count prints: "<ahead>\t<behind>"
+	ahead="${counts%%[$'\t ]*}"
+	behind="${counts##*[$'\t ]}"
+	[[ "$ahead" =~ ^[0-9]+$ && "$behind" =~ ^[0-9]+$ ]] || return 1
+	printf '%s %s\n' "$ahead" "$behind"
+}
+
+# Return 0 if merging <head> into <base> would be conflict-free (GitHub-style).
+# Does not touch the working tree, index, or refs (uses git merge-tree only).
+# Usage: git_merge_tree_clean "/path/to/repo" "master" "feature-branch"
+git_merge_tree_clean() {
+	local dir="${1:-.}"
+	local base="${2:-}"
+	local head="${3:-}"
+
+	[[ -n "$base" && -n "$head" ]] || return 1
+
+	# Ensure both tips resolve
+	git -C "$dir" rev-parse --verify "$base^{commit}" >/dev/null 2>&1 || return 1
+	git -C "$dir" rev-parse --verify "$head^{commit}" >/dev/null 2>&1 || return 1
+
+	git -C "$dir" merge-tree --write-tree "$base" "$head" >/dev/null 2>&1
 }

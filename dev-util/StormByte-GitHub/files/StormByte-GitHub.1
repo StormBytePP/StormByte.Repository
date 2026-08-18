@@ -7,7 +7,7 @@ StormByte-GitHub \- unified CLI for managing StormByte GitHub repositories, Acti
 .SH DESCRIPTION
 .B StormByte-GitHub
 is a convenience wrapper around common Git and GitHub operations used in the StormByte project ecosystem.
-It provides a consistent interface for managing Actions caches, CI workflow runs, submodules, repository synchronisation, forks, local repository listings and source code dumps across multiple local clones.
+It provides a consistent interface for managing Actions caches, CI workflow runs, submodules, repository synchronisation, forks, local repository listings, source code dumps and version releases across multiple local clones.
 
 The script requires a mandatory configuration file
 .I ~/.StormByte-GitHub.conf
@@ -169,11 +169,79 @@ Clean, fetch, update submodules to the remote tip and commit/push if necessary.
 When no directory is specified the update is performed in dependency order
 (using a topological sort over
 .BR ROOT ).
+.TP
+.B submodules list\fR [\fIdir-spec\fR]
+List submodule entries from
+.I .gitmodules
+for each selected repository: name, path and URL.
+If a repository has no submodules, a neutral informational message is shown
+(not treated as an error or warning).
+.TP
+.B submodules add \fI<dir>\fR \fI<URL>\fR \fI<path>\fR \fB--name\fR \fI<name>\fR
+Add a new submodule to a single repository.
+.RS
+.IP \(bu 2
+.I <dir>
+is the local clone (bare name under
+.BR ROOT ,
+or an absolute /
+.BR ~/ /
+relative path; may lie outside
+.BR ROOT ).
+.IP \(bu 2
+.B --name
+is required and may appear in any argument position. Use quotes when the name contains spaces; the quotes are not part of the stored name.
+.IP \(bu 2
+.I <path>
+must be relative to the selected repository. Absolute paths and any path containing
+.B ..
+are rejected.
+.IP \(bu 2
+Runs
+.B git submodule add --name ...
+only; does
+.B not
+run submodule init or update afterwards.
+.IP \(bu 2
+Respects
+.BR DRY_RUN .
+.RE
+.TP
+.B submodules delete \fI<dir>\fR (\fB--name\fR \fI<name>\fR | \fB--url\fR \fI<url>\fR | \fB--path\fR \fI<path>\fR)
+Remove one submodule from a single repository.
+.RS
+.IP \(bu 2
+Exactly one of
+.BR --name ,
+.B --url
+or
+.B --path
+is required (flags may appear in any position).
+.IP \(bu 2
+.B --path
+must be relative to the repository (no absolute path, no
+.BR .. ).
+.IP \(bu 2
+Cleans the submodule from the index and
+.IR .gitmodules ,
+then deletes the submodule directory on disk (even if it has local changes).
+.IP \(bu 2
+Does
+.B not
+commit and does
+.B not
+push, so the change can be reviewed and undone with
+.B git reset --hard
+if needed.
+.IP \(bu 2
+Respects
+.BR DRY_RUN .
+.RE
 
 .SS git
 .TP
 .B git reset\fR [\fIdir-spec\fR]
-Hard-reset and clean the working tree of the selected directories.
+Hard-reset and clean the working tree of the selected repositories.
 .TP
 .B git pull\fR [\fIdir-spec\fR]
 Fetch and pull with rebase (does not touch submodules).
@@ -205,6 +273,110 @@ Non-git directories are listed with placeholders.
 Concatenate source files of a project into one or more text files under
 .BR OUT .
 Optionally split the result into chunks of the given size.
+A bare directory name is resolved under
+.BR ROOT ;
+absolute and
+.B ~/
+paths are used as given.
+.TP
+.B repos status\fR [\fIdir-spec\fR]
+Report the state of the
+.B current branch
+in each selected repository under
+.BR ROOT :
+.RS
+.IP \(bu 2
+.B OK
+— working tree clean and no unpushed commits relative to the upstream tracking branch
+.IP \(bu 2
+.B DIRTY
+— uncommitted changes in the working tree
+.IP \(bu 2
+.B UNPUSHED
+— local commits not present on the upstream (or no upstream configured)
+.IP \(bu 2
+.B DIRTY+UNPUSHED
+— both of the above
+.RE
+Does not run
+.BR fetch ;
+ahead/behind reflect the last known upstream tips.
+.TP
+.B repos push\fR [\fIdir-spec\fR]
+Run
+.B git push
+on each selected repository under
+.B ROOT
+.B without
+.B --force
+or
+.BR --force-with-lease .
+Repositories with no upstream tracking branch are skipped with a warning.
+Failures are reported per repository without aborting the whole batch.
+Respects
+.BR DRY_RUN .
+.TP
+.B repos release \fI<dir>\fR \fI<version>\fR
+Create an annotated git tag, push the current branch and the tag, then create a
+GitHub Release for a
+.B single
+repository under
+.BR ROOT .
+.RS
+.IP \(bu 2
+.I <dir>
+is the local clone (bare name under
+.BR ROOT ,
+or an absolute /
+.BR ~/ /
+relative path).
+.IP \(bu 2
+.I <version>
+must look like
+.B 1.0.0
+or
+.B v1.0.0
+(optional leading
+.BR v ,
+optional pre-release/build suffix).
+.IP \(bu 2
+The repository remote must belong to the configured
+.BR OWNER .
+.IP \(bu 2
+The working tree must be clean.
+.IP \(bu 2
+.I CHANGELOG.md
+must exist at the repository root. It must contain a non-empty section for the
+requested version, with a header such as:
+.RS
+.IP \(bu 2
+.B "## [1.0.0] - 2026-08-20"
+.IP \(bu 2
+.B "## [1.0.0]"
+.IP \(bu 2
+.B "## 1.0.0"
+.RE
+The body of that section (until the next
+.B "## "
+heading) is used as the GitHub Release notes via
+.BR "gh release create --notes-file" .
+.IP \(bu 2
+Fails if
+.I CHANGELOG.md
+is missing, the version section is missing or empty, the tag already exists
+locally or on
+.BR origin ,
+or a GitHub Release for that tag already exists.
+.IP \(bu 2
+Sequence on success: fetch + pull --rebase, annotated tag, push branch, push tag,
+.B gh release create
+with title
+.BI "Version " <version without optional leading v> .
+.IP \(bu 2
+Respects
+.BR DRY_RUN
+(prints the planned steps and a notes preview without tagging or pushing).
+.RE
 
 .SS Other commands
 .TP
@@ -215,7 +387,7 @@ that is not already present under
 .BR ROOT .
 .TP
 .B search \fI<text>\fR [\fIdir-spec\fR]
-Search for the given text inside the selected directories. Matching terms are highlighted when the terminal supports colour.
+Search for the given text inside the selected repositories. Matching terms are highlighted when the terminal supports colour.
 .TP
 .B fork status\fR [\fIdir-spec\fR]
 Uses
@@ -232,6 +404,48 @@ if set, otherwise
 Synchronise
 .B only the master branch
 with the upstream repository when the fork is behind (equivalent to the GitHub web “Sync repository” button followed by a local pull --rebase). Forks that are already up to date are skipped. The current branch is preserved and any local changes are safely stashed.
+.TP
+.B fork branch-status\fR [\fIdir-spec\fR]
+Uses
+.B FORK_ROOT
+if set, otherwise
+.BR ROOT .
+Intended for pull-request workflows on fork clones.
+For each selected repository, list every
+.B local
+branch other than
+.B master
+and report whether merging that branch
+.B into master
+would be conflict-free, using
+.B git merge-tree
+(read-only; does not modify the working tree, index or refs):
+.RS
+.IP \(bu 2
+.B CLEAN
+— equivalent practical signal to a GitHub PR that can merge into master automatically
+.IP \(bu 2
+.B CONFLICTS
+— manual intervention (rebase/resolve) would be needed
+.IP \(bu 2
+If the branch has no matching remote-tracking ref (e.g.
+.BR origin/<branch> ),
+a friendly note
+.B local-only (not pushed)
+is shown in a NOTE column; mergeability is still reported.
+.IP \(bu 2
+If there are no local branches other than
+.BR master ,
+a neutral message is shown and the check ends cleanly (not an error).
+.RE
+If
+.B master
+does not exist locally, the repository is reported and skipped.
+Branches named
+.B main
+are included in the check (only
+.B master
+is excluded).
 
 .SH EXAMPLES
 .nf
@@ -240,6 +454,25 @@ StormByte-GitHub help
 
 # List local clones under ROOT
 StormByte-GitHub repos list
+
+# Working tree / unpushed status (own repos under ROOT)
+StormByte-GitHub repos status
+StormByte-GitHub repos status crypto
+StormByte-GitHub repos status !multimedia
+
+# Push current branch (no force)
+StormByte-GitHub repos push
+StormByte-GitHub repos push !multimedia
+
+# Tag + GitHub Release (requires CHANGELOG.md section for that version)
+StormByte-GitHub repos release database 1.0.0
+DRY_RUN=1 StormByte-GitHub repos release database 1.0.0
+
+# Fork / PR helpers under FORK_ROOT
+FORK_ROOT=~/Forks StormByte-GitHub fork status
+FORK_ROOT=~/Forks StormByte-GitHub fork sync
+FORK_ROOT=~/Forks StormByte-GitHub fork branch-status
+StormByte-GitHub fork branch-status gentoo
 
 # List all caches under ROOT
 StormByte-GitHub cache list
@@ -253,15 +486,25 @@ StormByte-GitHub ci start --failed
 # Synchronise all repositories under a temporary ROOT
 ROOT=~/Software StormByte-GitHub git sync
 
-# Fork operations under a dedicated forks directory
-FORK_ROOT=~/Forks StormByte-GitHub fork status
-FORK_ROOT=~/Forks StormByte-GitHub fork sync
-
 # Explicit path (does not depend on ROOT)
 StormByte-GitHub git reset ~/Software/my-repo
 
 # Update submodules in dependency order
 StormByte-GitHub submodules update
+
+# List submodules of one repo
+StormByte-GitHub submodules list crypto
+
+# Add a submodule (name may contain spaces)
+StormByte-GitHub submodules add crypto \\
+  https://github.com/libarchive/bzip2.git thirdparty/Bzip2/src --name Bzip2
+
+StormByte-GitHub submodules add --name "StormByte Suite - Buffer" crypto \\
+  https://github.com/StormBytePP/StormByte-Buffer.git \\
+  thirdparty/StormByte/buffer/src
+
+# Remove a submodule by name (no commit/push)
+StormByte-GitHub submodules delete crypto --name Bzip2
 
 # Search for a symbol
 StormByte-GitHub search "mimalloc"
@@ -291,7 +534,8 @@ Looked up first in the same directory as the script, then in
 
 .TP
 .I git.sh
-Git- and repository-specific helpers.
+Git- and repository-specific helpers (including .gitmodules listing, path checks,
+local upstream/ahead-behind, and merge-tree mergeability).
 Looked up first in the same directory as the script, then in
 .IR /lib/StormByte/git.sh .
 
@@ -312,6 +556,30 @@ Looked up first in the same directory as the script, then in
   command deliberately touches only the
   .B master
   branch, skips forks that are not behind upstream, and never creates commits or pushes.
+-
+.B fork branch-status
+uses
+.B git merge-tree
+only (no checkout, no rebase); it answers whether a branch could merge into
+.B master
+without text conflicts, similar to the GitHub PR conflict check.
+Local-only branches (no remote-tracking ref) are annotated, not treated as errors.
+-
+.B submodules add
+never runs init/update after adding.
+-
+.B submodules delete
+removes the working-tree folder and stages index/.gitmodules changes but never commits or pushes.
+- Submodule checkout paths must stay inside the selected repository (relative path, no
+.BR .. ).
+-
+.B repos push
+never uses force push.
+-
+.B repos release
+requires
+.I CHANGELOG.md
+with a matching version section, a clean tree, and will not overwrite an existing tag or GitHub Release.
 - On Windows the script expects a POSIX-compatible environment (Git Bash, MSYS2, WSL, \ldots).
 
 .SH SEE ALSO
