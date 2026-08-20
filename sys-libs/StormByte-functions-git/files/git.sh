@@ -4,13 +4,30 @@
 # =============================================================================
 # Contains only git and repository related helpers.
 # This file is intended to be sourced by StormByte scripts.
+# Requires StormByte functions.sh >= 1.1.0 (semver / version_* helpers).
 # =============================================================================
 
 [[ -n "${_STORMBYTE_FUNCTIONS_GIT_LOADED:-}" ]] && return
 readonly _STORMBYTE_FUNCTIONS_GIT_LOADED=1
 
 # Library version (SEMVER)
-readonly STORMBYTE_FUNCTIONS_GIT_VERSION="1.0.0"
+readonly STORMBYTE_FUNCTIONS_GIT_VERSION="1.1.0"
+
+# Minimum StormByte functions.sh version (version_plain, version_is_*, semver_*)
+readonly _STORMBYTE_FUNCTIONS_GIT_NEED_FUNCTIONS="1.1.0"
+
+if [[ -z "${STORMBYTE_FUNCTIONS_VERSION:-}" ]]; then
+	printf 'ERROR: functions.sh must be sourced before git.sh\n' >&2
+	return 1 2>/dev/null || exit 1
+fi
+
+if ! semver_ge "${STORMBYTE_FUNCTIONS_VERSION}" "${_STORMBYTE_FUNCTIONS_GIT_NEED_FUNCTIONS}"; then
+	printf 'ERROR: git.sh %s requires functions.sh >= %s (have %s)\n' \
+		"${STORMBYTE_FUNCTIONS_GIT_VERSION}" \
+		"${_STORMBYTE_FUNCTIONS_GIT_NEED_FUNCTIONS}" \
+		"${STORMBYTE_FUNCTIONS_VERSION}" >&2
+	return 1 2>/dev/null || exit 1
+fi
 
 # -----------------------------------------------------------------------------
 # Force English/C locale for every git invocation (this script + sourced libs).
@@ -577,4 +594,168 @@ git_merge_tree_clean() {
 	git -C "$dir" rev-parse --verify "$head^{commit}" >/dev/null 2>&1 || return 1
 
 	git -C "$dir" merge-tree --write-tree "$base" "$head" >/dev/null 2>&1
+}
+
+# -----------------------------------------------------------------------------
+# Tag helpers (1.1.0)
+# -----------------------------------------------------------------------------
+
+# Print the latest tag by version sort (v-aware). Empty if none.
+# Usage: git_latest_tag "/path/to/repo"
+git_latest_tag() {
+	local dir="${1:-.}"
+	git -C "$dir" tag -l --sort=-v:refname 2>/dev/null | head -n1 || true
+}
+
+# Return 0 if the tag exists locally.
+# Usage: git_tag_exists_local "/path/to/repo" "1.0.0"
+git_tag_exists_local() {
+	local dir="${1:-.}"
+	local tag="${2:-}"
+	[[ -n "$tag" ]] || return 1
+	git -C "$dir" rev-parse -q --verify "refs/tags/$tag" >/dev/null 2>&1
+}
+
+# Return 0 if the tag exists on origin.
+# Usage: git_tag_exists_remote "/path/to/repo" "1.0.0"
+git_tag_exists_remote() {
+	local dir="${1:-.}"
+	local tag="${2:-}"
+	[[ -n "$tag" ]] || return 1
+	git -C "$dir" ls-remote --tags origin "refs/tags/$tag" 2>/dev/null | grep -q .
+}
+
+# Delete a tag locally and on origin (best-effort).
+# Usage: git_tag_delete_local_remote "/path/to/repo" "1.0.0"
+git_tag_delete_local_remote() {
+	local dir="${1:-.}"
+	local tag="${2:-}"
+	[[ -n "$tag" ]] || return 1
+	git -C "$dir" tag -d "$tag" >/dev/null 2>&1 || true
+	git -C "$dir" push origin ":refs/tags/$tag" >/dev/null 2>&1 || true
+	return 0
+}
+
+# -----------------------------------------------------------------------------
+# CHANGELOG helpers (1.1.0) — Keep a Changelog style
+# -----------------------------------------------------------------------------
+
+# Extract release notes for a version from CHANGELOG.md.
+# Requires a header of the form:
+#   ## [1.0.0] - YYYY-MM-DD
+#   ## [v1.0.0] - YYYY-MM-DD
+# Uses version_plain() from functions.sh for matching.
+# Prints the section body (no header). Returns 1 if missing or empty.
+# Usage: git_changelog_extract_notes "/path/CHANGELOG.md" "1.0.0"
+git_changelog_extract_notes() {
+	local changelog="$1"
+	local version="$2"
+	local ver body tmp rc
+
+	ver="$(version_plain "$version")"
+	[[ -f "$changelog" ]] || return 1
+
+	tmp="$(mktemp)"
+	awk -v ver="$ver" '
+		BEGIN { want = 0; found = 0 }
+		/^##[ \t]+\[/ {
+			if (want == 1) exit
+			line = $0
+			if (match(line, /^##[ \t]+\[v?([0-9]+\.[0-9]+\.[0-9]+[0-9A-Za-z._-]*)\][ \t]*-[ \t]*[0-9]{4}-[0-9]{2}-[0-9]{2}/, m)) {
+				if (m[1] == ver) { want = 1; found = 1; next }
+			}
+			next
+		}
+		/^##[ \t]+/ {
+			if (want == 1) exit
+			next
+		}
+		want == 1 { print }
+		END { exit(found ? 0 : 1) }
+	' "$changelog" > "$tmp"
+	rc=$?
+	if [[ "$rc" -ne 0 ]]; then
+		rm -f "$tmp"
+		return 1
+	fi
+
+	body="$(sed -e '/./,$!d' "$tmp" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
+	rm -f "$tmp"
+	[[ -n "${body//[:space:]/}" ]] || return 1
+	printf '%s\n' "$body"
+}
+
+# -----------------------------------------------------------------------------
+# CI wait helper (1.1.0) — requires gh
+# -----------------------------------------------------------------------------
+
+# Wait until all workflow runs for a commit have completed successfully.
+# Polls periodically. Safe to interrupt with Ctrl-C (returns non-zero; no side effects).
+# Usage: git_wait_ci_success "owner/repo" "fullsha" [timeout_sec=3600]
+git_wait_ci_success() {
+	local repo="$1"
+	local sha="$2"
+	local timeout="${3:-3600}"
+	local start now elapsed pending failed
+	local -a runs
+	local line st conc name rest
+
+	start="$(date +%s)"
+	printf '  Waiting for CI on %s (commit %s)…\n' "$repo" "${sha:0:12}" >&2
+	printf '  This may take a while. Ctrl-C cancels cleanly (no tag should exist yet).\n' >&2
+
+	while true; do
+		now="$(date +%s)"
+		elapsed=$((now - start))
+		if ((elapsed > timeout)); then
+			printf '  CI wait timed out after %ss\n' "$timeout" >&2
+			return 1
+		fi
+
+		mapfile -t runs < <(
+			gh run list -R "$repo" --commit "$sha" --limit 50 \
+				--json status,conclusion,name \
+				--jq '.[] | "\(.status)\t\(.conclusion // "-")\t\(.name // "?")"' \
+				2>/dev/null || true
+		)
+
+		if [[ ${#runs[@]} -eq 0 ]]; then
+			printf '  No workflow runs found yet for this commit (waiting)…\n' >&2
+			sleep 15
+			continue
+		fi
+
+		pending=0
+		failed=0
+		for line in "${runs[@]}"; do
+			st="${line%%$'\t'*}"
+			rest="${line#*$'\t'}"
+			conc="${rest%%$'\t'*}"
+			name="${rest#*$'\t'}"
+			case "$st" in
+				queued|pending|in_progress|waiting|requested)
+					pending=$((pending + 1))
+					;;
+				completed)
+					case "$conc" in
+						success|skipped|neutral) ;;
+						*)
+							failed=$((failed + 1))
+							printf '  CI failed: %s (%s)\n' "$name" "$conc" >&2
+							;;
+					esac
+					;;
+			esac
+		done
+
+		if ((failed > 0)); then
+			return 1
+		fi
+		if ((pending == 0)); then
+			printf '  CI green (%s run(s))\n' "${#runs[@]}" >&2
+			return 0
+		fi
+		printf '  … %s run(s) still in progress (%ss elapsed)\n' "$pending" "$elapsed" >&2
+		sleep 20
+	done
 }

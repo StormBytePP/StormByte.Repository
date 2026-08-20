@@ -10,7 +10,7 @@
 readonly _STORMBYTE_FUNCTIONS_LOADED=1
 
 # Library version (SEMVER)
-readonly STORMBYTE_FUNCTIONS_VERSION="1.0.0"
+readonly STORMBYTE_FUNCTIONS_VERSION="1.1.0"
 
 # -----------------------------------------------------------------------------
 # ANSI color codes (ANSI-C quoting for actual escape characters)
@@ -470,4 +470,32 @@ require_version() {
 	if ! semver_ge "$have" "$need"; then
 		displayError "$name version $have is too old (requires >= $need)"
 	fi
+}
+
+# -----------------------------------------------------------------------------
+# Version string helpers (1.1.0)
+# -----------------------------------------------------------------------------
+
+# Strip optional leading "v" (v1.0.0 → 1.0.0).
+# Usage: version_plain "v1.2.3"
+version_plain() {
+	local v="${1:-}"
+	printf '%s\n' "${v#v}"
+}
+
+# Return 0 if string looks like SEMVER core + optional pre-release/build
+# (optional leading v). Examples: 1.0.0, v1.0.0, 1.0.0-rc.1, 1.0.0+build
+# Usage: version_is_valid "1.0.0-rc.1"
+version_is_valid() {
+	local v
+	v="$(version_plain "${1:-}")"
+	[[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.+-][0-9A-Za-z.-]*)?$ ]]
+}
+
+# Return 0 if version has a pre-release segment (contains '-' in the plain form).
+# Usage: version_is_prerelease "1.0.0-rc.1"
+version_is_prerelease() {
+	local v
+	v="$(version_plain "${1:-}")"
+	[[ "$v" == *-* ]]
 }
