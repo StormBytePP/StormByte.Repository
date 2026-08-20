@@ -1,6 +1,7 @@
 *app-benchmarks/hyperfine
 *app-crypt/efitools
 *dev-debug/strace
+*dev-util/bloaty
 *dev-util/StormByte-GitHub
 *dev-libs/libisoburn #For virt-manager
 *games-util/game-device-udev-rules
