@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>stormbyte@example.com</email>
+		<name>StormByte</name>
+	</maintainer>
+	<longdescription lang="en">
+		Unified Bash CLI for GitHub Actions caches, CI runs, git operations,
+		pin-aware submodules, source dumps, releases, forks, search/clone
+		helpers and test drivers across many local clones under one root.
+	</longdescription>
+	<upstream>
+		<remote-id type="github">StormBytePP/StormByte-GitHub</remote-id>
+	</upstream>
+</pkgmetadata>

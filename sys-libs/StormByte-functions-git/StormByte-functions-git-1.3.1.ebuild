@@ -11,7 +11,10 @@ SLOT="0"
 KEYWORDS="amd64 x86"
 IUSE=""
 
-RDEPEND="dev-vcs/git"
+RDEPEND="
+	dev-vcs/git
+	>=sys-libs/StormByte-functions-bash-1.3.0
+"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}"
