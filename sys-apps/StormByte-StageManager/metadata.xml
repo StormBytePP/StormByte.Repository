@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>stormbyte@example.com</email>
+		<name>StormByte</name>
+	</maintainer>
+	<longdescription lang="en">
+		Bash CLI to manage Gentoo stage tarballs: list, chroot (use/rebase),
+		convert, export, delete, rename, download official stage3 images, and
+		per-stage notes. Supports folder/tmpfs/zram storage, optional host bind
+		mounts, and ccache sidecars.
+	</longdescription>
+	<use>
+		<flag name="lbzip2">Use app-arch/lbzip2 (via app-alternatives) for parallel bzip2</flag>
+		<flag name="pigz">Use app-arch/pigz (via app-alternatives) for parallel gzip</flag>
+		<flag name="pxz">Use app-arch/pxz for parallel xz; without it depend on app-arch/xz-utils</flag>
+		<flag name="zram">Enable zram storage backend (requires CONFIG_ZRAM and ext2-capable FS in the kernel)</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">StormBytePP/StormByte-StageManager</remote-id>
+	</upstream>
+</pkgmetadata>

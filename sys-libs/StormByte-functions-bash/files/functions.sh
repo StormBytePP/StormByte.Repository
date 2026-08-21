@@ -3,14 +3,15 @@
 # StormByte shared functions library
 # =============================================================================
 # This file is sourced by multiple StormByte scripts.
-# Existing functions must not be modified. Only new generic helpers are added.
+# Existing public helpers are kept for compatibility. Output helpers used by
+# StageManager (handleCommand*) were tightened in 1.2.0 for a single UI style.
 # =============================================================================
 
 [[ -n "${_STORMBYTE_FUNCTIONS_LOADED:-}" ]] && return
 readonly _STORMBYTE_FUNCTIONS_LOADED=1
 
 # Library version (SEMVER)
-readonly STORMBYTE_FUNCTIONS_VERSION="1.1.0"
+readonly STORMBYTE_FUNCTIONS_VERSION="1.2.0"
 
 # -----------------------------------------------------------------------------
 # ANSI color codes (ANSI-C quoting for actual escape characters)
@@ -34,7 +35,7 @@ readonly _CLR_MAGENTA=$'\033[0;35m'
 readonly _CLR_BOLD_MAGENTA=$'\033[1;35m'
 
 # -----------------------------------------------------------------------------
-# Existing display helpers (DO NOT MODIFY)
+# Display helpers
 # -----------------------------------------------------------------------------
 
 # Display an error message and exit with status 1.
@@ -50,13 +51,13 @@ function displayWarning() {
 	printf "  ${_CLR_BOLD_YELLOW}⚠  WARNING${_CLR_RESET} ${_CLR_DIM}│${_CLR_RESET} %s\n" "$1"
 }
 
-# Print a step indicator (no newline).
+# Print a step indicator (no newline) — same prefix as handleCommand.
 # Usage: printStep "Doing something"
 function printStep() {
 	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET} " "$1"
 }
 
-# Print a green OK mark.
+# Print a green OK mark (continues a printStep / handleCommand line, or alone).
 function printOK() {
 	printf "${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
 }
@@ -72,40 +73,71 @@ function printSkip() {
 	printf "${_CLR_BOLD_YELLOW}○ SKIP${_CLR_RESET}${_CLR_DIM} %s${_CLR_RESET}\n" "$1"
 }
 
-# Execute a command silently and show OK/FAIL.
+# Execute a command silently and show OK/FAIL on the same line.
 # $1 = command string, $2 = description
-# Usage: handleCommand 'mount ...' "Mounting system..."
+# Usage: handleCommand 'mount ...' "Mounting system"
 function handleCommand() {
-	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET} " "${2}"
-	eval $1 > /dev/null 2>&1
-
-	if [ $? -eq 0 ]; then
+	local cmd="$1"
+	local desc="$2"
+	local rc=0
+	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET} " "${desc}"
+	eval "${cmd}" > /dev/null 2>&1 || rc=$?
+	if [[ "${rc}" -eq 0 ]]; then
 		printf "${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
 	else
 		printf "${_CLR_BOLD_RED}✗ FAIL${_CLR_RESET}\n"
-		cd "${current_folder}"
-		displayError "in command $1"
+		cd "${current_folder}" 2>/dev/null || true
+		displayError "in command ${cmd}"
 	fi
 }
 
-# Execute a command showing its output.
+# Execute a command showing its output (progress bars, etc.).
+# Layout (unified with handleCommand):
+#   ◆ Description …
+#   <command stdout/stderr>
+#   ✓ OK
 # $1 = command string, $2 = description
+# Usage: handleCommandWithOutput 'pv file | tar …' "Extracting …"
 function handleCommandWithOutput() {
-	printf "\n  ${_CLR_BOLD_MAGENTA}▶${_CLR_RESET} ${_CLR_BOLD_WHITE}%s${_CLR_RESET}\n\n" "${2}"
-	eval $1
-
-	if [ $? -ne 0 ]; then
-		cd "${current_folder}"
-		displayError "in command $1"
+	local cmd="$1"
+	local desc="$2"
+	local rc=0
+	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET}\n" "${desc}"
+	eval "${cmd}" || rc=$?
+	if [[ "${rc}" -eq 0 ]]; then
+		printf "  ${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
+	else
+		printf "  ${_CLR_BOLD_RED}✗ FAIL${_CLR_RESET}\n"
+		cd "${current_folder}" 2>/dev/null || true
+		displayError "in command ${cmd}"
 	fi
+}
+
+# Soft variant: same layout as handleCommandWithOutput but does not exit on failure.
+# Returns the command exit status. Prints FAIL + optional warn via caller.
+# Usage: handleCommandWithOutputSoft '…' "Packing …" || warn "pack failed"
+function handleCommandWithOutputSoft() {
+	local cmd="$1"
+	local desc="$2"
+	local rc=0
+	printf "  ${_CLR_BOLD_CYAN}◆${_CLR_RESET} ${_CLR_WHITE}%s${_CLR_RESET} ${_CLR_DIM}…${_CLR_RESET}\n" "${desc}"
+	eval "${cmd}" || rc=$?
+	if [[ "${rc}" -eq 0 ]]; then
+		printf "  ${_CLR_BOLD_GREEN}✓ OK${_CLR_RESET}\n"
+	else
+		printf "  ${_CLR_BOLD_RED}✗ FAIL${_CLR_RESET}\n"
+	fi
+	return "${rc}"
 }
 
 # Load a classic configuration file (source).
 # Looks first in the script directory, then in /etc/conf.d/
 function loadConfig() {
 	if [ -f "${workdir}/${self}.conf" ]; then
+		# shellcheck source=/dev/null
 		source "${workdir}/${self}.conf"
 	elif [ -f "/etc/conf.d/${self}.conf" ]; then
+		# shellcheck source=/dev/null
 		source "/etc/conf.d/${self}.conf"
 	else
 		displayError "Configuration file ${self}.conf not found in current directory or /etc/conf.d!"
@@ -120,13 +152,14 @@ function list_contains() {
 
 # Useful variables (kept for compatibility with older scripts)
 workdir="${0%/*}"
-self=`basename $0`
+self="$(basename "$0")"
 parameters=("${@:1}")
-current_dir=`pwd`
+current_dir="$(pwd)"
+# Alias used by older StageManager paths
+current_folder="${current_folder:-${current_dir}}"
 
 # =============================================================================
-# NEW GENERIC HELPERS (added in 1.0.0)
-# All new functions are documented in English and intended to be reusable.
+# NEW GENERIC HELPERS (1.0.0+)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -206,14 +239,12 @@ load_safe_config() {
 	[[ -f "$conf" ]] || return 0
 
 	while IFS= read -r line || [[ -n "$line" ]]; do
-		# Skip comments and empty lines
 		[[ "$line" =~ ^[[:space:]]*# ]] && continue
 		[[ -z "${line// }" ]] && continue
 
 		if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
 			key="${BASH_REMATCH[1]}"
 			value="${BASH_REMATCH[2]}"
-			# Strip optional surrounding quotes
 			value="${value#\"}" ; value="${value%\"}"
 			value="${value#\'}" ; value="${value%\'}"
 
@@ -248,7 +279,6 @@ parse_selection_spec() {
 
 	[[ -z "$spec" ]] && return 0
 
-	# Multiple exclusions joined by +
 	if [[ "$spec" == *'+'* && "$spec" == '!'* ]]; then
 		local part
 		local -a parts
@@ -279,7 +309,6 @@ should_process_item() {
 	local name="$1"
 	local n
 
-	# Explicit include list has priority
 	if [[ ${#INCLUDE_ITEMS[@]} -gt 0 ]]; then
 		for n in "${INCLUDE_ITEMS[@]}"; do
 			[[ "${name,,}" == "${n,,}" ]] && return 0
@@ -287,7 +316,6 @@ should_process_item() {
 		return 1
 	fi
 
-	# Exclusion list
 	if [[ ${#EXCLUDE_ITEMS[@]} -gt 0 ]]; then
 		for n in "${EXCLUDE_ITEMS[@]}"; do
 			[[ "${name,,}" == "${n,,}" ]] && return 1
@@ -343,12 +371,10 @@ topological_sort() {
 	local -a zero=() queue=() result=()
 	local n d cur child seen
 
-	# Initialise indegree
 	for n in "${nodes_ref[@]}"; do
 		indeg["$n"]=0
 	done
 
-	# Build reverse edges and indegrees
 	for n in "${nodes_ref[@]}"; do
 		for d in ${deps_ref[$n]:-}; do
 			[[ -z "$d" ]] && continue
@@ -357,7 +383,6 @@ topological_sort() {
 		done
 	done
 
-	# Nodes with indegree 0
 	for n in "${nodes_ref[@]}"; do
 		if [[ ${indeg[$n]:-0} -eq 0 ]]; then
 			zero+=("$n")
@@ -380,7 +405,6 @@ topological_sort() {
 		done
 	done
 
-	# Cycle detection: append remaining nodes
 	if [[ ${#result[@]} -lt ${#nodes_ref[@]} ]]; then
 		warn "Dependency cycle detected — appending remaining nodes"
 		for n in "${nodes_ref[@]}"; do
@@ -410,11 +434,9 @@ semver_compare() {
 	local -a pa pb
 	local i
 
-	# Ignore pre-release / build metadata for the basic comparison
 	IFS='.' read -ra pa <<< "${a%%-*}"
 	IFS='.' read -ra pb <<< "${b%%-*}"
 
-	# Pad with zeros
 	while [[ ${#pa[@]} -lt 3 ]]; do pa+=("0"); done
 	while [[ ${#pb[@]} -lt 3 ]]; do pb+=("0"); done
 
@@ -434,27 +456,22 @@ semver_compare() {
 	echo 0
 }
 
-# Return true (exit 0) if $1 >= $2
 semver_ge() {
 	[[ "$(semver_compare "$1" "$2")" -ge 0 ]]
 }
 
-# Return true (exit 0) if $1 > $2
 semver_gt() {
 	[[ "$(semver_compare "$1" "$2")" -gt 0 ]]
 }
 
-# Return true (exit 0) if $1 <= $2
 semver_le() {
 	[[ "$(semver_compare "$1" "$2")" -le 0 ]]
 }
 
-# Return true (exit 0) if $1 < $2
 semver_lt() {
 	[[ "$(semver_compare "$1" "$2")" -lt 0 ]]
 }
 
-# Return true (exit 0) if $1 == $2
 semver_eq() {
 	[[ "$(semver_compare "$1" "$2")" -eq 0 ]]
 }
