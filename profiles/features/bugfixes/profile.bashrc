@@ -20,7 +20,7 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 		force_gcc_vars
 		if [[ -n "$INTEL_BIG_LITTLE" ]]; then
-			CFLAGS="$(resolve-march-native) ${COMPILER_OPTIMIZATION_BASE}"
+			CFLAGS="${COMPILER_OPTIMIZATION_BASE} $(resolve-march-native --drop-cache-sizes)"
 			CXXFLAGS="${CFLAGS}"
 		fi
 		LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
