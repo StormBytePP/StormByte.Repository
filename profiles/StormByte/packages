@@ -12,6 +12,7 @@
 *app-shells/gentoo-bashcomp
 *app-shells/bash-completion
 *dev-util/ccache
+*dev-util/sccache
 *dev-vcs/git
 *sec-keys/openpgp-keys-gentoo-developers
 *sys-apps/dmidecode
