@@ -30,7 +30,7 @@ INPUT_DEVICES="-* libinput"
 PORTAGE_WORKDIR_MODE="0770"
 
 # Features
-FEATURES="buildpkg metadata-transfer userfetch"
+FEATURES="buildpkg metadata-transfer userfetch splitdebug compressdebug"
 
 # System
 ABI_X86="64"
@@ -60,7 +60,7 @@ FLAGS_SECURITY="-fcf-protection=full -mshstk -ftrivial-auto-var-init=zero"
 FLAGS_CLANG="-Wno-unused-command-line-argument"
 FLAGS_CLANG_POLLY="-mllvm -polly -mllvm -polly-vectorizer=stripmine -mllvm -polly-scheduling=dynamic -mllvm -polly-invariant-load-hoisting -mllvm -polly-run-dce"
 FLAGS_CPU="-march=native"
-FLAGS_DEBUG="-g -ggdb3"
+FLAGS_DEBUG="-ggdb3"
 FLAGS_GCC=""
 FLAGS_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
 FLAGS_LTO="-flto=thin"
@@ -93,12 +93,12 @@ STRIP="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-strip"
 LLVM_CONFIG="/usr/lib/llvm/${LLVM_MAJOR}/bin/llvm-config"
 
 # Flags
-CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_CLANG} ${FLAGS_SECURITY}"
+CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_CLANG} ${FLAGS_SECURITY} ${FLAGS_DEBUG}"
 CXXFLAGS="${CFLAGS}"
-FCFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
-FFLAGS="${FLAGS_BASE} ${FLAGS_CPU}"
+FCFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_DEBUG}"
+FFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_DEBUG}"
 LDFLAGS="${LINKER_BASE} ${LINKER_LLD}"
-RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 \
+RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Cdebuginfo=2 -Csplit-debuginfo=unpacked \
 -Clink-arg=-Wl,-z,pack-relative-relocs \
 -Clink-arg=-Wl,--as-needed \
 -Clink-arg=-Wl,-O2 \

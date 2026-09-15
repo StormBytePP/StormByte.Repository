@@ -3,7 +3,7 @@
 [[ -n "${_STORMBYTE_FUNCTIONS_PORTAGE_LOADED:-}" ]] && return
 readonly _STORMBYTE_FUNCTIONS_PORTAGE_LOADED=1
 
-readonly STORMBYTE_FUNCTIONS_PORTAGE_VERSION="1.0.0"
+readonly STORMBYTE_FUNCTIONS_PORTAGE_VERSION="1.0.1"
 
 source /lib/StormByte/functions.sh
 
@@ -28,7 +28,7 @@ function force_gcc_vars() {
 	CC="gcc"
 	CXX="g++"
 	CPP="cpp"
-	CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_GCC} ${FLAGS_SECURITY} ${FLAGS_GRAPHITE}"
+	CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_GCC} ${FLAGS_SECURITY} ${FLAGS_GRAPHITE} ${FLAGS_DEBUG}"
 	CXXFLAGS="${CFLAGS}"
 	force_binutils_vars
 }
