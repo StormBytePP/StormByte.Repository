@@ -3,3 +3,6 @@ llvm-runtimes/compiler-rt -clang
 llvm-runtimes/compiler-rt-sanitizers -clang
 llvm-runtimes/libcxx -clang
 llvm-runtimes/libcxxabi -clang
+
+# While another version comes out
+dev-lang/spidermonkey:140 llvm_slot_21

@@ -7,3 +7,6 @@ llvm-runtimes/clang-runtime compiler-rt default-compiler-rt default-libcxx defau
 llvm-runtimes/compiler-rt atomic-builtins
 llvm-runtimes/libcxx static-libs
 llvm-runtimes/libcxxabi static-libs
+
+# While another version comes out
+dev-lang/spidermonkey:140 llvm_slot_20
