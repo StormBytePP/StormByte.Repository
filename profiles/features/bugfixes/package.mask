@@ -1,2 +1,5 @@
 # Cause blocks
 >=dev-db/mariadb-connector-c-3.4.9
+
+# Blocking in configure stage
+=sys-devel/gcc-15.3.1_p20260717
