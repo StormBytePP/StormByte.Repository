@@ -43,7 +43,7 @@ NINJA_STATUS="[1m[%f/%t [38;2;42;181;0m(%p)[0m[1m][0m "
 
 # Basic config
 # Use defaults
-USE_BASE="branding cjk -debug unicode pic icu -bindist python numa"
+USE_BASE="branding cjk -debug unicode pic icu -bindist python"
 USE_CODECS="lame"
 USE_COMPRESSION="brotli bzip2 lz4 lzip lzma lzo zlib zlib zstd"
 USE_DEBUG="strip" # If it is named 'DEBUG' it causes problems on some ebuilds
