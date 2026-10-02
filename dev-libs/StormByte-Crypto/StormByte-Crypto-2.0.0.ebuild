@@ -5,14 +5,14 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte Logger module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-Logger"
+DESCRIPTION="StormByte Crypto module"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-Crypto"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
+	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
-	SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 fi
 
@@ -21,7 +21,12 @@ SLOT="0"
 IUSE="pgo lto"
 
 DEPEND="
+	app-arch/bzip2
+	dev-libs/crypto++
 	dev-libs/StormByte
+	dev-libs/StormByte-Buffer
+	dev-libs/StormByte-Logger
+	dev-libs/StormByte-System
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -42,8 +47,8 @@ src_prepare() {
 
 	# Tarball lacks for submodules
 	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
+		buildmaster/CMakeLists.txt
+		buildmaster/helpers.cmake
 	)
 
 	local file
@@ -55,6 +60,8 @@ src_prepare() {
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 	)
@@ -94,6 +101,8 @@ src_compile() {
 	fi
 
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=ON
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_generate_flags}"
@@ -148,6 +157,8 @@ src_compile() {
 	pgo_use_flags+=" ${lto_flags}"
 
 	local mycmakeargs=(
+		-DWITH_BZIP2=SYSTEM
+		-DWITH_CRYPTOPP=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_use_flags}"

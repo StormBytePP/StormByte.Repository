@@ -5,26 +5,35 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte System module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-System"
+DESCRIPTION="StormByte C++ Library"
+HOMEPAGE="https://suite.stormbyte.org/StormByte"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
+	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
-	SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 fi
 
 LICENSE="LGPL-3"
 SLOT="0"
-IUSE="pgo lto"
+IUSE="buffer config crypto database logger multimedia network system pgo lto"
 
-DEPEND="
-	dev-libs/StormByte
-"
+DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
+
+PDEPEND="
+	buffer? ( dev-libs/StormByte-Buffer )
+	config? ( dev-libs/StormByte-Config )
+	crypto? ( dev-libs/StormByte-Crypto )
+	database? ( dev-libs/StormByte-Database )
+	logger? ( dev-libs/StormByte-Logger )
+	multimedia? ( dev-libs/StormByte-Multimedia )
+	network? ( dev-libs/StormByte-Network )
+	system? ( dev-libs/StormByte-System )
+"
 
 # Helper to get the correct LTO flags
 _get_lto_flags() {
@@ -37,25 +46,9 @@ _get_lto_flags() {
 	fi
 }
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
 src_configure() {
 	# Only used when USE=-pgo
 	local mycmakeargs=(
-		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 	)
 
@@ -93,8 +86,8 @@ src_compile() {
 		pgo_generate_flags+=" $(test-flags-CC -fprofile-partial-training)"
 	fi
 
+	# LTO is usually disabled during the generate pass (more reliable)
 	local mycmakeargs=(
-		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=ON
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_generate_flags}"
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS} ${pgo_generate_flags}"
@@ -148,7 +141,6 @@ src_compile() {
 	pgo_use_flags+=" ${lto_flags}"
 
 	local mycmakeargs=(
-		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 		-DCMAKE_C_FLAGS="${CFLAGS} ${pgo_use_flags}"
 		-DCMAKE_CXX_FLAGS="${CXXFLAGS} ${pgo_use_flags}"

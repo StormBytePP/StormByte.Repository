@@ -6,13 +6,13 @@ EAPI=8
 inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="StormByte Multimedia module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-Multimedia"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-Multimedia"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
+	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
-	SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 fi
 
@@ -35,6 +35,21 @@ _get_lto_flags() {
 			echo "-flto"
 		fi
 	fi
+}
+
+src_prepare() {
+	cmake_src_prepare
+
+	# Tarball lacks for submodules
+	local empty_submodules=(
+		buildmaster/CMakeLists.txt
+		buildmaster/helpers.cmake
+	)
+
+	local file
+	for file in "${empty_submodules[@]}"; do
+		touch "${file}" || die
+	done
 }
 
 src_configure() {

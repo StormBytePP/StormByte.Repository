@@ -5,14 +5,14 @@ EAPI=8
 
 inherit cmake flag-o-matic toolchain-funcs
 
-DESCRIPTION="StormByte Config module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-Config"
+DESCRIPTION="StormByte Logger module"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-Logger"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
+	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
-	SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 fi
 
@@ -42,8 +42,8 @@ src_prepare() {
 
 	# Tarball lacks for submodules
 	local empty_submodules=(
-		thirdparty/buildmaster/CMakeLists.txt
-		thirdparty/buildmaster/helpers.cmake
+		buildmaster/CMakeLists.txt
+		buildmaster/helpers.cmake
 	)
 
 	local file

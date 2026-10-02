@@ -6,13 +6,13 @@ EAPI=8
 inherit cmake flag-o-matic toolchain-funcs
 
 DESCRIPTION="StormByte Buffer module"
-HOMEPAGE="https://dev.stormbyte.org/StormByte-Buffer"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-Buffer"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormBytePP/${PN}.git"
+	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
-	SRC_URI="https://github.com/StormBytePP/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 fi
 
@@ -23,6 +23,7 @@ IUSE="pgo lto"
 DEPEND="
 	dev-libs/StormByte
 	dev-libs/StormByte-Logger
+	dev-libs/StormByte-System
 "
 RDEPEND="${DEPEND}"
 BDEPEND=">=dev-build/cmake-3.12.0"
@@ -38,14 +39,28 @@ _get_lto_flags() {
 	fi
 }
 
-src_configure() {
-	# Only used when USE=-pgo
-	local mycmakeargs=(
-		-DWITH_STORMBYTE=SYSTEM
-		-DENABLE_TEST=OFF
+src_prepare() {
+	cmake_src_prepare
+
+	# Tarball lacks for submodules
+	local empty_submodules=(
+		buildmaster/CMakeLists.txt
+		buildmaster/helpers.cmake
 	)
 
-	# Apply LTO when not doing PGO
+	local file
+	for file in "${empty_submodules[@]}"; do
+		touch "${file}" || die
+	done
+}
+
+src_configure() {
+	local mycmakeargs=(
+		-DWITH_STORMBYTE=SYSTEM
+		-DENABLE_TEST=$(usex pgo ON OFF)
+	)
+
+	# LTO solo cuando no estamos en PGO
 	if ! use pgo; then
 		local lto_flags=$(_get_lto_flags)
 		if [[ -n ${lto_flags} ]]; then
@@ -91,21 +106,17 @@ src_compile() {
 	cmake_src_configure
 	cmake_src_compile
 
-	# Force profile output location (important for Clang)
 	export LLVM_PROFILE_FILE="${pgo_dir}/default-%p-%m.profraw"
 
 	ctest --test-dir "${BUILD_DIR}/test" --output-on-failure \
 		|| die "PGO training (ctest) failed"
 
-	# Collect profile data
 	local profraw_files=( $(find "${pgo_dir}" -name '*.profraw' 2>/dev/null) )
-
 	if [[ ${#profraw_files[@]} -eq 0 ]]; then
 		profraw_files=( $(find "${WORKDIR}" -name '*.profraw' 2>/dev/null) )
 	fi
-
 	if [[ ${#profraw_files[@]} -eq 0 ]]; then
-		die "No profile data (*.profraw) was generated. Tests did not exercise instrumented code."
+		die "No profile data (*.profraw) was generated."
 	fi
 
 	einfo "Collected ${#profraw_files[@]} profile file(s)"
@@ -115,7 +126,7 @@ src_compile() {
 			"${profraw_files[@]}" || die
 	fi
 
-	# === PGO second pass: optimized build ===
+	# === PGO second pass ===
 	einfo "PGO: second pass (using profile data)"
 
 	rm -rf "${BUILD_DIR}" || die
@@ -129,7 +140,6 @@ src_compile() {
 		pgo_use_flags+=" $(test-flags-CC -fprofile-partial-training)"
 	fi
 
-	# Apply LTO in the final (use) pass
 	local lto_flags=$(_get_lto_flags)
 	pgo_use_flags+=" ${lto_flags}"
 
