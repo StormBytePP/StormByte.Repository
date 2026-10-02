@@ -21,8 +21,8 @@ SLOT="0"
 IUSE="+mariadb mssql +postgres +sqlite lto"
 
 DEPEND="
-	dev-libs/StormByte
-	dev-libs/StormByte-Logger
+	>=dev-libs/StormByte-2.0.0
+	>=dev-libs/StormByte-Logger-2.0.0
 	mariadb? ( dev-db/mariadb-connector-c )
 	postgres? ( dev-db/postgresql )
 	sqlite? ( dev-db/sqlite:3 )
@@ -30,7 +30,7 @@ DEPEND="
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
-	>=dev-build/cmake-3.12.0
+	>=dev-build/cmake-3.21
 	>=dev-build/StormByte-BuildMaster-2.0.3
 "
 

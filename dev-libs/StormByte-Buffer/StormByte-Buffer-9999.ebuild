@@ -21,13 +21,13 @@ SLOT="0"
 IUSE="pgo lto"
 
 DEPEND="
-	dev-libs/StormByte
-	dev-libs/StormByte-Logger
-	dev-libs/StormByte-System
+	~dev-libs/StormByte-9999
+	~dev-libs/StormByte-Logger-9999
+	~dev-libs/StormByte-System-9999
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
-	>=dev-build/cmake-3.12.0
+	>=dev-build/cmake-3.21
 	>=dev-build/StormByte-BuildMaster-2.0.3
 "
 

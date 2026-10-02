@@ -21,19 +21,19 @@ SLOT="0"
 IUSE="buffer config crypto database logger multimedia network system pgo lto"
 
 BDEPEND="
-	>=dev-build/cmake-3.12.0
+	>=dev-build/cmake-3.21
 	>=dev-build/StormByte-BuildMaster-2.0.3
 "
 
 PDEPEND="
-	buffer? ( dev-libs/StormByte-Buffer )
-	config? ( dev-libs/StormByte-Config )
-	crypto? ( dev-libs/StormByte-Crypto )
-	database? ( dev-libs/StormByte-Database )
-	logger? ( dev-libs/StormByte-Logger )
+	buffer? ( >=dev-libs/StormByte-Buffer-2.0.0 )
+	config? ( >=dev-libs/StormByte-Config-2.0.0 )
+	crypto? ( >=dev-libs/StormByte-Crypto-2.0.0 )
+	database? ( >=dev-libs/StormByte-Database-2.0.0 )
+	logger? ( >=dev-libs/StormByte-Logger-2.0.0 )
 	multimedia? ( dev-libs/StormByte-Multimedia )
-	network? ( dev-libs/StormByte-Network )
-	system? ( dev-libs/StormByte-System )
+	network? ( >=dev-libs/StormByte-Network-2.0.0 )
+	system? ( >=dev-libs/StormByte-System-2.0.0 )
 "
 
 # Helper to get the correct LTO flags

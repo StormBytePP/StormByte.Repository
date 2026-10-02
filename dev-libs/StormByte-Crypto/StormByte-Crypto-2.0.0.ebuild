@@ -23,14 +23,14 @@ IUSE="pgo lto"
 DEPEND="
 	app-arch/bzip2
 	dev-libs/crypto++
-	dev-libs/StormByte
-	dev-libs/StormByte-Buffer
-	dev-libs/StormByte-Logger
-	dev-libs/StormByte-System
+	>=dev-libs/StormByte-2.0.0
+	>=dev-libs/StormByte-Buffer-2.0.0
+	>=dev-libs/StormByte-Logger-2.0.0
+	>=dev-libs/StormByte-System-2.0.0
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
-	>=dev-build/cmake-3.12.0
+	>=dev-build/cmake-3.21
 	>=dev-build/StormByte-BuildMaster-2.0.3
 "
 
