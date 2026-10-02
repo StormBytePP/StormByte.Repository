@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<use>
+		<flag name="buffer">Install the StormByte Buffer module</flag>
+		<flag name="config">Install the StormByte Config module</flag>
+		<flag name="crypto">Install the StormByte Crypto module</flag>
+		<flag name="database">Install the StormByte Database module</flag>
+		<flag name="logger">Install the StormByte Logger module</flag>
+		<flag name="multimedia">Install the StormByte Multimedia module</flag>
+		<flag name="network">Install the StormByte Network module</flag>
+		<flag name="pgo">Enable profile-guided optimization using the test suite for training</flag>
+		<flag name="system">Install the StormByte System module</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">StormByte-Suite/StormByte</remote-id>
+	</upstream>
+</pkgmetadata>

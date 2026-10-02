@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<use>
+		<flag name="mariadb">Enable MariaDB and MySQL support using MariaDB Connector/C</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">StormByte-Suite/StormByte-Database</remote-id>
+	</upstream>
+</pkgmetadata>

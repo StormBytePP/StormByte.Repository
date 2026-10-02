@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<use>
+		<flag name="pgo">Enable profile-guided optimization using the test suite for training</flag>
+	</use>
+	<upstream>
+		<remote-id type="github">StormByte-Suite/StormByte-Buffer</remote-id>
+	</upstream>
+</pkgmetadata>

@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit cmake flag-o-matic toolchain-funcs
+inherit cmake
 
 DESCRIPTION="StormByte Database module"
 HOMEPAGE="https://suite.stormbyte.org/StormByte-Database"
@@ -13,7 +13,7 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
 	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
 fi
 
 LICENSE="LGPL-3"
@@ -29,7 +29,10 @@ DEPEND="
 	mssql? ( dev-db/freetds )
 "
 RDEPEND="${DEPEND}"
-BDEPEND=">=dev-build/cmake-3.12.0"
+BDEPEND="
+	>=dev-build/cmake-3.12.0
+	>=dev-build/StormByte-BuildMaster-2.0.3
+"
 
 src_prepare() {
 	cmake_src_prepare

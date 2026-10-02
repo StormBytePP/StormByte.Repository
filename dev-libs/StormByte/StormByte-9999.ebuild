@@ -13,16 +13,17 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 else
 	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~x86 ~arm ~arm64"
+	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
 fi
 
 LICENSE="LGPL-3"
 SLOT="0"
 IUSE="buffer config crypto database logger multimedia network system pgo lto"
 
-DEPEND=""
-RDEPEND="${DEPEND}"
-BDEPEND=">=dev-build/cmake-3.12.0"
+BDEPEND="
+	>=dev-build/cmake-3.12.0
+	>=dev-build/StormByte-BuildMaster-2.0.3
+"
 
 PDEPEND="
 	buffer? ( dev-libs/StormByte-Buffer )
