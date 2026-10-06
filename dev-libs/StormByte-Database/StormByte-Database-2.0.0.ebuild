@@ -27,6 +27,7 @@ DEPEND="
 	postgres? ( dev-db/postgresql )
 	sqlite? ( dev-db/sqlite:3 )
 	mssql? ( dev-db/freetds )
+	dev-libs/openssl
 "
 RDEPEND="${DEPEND}"
 BDEPEND="
@@ -55,6 +56,7 @@ src_configure() {
 		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
 		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
 		-DWITH_MSSQL=$(usex mssql SYSTEM OFF)
+		-DWITH_OPENSSL=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DENABLE_TEST=OFF
 	)
