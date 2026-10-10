@@ -6,8 +6,10 @@ local LTO_FORCED_PACKAGES="
 	dev-lang/nasm
 	mail-client/thunderbird
 	media-libs/avidemux-core
-	media-libs/x264
-	media-libs/x265
+	# x264 introduced align with LTO which might break other packages
+	# media-libs/x264
+	# x265 have ODR with LTO making it LTO unsafe
+	# media-libs/x265
 	media-video/ffmpeg
 	media-video/ffmpeg-chromium
 	llvm-core/clang
