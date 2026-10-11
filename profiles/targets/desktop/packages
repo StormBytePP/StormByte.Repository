@@ -16,6 +16,7 @@
 *sys-boot/plymouth-dotlock-theme
 *sys-boot/plymouth-loading-theme
 *sys-boot/plymouth-unwrap-theme
+*sys-fs/ntfs3g
 *sys-power/acpid
 *sys-power/nut
 *sys-process/nvtop
