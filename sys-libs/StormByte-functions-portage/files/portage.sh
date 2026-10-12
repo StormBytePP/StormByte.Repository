@@ -28,7 +28,7 @@ function force_gcc_vars() {
 	CC="gcc"
 	CXX="g++"
 	CPP="cpp"
-	CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_GCC} ${FLAGS_SECURITY} ${FLAGS_GRAPHITE}"
+	CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_GCC} ${FLAGS_SECURITY} ${FLAGS_GRAPHITE} ${FLAGS_DEBUG}"
 	CXXFLAGS="${CFLAGS}"
 	force_binutils_vars
 }
