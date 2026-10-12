@@ -4,6 +4,7 @@ app-office/libreoffice base custom-cflags -gtk3 gtk4 java pdfimport -qt6
 app-office/libreoffice-l10n offlinehelp
 app-portage/gemato pretty-log
 app-text/texlive-core xetex
+dev-cpp/simdutf atomic-base64
 dev-db/postgresql llvm uuid
 dev-lang/rust rustfmt # Needed for firefox
 dev-libs/appstream-glib fonts
