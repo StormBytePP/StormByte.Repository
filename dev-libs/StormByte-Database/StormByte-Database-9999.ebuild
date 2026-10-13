@@ -3,61 +3,38 @@
 
 EAPI=8
 
-inherit cmake
+# Tests need real database servers, users and credentials, so they cannot
+# train a profile. The profile enables pgo globally; this package does not
+# advertise the flag. The -9999 ebuild is the same file content.
+STORMBYTE_NO_PGO=1
+inherit stormbyte-suite
 
 DESCRIPTION="StormByte Database module"
 HOMEPAGE="https://suite.stormbyte.org/StormByte-Database"
 
-if [[ ${PV} == 9999 ]]; then
-	inherit git-r3
-	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
-else
-	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
-fi
-
 LICENSE="LGPL-3"
-SLOT="0"
-IUSE="+mariadb mssql +postgres +sqlite lto"
+IUSE+=" +mariadb mssql +postgres +sqlite"
 
+# Logger public-links the core library; both are required explicitly.
+# OpenSSL cannot be disabled upstream (WITH_OPENSSL is SYSTEM or BUNDLED).
 DEPEND="
-	~dev-libs/StormByte-9999
-	~dev-libs/StormByte-Logger-9999
-	mariadb? ( dev-db/mariadb-connector-c )
-	postgres? ( dev-db/postgresql )
-	sqlite? ( dev-db/sqlite:3 )
-	mssql? ( dev-db/freetds )
+	$(stormbyte-suite_dep dev-libs/StormByte)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger)
+	dev-libs/openssl:=
+	mariadb? ( dev-db/mariadb-connector-c:= )
+	mssql? ( dev-db/freetds:= )
+	postgres? ( dev-db/postgresql:= )
+	sqlite? ( dev-db/sqlite:3= )
 "
 RDEPEND="${DEPEND}"
-BDEPEND="
-	>=dev-build/cmake-3.21
-	>=dev-build/StormByte-BuildMaster-2.0.3
-"
 
-src_prepare() {
-	cmake_src_prepare
-
-	# Tarball lacks for submodules
-	local empty_submodules=(
-		buildmaster/CMakeLists.txt
-		buildmaster/helpers.cmake
-	)
-
-	local file
-	for file in "${empty_submodules[@]}"; do
-		touch "${file}" || die
-	done
-}
-
-src_configure() {
-	local mycmakeargs=(
+stormbyte-suite_cmake_args() {
+	STORMBYTE_CMAKEARGS=(
 		-DWITH_MARIADB=$(usex mariadb SYSTEM OFF)
+		-DWITH_MSSQL=$(usex mssql SYSTEM OFF)
+		-DWITH_OPENSSL=SYSTEM
 		-DWITH_POSTGRES=$(usex postgres SYSTEM OFF)
 		-DWITH_SQLITE=$(usex sqlite SYSTEM OFF)
-		-DWITH_MSSQL=$(usex mssql SYSTEM OFF)
 		-DWITH_STORMBYTE=SYSTEM
-		-DENABLE_TEST=OFF
 	)
-
-	cmake_src_configure
 }

@@ -2,7 +2,8 @@
 <!DOCTYPE pkgmetadata SYSTEM "https://www.gentoo.org/dtd/metadata.dtd">
 <pkgmetadata>
 	<use>
-		<flag name="advanced">Enable the advanced installation layout</flag>
+		<flag name="gpl">Enable GPL components (x264, x265, rubberband, hqdn3d) and require the same FFmpeg USE flags</flag>
+		<flag name="nonfree">Enable nonfree components (fdk-aac) and require FFmpeg built with fdk</flag>
 		<flag name="pgo">Enable profile-guided optimization using the test suite for training</flag>
 	</use>
 	<upstream>

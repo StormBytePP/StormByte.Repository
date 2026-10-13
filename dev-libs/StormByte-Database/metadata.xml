@@ -3,6 +3,9 @@
 <pkgmetadata>
 	<use>
 		<flag name="mariadb">Enable MariaDB and MySQL support using MariaDB Connector/C</flag>
+		<flag name="mssql">Enable Microsoft SQL Server support using FreeTDS</flag>
+		<flag name="postgres">Enable PostgreSQL support</flag>
+		<flag name="sqlite">Enable SQLite support</flag>
 	</use>
 	<upstream>
 		<remote-id type="github">StormByte-Suite/StormByte-Database</remote-id>
