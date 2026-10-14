@@ -9,4 +9,5 @@ llvm-runtimes/libcxx static-libs
 llvm-runtimes/libcxxabi static-libs
 
 # While another version comes out
-dev-lang/spidermonkey:140 llvm_slot_20
+dev-lang/spidermonkey:140 llvm_slot_21
+=dev-lang/rust-1.94.1 llvm_slot_21
