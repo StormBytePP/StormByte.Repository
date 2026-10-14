@@ -20,8 +20,21 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 		force_gcc_vars
 		if [[ -n "$INTEL_BIG_LITTLE" ]]; then
+			local FLAGS_MARCH
+			FLAGS_MARCH="$(resolve-march-native --drop-cache-sizes)"
+
+			# Drop shadow-stack and CET flags (they break GCC 16 bootstrap, especially
+			# the static TLS test in libgomp)
+			FLAGS_MARCH="${FLAGS_MARCH//-mshstk/}"
+			FLAGS_MARCH="${FLAGS_MARCH//-fcf-protection=full/}"
+			FLAGS_MARCH="${FLAGS_MARCH//-fcf-protection=return/}"
+			FLAGS_MARCH="${FLAGS_MARCH//-fcf-protection=branch/}"
+
+			# Collapse any double spaces left after removing the flags
+			FLAGS_MARCH="$(echo "$FLAGS_MARCH" | tr -s ' ')"
+
 			# FLAGS_SECURITY is removed for gcc as of gcc bug failing to compile with them
-			CFLAGS="${FLAGS_BASE} ${FLAGS_GRAPHITE} ${FLAGS_DEBUG} $(resolve-march-native --drop-cache-sizes)"
+			CFLAGS="${FLAGS_BASE} ${FLAGS_GRAPHITE} ${FLAGS_DEBUG} ${FLAGS_MARCH}"
 			CXXFLAGS="${CFLAGS}"
 		fi
 		LDFLAGS="${LINKER_BASE}"

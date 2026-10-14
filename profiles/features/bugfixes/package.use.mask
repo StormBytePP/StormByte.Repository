@@ -1,0 +1,2 @@
+# Stalls when building with CET
+sys-devel/gcc cet openmp
