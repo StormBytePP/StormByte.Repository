@@ -20,10 +20,11 @@ if [[ -z "$DISABLE_BUGFIXES" ]]; then
 	if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 		force_gcc_vars
 		if [[ -n "$INTEL_BIG_LITTLE" ]]; then
-			CFLAGS="${COMPILER_OPTIMIZATION_BASE} $(resolve-march-native --drop-cache-sizes)"
+			# FLAGS_SECURITY is removed for gcc as of gcc bug failing to compile with them
+			CFLAGS="${FLAGS_BASE} ${FLAGS_GRAPHITE} ${FLAGS_DEBUG} $(resolve-march-native --drop-cache-sizes)"
 			CXXFLAGS="${CFLAGS}"
 		fi
-		LDFLAGS="${LINKER_OPTIMIZATION_BASE}"
+		LDFLAGS="${LINKER_BASE}"
 	fi
 fi
 
