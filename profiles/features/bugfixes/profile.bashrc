@@ -8,14 +8,14 @@ local FORCE_OPENMP_VARS="media-sound/fluidsynth"
 local FORCE_REDUCE_PARALLEL=""
 
 if [[ -z "$DISABLE_BUGFIXES" ]]; then
-	if [[ ${EBUILD_PHASE} == "configure" ]]; then
-		list_contains "${FORCE_BINUTIL_VARS}" "${CATEGORY}/${PN}" && force_binutils_vars
-		list_contains "${FORCE_PIC_VARS}" "${CATEGORY}/${PN}" && force_pic_vars
-		list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
-		list_contains "${FORCE_GCC_VARS}" "${CATEGORY}/${PN}" && force_gcc_vars
-		list_contains "${FORCE_OPENMP_VARS}" "${CATEGORY}/${PN}" && force_openmp_vars
-		list_contains "${FORCE_REDUCE_PARALLEL}" "${CATEGORY}/${PN}" && force_reduce_parallel
-	fi
+	# Execute them in all ebuild phases to ensure validity
+	list_contains "${FORCE_BINUTIL_VARS}" "${CATEGORY}/${PN}" && force_binutils_vars
+	list_contains "${FORCE_PIC_VARS}" "${CATEGORY}/${PN}" && force_pic_vars
+	list_contains "${FORCE_LD_UNDEFINED_VERSION}" "${CATEGORY}/${PN}" && force_ld_undefined_version
+	list_contains "${FORCE_GCC_VARS}" "${CATEGORY}/${PN}" && force_gcc_vars
+	list_contains "${FORCE_OPENMP_VARS}" "${CATEGORY}/${PN}" && force_openmp_vars
+	list_contains "${FORCE_REDUCE_PARALLEL}" "${CATEGORY}/${PN}" && force_reduce_parallel
+
 	# Gcc needs it for Intel's big little arch
 	if [ "${CATEGORY}/${PN}" == "sys-devel/gcc" ]; then
 		force_gcc_vars
