@@ -2,11 +2,15 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
-PYTHON_COMPAT=( python3_{11..14} )
+
+PYTHON_COMPAT=( python3_{12..14} )
 
 inherit cmake fcaps linux-info optfeature python-single-r1 systemd
 
-DLIB_VER="19.24.8"
+# SQLite itself is the system library; only ext/recover (not part of
+# libsqlite3) is compiled from this source tree. Keep in sync with
+# SQLITE_VERSION_NUMBER in packaging/cmake/Modules/NetdataSQLite.cmake.
+SQLITE_VER="3530400"
 
 if [[ ${PV} == *9999 ]] ; then
 	EGIT_REPO_URI="https://github.com/netdata/${PN}.git"
@@ -14,22 +18,34 @@ if [[ ${PV} == *9999 ]] ; then
 else
 	SRC_URI="
 		https://github.com/netdata/netdata/releases/download/v${PV}/${PN}-v${PV}.tar.gz -> ${P}.tar.gz
-		https://github.com/davisking/dlib/archive/v${DLIB_VER}.tar.gz -> dlib-${DLIB_VER}.tar.gz
-		"
+		https://www.sqlite.org/2026/sqlite-src-${SQLITE_VER}.zip
+		https://distfiles.gentoo.org/pub/dev/arthurzam@gentoo.org/net-analyzer/${PN}/${PN}-2.11.1-system-libs.patch.xz
+	"
 	S="${WORKDIR}/${PN}-v${PV}"
-	KEYWORDS="~amd64"
+	# No ~riscv: sci-libs/dlib, now a system dependency, is not keyworded there.
+	# The bundled-dlib build this replaced had it; ::gentoo never did.
+	KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86"
 fi
 
 DESCRIPTION="Linux real time system monitoring, done right!"
 HOMEPAGE="https://github.com/netdata/netdata https://my-netdata.io/"
 
-LICENSE="GPL-3+ MIT BSD"
+# BENTOO-DIVERGENCE: LICENSE - public-domain, for SQLite's ext/recover sources,
+# which are compiled into the binary from the sqlite-src zip in SRC_URI.
+# ::gentoo fetches and compiles the same files but does not list them.
+LICENSE="GPL-3+ MIT BSD public-domain"
 SLOT="0"
+# BENTOO-DIVERGENCE: IUSE - jemalloc, exposing upstream's ENABLE_JEMALLOC,
+# which ::gentoo hardcodes OFF. Default off, so the default build matches.
 IUSE="cups +dbengine ipmi jemalloc mongodb mysql nfacct nodejs prometheus +python systemd xen"
 REQUIRED_USE="
 	mysql? ( python )
 	python? ( ${PYTHON_REQUIRED_USE} )"
 
+# BENTOO-DIVERGENCE: DEPEND - jemalloc? ( dev-libs/jemalloc ), for the flag
+# above, and nodejs:* where ::gentoo has a bare atom: this overlay slots nodejs
+# by major, and any slot runs the plugins. Otherwise ::gentoo's list as is.
+# BENTOO-DIVERGENCE: RDEPEND - the same jemalloc? group.
 # most unconditional dependencies are for plugins.d/charts.d.plugin:
 RDEPEND="
 	acct-group/netdata
@@ -40,27 +56,28 @@ RDEPEND="
 	app-arch/zstd:=
 	app-misc/jq
 	>=app-shells/bash-4:0
+	dev-cpp/abseil-cpp:=
+	>=dev-db/sqlite-3.53:3
+	dev-libs/judy
 	dev-libs/json-c:=
 	dev-libs/libpcre2:=
 	dev-libs/libuv:=
 	dev-libs/libyaml
+	dev-libs/openssl:=
 	dev-libs/protobuf:=
 	|| (
 		net-analyzer/openbsd-netcat
 		net-analyzer/netcat
 	)
 	net-libs/libmnl:=
-	net-libs/libwebsockets
 	net-misc/curl
 	net-misc/wget
+	sci-libs/dlib:=
+	sys-apps/lm-sensors:=
 	sys-apps/util-linux
 	sys-libs/libcap
 	virtual/zlib:=
 	cups? ( net-print/cups )
-	dbengine? (
-		dev-libs/judy
-		dev-libs/openssl:=
-	)
 	ipmi? ( sys-libs/freeipmi )
 	jemalloc? ( dev-libs/jemalloc:= )
 	mongodb? ( dev-libs/mongo-c-driver:0 )
@@ -68,7 +85,7 @@ RDEPEND="
 		net-firewall/nfacct
 		net-libs/libmnl:=
 	)
-	nodejs? ( net-libs/nodejs )
+	nodejs? ( net-libs/nodejs:* )
 	prometheus? (
 		app-arch/snappy:=
 	)
@@ -81,11 +98,18 @@ RDEPEND="
 		app-emulation/xen-tools
 		dev-libs/yajl
 	)
-	systemd? ( sys-apps/systemd )"
+	systemd? ( sys-apps/systemd:= )"
 DEPEND="${RDEPEND}"
 BDEPEND="
+	app-arch/unzip
 	virtual/pkgconfig
 "
+
+PATCHES=(
+	# ::gentoo's patch for 2.11.1, unchanged: system sqlite, dlib, libsensors
+	# and libJudy. Applies to 2.12.0 with offsets only (checked 2026-10-04).
+	"${WORKDIR}"/${PN}-2.11.1-system-libs.patch
+)
 
 FILECAPS=(
 	'cap_dac_read_search,cap_sys_ptrace+ep'
@@ -100,7 +124,7 @@ pkg_setup() {
 
 src_configure() {
 	local mycmakeargs=(
-		-DNETDATA_DLIB_SOURCE_PATH="${WORKDIR}/dlib-${DLIB_VER}"
+		-DNETDATA_SQLITE_RECOVER_SOURCE_DIR="${WORKDIR}/sqlite-src-${SQLITE_VER}/ext/recover"
 		-DCMAKE_DISABLE_FIND_PACKAGE_Git=ON
 		-DCMAKE_INSTALL_PREFIX=/
 		-DFETCHCONTENT_FULLY_DISCONNECTED=ON
@@ -115,6 +139,7 @@ src_configure() {
 		-DENABLE_JEMALLOC=$(usex jemalloc)
 		-DENABLE_LIBBACKTRACE=OFF
 		-DENABLE_MIMALLOC=OFF
+		-DENABLE_NETDATA_JOURNAL_FILE_READER=OFF # rust
 		-DENABLE_ML=ON
 		-DENABLE_PLUGIN_APPS=ON
 		-DENABLE_PLUGIN_CGROUP_NETWORK=ON
@@ -123,14 +148,15 @@ src_configure() {
 		-DENABLE_PLUGIN_DEBUGFS=ON
 		-DENABLE_PLUGIN_EBPF=OFF # bundles libbpf
 		-DENABLE_PLUGIN_GO=OFF
-		-DENABLE_PLUGIN_SCRIPTS=OFF # builds Go scriptsdplugin, fetches modules online
+		-DENABLE_PLUGIN_IBM=OFF
+		-DENABLE_PLUGIN_NETFLOW=OFF # rust
 		-DENABLE_PLUGIN_FREEIPMI=$(usex ipmi)
 		-DENABLE_PLUGIN_NFACCT=$(usex nfacct)
-		-DENABLE_PLUGIN_OTEL=OFF
-		-DENABLE_PLUGIN_OTEL_SIGNAL_VIEWER=OFF # bundles Rust/Corrosion via FetchContent
-		-DENABLE_NETDATA_JOURNAL_FILE_READER=OFF # bundles Rust/Corrosion via FetchContent
+		-DENABLE_PLUGIN_OTEL=OFF # rust
+		-DENABLE_PLUGIN_OTEL_SIGNAL_VIEWER=OFF # rust, via FetchContent
 		-DENABLE_PLUGIN_PERF=ON
 		-DENABLE_PLUGIN_PYTHON=$(usex python)
+		-DENABLE_PLUGIN_SCRIPTS=OFF # go
 		-DENABLE_PLUGIN_SLABINFO=ON
 		-DENABLE_PLUGIN_SYSTEMD_JOURNAL=$(usex systemd)
 		-DENABLE_PLUGIN_SYSTEMD_UNITS=$(usex systemd)
