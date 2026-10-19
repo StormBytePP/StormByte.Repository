@@ -33,9 +33,6 @@ BDEPEND+="
 "
 
 src_prepare() {
-	# 2.0.2's install smoke test only looks in the BuildMaster prefix.
-	# A system StormByte-Logger lives in /usr/lib64, so PGO aborts.
-	eapply "${FILESDIR}/stormbyte-database-2.0.2-system-smoke.patch"
 	stormbyte-suite_src_prepare
 }
 

@@ -34,9 +34,6 @@ PDEPEND="
 "
 
 src_prepare() {
-	# 2.1.0's finder rejects the Base component. Buffer, Crypto, Database,
-	# Multimedia and Network request it. The core library is already found.
-	eapply "${FILESDIR}/stormbyte-2.1.0-find-base.patch"
 	stormbyte-suite_src_prepare
 }
 
