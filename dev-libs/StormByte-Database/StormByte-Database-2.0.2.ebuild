@@ -60,6 +60,14 @@ _sbdb_pg_bindir() {
 	echo "${latest}"
 }
 
+# MariaDB 12 has no --daemonize. Keep the server attached to this shell.
+_sbdb_maria_launch() {
+	local server=$1 cnf=$2
+	shift 2
+	"${server}" --defaults-file="${cnf}" "$@" >>"${T}/mariadb.err" 2>&1 &
+	disown $! 2>/dev/null || true
+}
+
 stormbyte-suite_pgo_start() {
 	local root
 	root=$(_sbdb_root)
@@ -117,8 +125,6 @@ stormbyte-suite_pgo_start() {
 		mkdir -p "${data}" || die
 
 		einfo "PGO: MariaDB datadir ${data} port ${port}"
-		"${installdb}" --datadir="${data}" --auth-root-authentication-method=normal \
-			|| die "mariadb-install-db failed"
 		cat > "${cnf}" <<-EOF || die
 			[mysqld]
 			datadir=${data}
@@ -126,15 +132,16 @@ stormbyte-suite_pgo_start() {
 			socket=${sock}
 			pid-file=${T}/mariadb.pid
 			bind-address=127.0.0.1
-			skip-networking=0
 			skip-name-resolve
 			log-error=${T}/mariadb.err
 		EOF
-		# skip-grant-tables only for the first boot, so the test user can be
-		# created no matter how root was authenticated. The tests then run
-		# against a normal server.
-		"${server}" --defaults-file="${cnf}" --skip-grant-tables --daemonize \
-			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadbd failed to start"; }
+		"${installdb}" --defaults-file="${cnf}" --datadir="${data}" \
+			--auth-root-authentication-method=normal \
+			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadb-install-db failed"; }
+		# MariaDB 12 dropped --daemonize. The server stays in this shell
+		# until SHUTDOWN. skip-grant-tables is only the first boot, so the
+		# test user can be created; the tests then use a normal server.
+		_sbdb_maria_launch "${server}" "${cnf}" --skip-grant-tables
 		local i
 		for i in $(seq 1 60); do
 			"${client}" --socket="${sock}" -u root -e "SELECT 1" &>/dev/null && break
@@ -158,8 +165,7 @@ stormbyte-suite_pgo_start() {
 			n=$((n + 1))
 		done
 		[[ -S ${sock} ]] && die "MariaDB socket stayed after shutdown"
-		"${server}" --defaults-file="${cnf}" --daemonize \
-			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadbd failed to restart"; }
+		_sbdb_maria_launch "${server}" "${cnf}"
 		for i in $(seq 1 60); do
 			"${client}" --socket="${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null && break
 			sleep 1
