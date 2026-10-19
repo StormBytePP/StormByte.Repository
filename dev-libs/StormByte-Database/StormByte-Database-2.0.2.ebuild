@@ -207,19 +207,24 @@ stormbyte-suite_pgo_start() {
 			FLUSH PRIVILEGES;
 			CREATE DATABASE IF NOT EXISTS stormbyte_test;
 			CREATE USER IF NOT EXISTS 'testuser'@'127.0.0.1' IDENTIFIED BY 'testpass';
+			CREATE USER IF NOT EXISTS 'testuser'@'localhost' IDENTIFIED BY 'testpass';
 			GRANT ALL PRIVILEGES ON stormbyte_test.* TO 'testuser'@'127.0.0.1';
+			GRANT ALL PRIVILEGES ON stormbyte_test.* TO 'testuser'@'localhost';
 			FLUSH PRIVILEGES;
 		SQL
 		_sbdb_maria "${client}" "${sock}" -u root -e "SHUTDOWN" || die "MariaDB shutdown failed"
-		rm -f "${T}/mariadb.pid"
-		local n=0
-		while [[ -S ${sock} && ${n} -lt 30 ]]; do
+		local n=0 pid=""
+		[[ -f ${T}/mariadb.pid ]] && pid=$(<"${T}/mariadb.pid")
+		while [[ -n ${pid} && ${n} -lt 30 ]] && kill -0 "${pid}" 2>/dev/null; do
 			sleep 1
 			n=$((n + 1))
 		done
-		[[ -S ${sock} ]] && die "MariaDB socket stayed after shutdown"
+		rm -f "${T}/mariadb.pid" "${sock}"
+		[[ -n ${pid} ]] && kill -0 "${pid}" 2>/dev/null && die "MariaDB did not exit"
 		_sbdb_maria_launch "${server}" "${cnf}"
-		_sbdb_maria_wait "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test \
+		# The tests connect to 127.0.0.1, not to the unix socket.
+		_sbdb_maria_wait "${client}" "${sock}" --protocol=tcp -h 127.0.0.1 -P "${port}" \
+			-u testuser -ptestpass -e "SELECT 1" stormbyte_test \
 			|| die "MariaDB did not accept the test user"
 		export MARIADB_USER=testuser
 		export MARIADB_PASSWORD=testpass
