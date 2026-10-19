@@ -10,6 +10,11 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Network"
 
 LICENSE="LGPL-3"
 
+# DiscoveryTest sends a UDP broadcast. Portage network-sandbox has no
+# route for 255.255.255.255, so sendto fails with ENETUNREACH and the
+# PGO training ctest fails. Allow the real network stack.
+RESTRICT="network-sandbox"
+
 # The link edge is Buffer. Logger and System are Buffer's public deps and
 # are requested by find_package(); the core library comes with all of them.
 DEPEND="
