@@ -85,14 +85,18 @@ stormbyte-suite_pgo_start() {
 			--auth-local=trust --auth-host=scram-sha-256 \
 			--encoding=UTF8 --locale=C --no-instructions \
 			|| die "initdb failed"
-		mkdir -p "${pgdata}/sock" || die
+		# The build path is longer than the 108-byte unix-socket limit.
+		# Data stays in the build tree; the socket does not.
+		local pgsock="${T}/pgsock"
+		mkdir -p "${pgsock}" || die
 		"${pg}/pg_ctl" -D "${pgdata}" -w -t 60 -l "${root}/postgres.log" start \
-			-o "-p ${port} -k ${pgdata}/sock -c listen_addresses=localhost" \
-			|| die "pg_ctl start failed"
+			-o "-p ${port} -k ${pgsock} -c listen_addresses=localhost" \
+			|| { cat "${root}/postgres.log" >&2 || true; die "pg_ctl start failed"; }
 		echo "${port}" > "${root}/postgres.port" || die
-		"${pg}/psql" -h "${pgdata}/sock" -U testuser -d postgres -v ON_ERROR_STOP=1 \
+		echo "${pgsock}" > "${root}/postgres.sockdir" || die
+		"${pg}/psql" -h "${pgsock}" -U testuser -d postgres -v ON_ERROR_STOP=1 \
 			-c "CREATE DATABASE stormbyte_test OWNER testuser;" \
-			|| die "CREATE DATABASE stormbyte_test failed"
+			|| { cat "${root}/postgres.log" >&2 || true; die "CREATE DATABASE stormbyte_test failed"; }
 		export POSTGRES_USER=testuser
 		export POSTGRES_PASSWORD=testpass
 		export POSTGRES_PORT=${port}
@@ -107,7 +111,8 @@ stormbyte-suite_pgo_start() {
 			|| die "MariaDB server binaries not found"
 		data="${root}/mariadb"
 		port=$(_sbdb_free_port 43306)
-		sock="${root}/mariadb.sock"
+		# Same 108-byte unix-socket limit as PostgreSQL.
+		sock="${T}/maria.sock"
 		cnf="${root}/mariadb.cnf"
 		mkdir -p "${data}" || die
 
@@ -119,23 +124,24 @@ stormbyte-suite_pgo_start() {
 			datadir=${data}
 			port=${port}
 			socket=${sock}
-			pid-file=${root}/mariadb.pid
+			pid-file=${T}/mariadb.pid
 			bind-address=127.0.0.1
 			skip-networking=0
 			skip-name-resolve
+			log-error=${T}/mariadb.err
 		EOF
 		# skip-grant-tables only for the first boot, so the test user can be
 		# created no matter how root was authenticated. The tests then run
 		# against a normal server.
 		"${server}" --defaults-file="${cnf}" --skip-grant-tables --daemonize \
-			|| die "mariadbd failed to start"
+			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadbd failed to start"; }
 		local i
 		for i in $(seq 1 60); do
 			"${client}" --socket="${sock}" -u root -e "SELECT 1" &>/dev/null && break
 			sleep 1
 		done
 		"${client}" --socket="${sock}" -u root -e "SELECT 1" &>/dev/null \
-			|| die "MariaDB did not accept connections"
+			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept connections"; }
 		echo "${port}" > "${root}/mariadb.port" || die
 		"${client}" --socket="${sock}" -u root <<-SQL || die "MariaDB user setup failed"
 			FLUSH PRIVILEGES;
@@ -145,7 +151,7 @@ stormbyte-suite_pgo_start() {
 			FLUSH PRIVILEGES;
 		SQL
 		"${client}" --socket="${sock}" -u root -e "SHUTDOWN" || die "MariaDB shutdown failed"
-		rm -f "${root}/mariadb.pid"
+		rm -f "${T}/mariadb.pid"
 		local n=0
 		while [[ -S ${sock} && ${n} -lt 60 ]]; do
 			sleep 1
@@ -153,13 +159,13 @@ stormbyte-suite_pgo_start() {
 		done
 		[[ -S ${sock} ]] && die "MariaDB socket stayed after shutdown"
 		"${server}" --defaults-file="${cnf}" --daemonize \
-			|| die "mariadbd failed to restart"
+			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadbd failed to restart"; }
 		for i in $(seq 1 60); do
 			"${client}" --socket="${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null && break
 			sleep 1
 		done
 		"${client}" --socket="${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null \
-			|| die "MariaDB did not accept the test user"
+			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept the test user"; }
 		export MARIADB_USER=testuser
 		export MARIADB_PASSWORD=testpass
 		export MARIADB_PORT=${port}
@@ -178,11 +184,11 @@ stormbyte-suite_pgo_stop() {
 		rm -f "${root}/postgres.port"
 	fi
 
-	if [[ -S ${root}/mariadb.sock ]]; then
+	if [[ -S ${T}/maria.sock ]]; then
 		local client
 		client=$(type -P mariadb || type -P mysql || true)
 		if [[ -n ${client} ]]; then
-			"${client}" --socket="${root}/mariadb.sock" -u root -e "SHUTDOWN" \
+			"${client}" --socket="${T}/maria.sock" -u root -e "SHUTDOWN" \
 				|| einfo "MariaDB was already stopped"
 		fi
 	fi
