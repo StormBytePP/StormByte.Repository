@@ -33,6 +33,13 @@ PDEPEND="
 	system? ( $(stormbyte-suite_dep dev-libs/StormByte-System) )
 "
 
+src_prepare() {
+	# 2.1.0's finder rejects the Base component. Buffer, Crypto, Database,
+	# Multimedia and Network request it. The core library is already found.
+	eapply "${FILESDIR}/stormbyte-2.1.0-find-base.patch"
+	stormbyte-suite_src_prepare
+}
+
 src_unpack() {
 	if [[ ${PV} == 9999 ]]; then
 		git-r3_src_unpack
