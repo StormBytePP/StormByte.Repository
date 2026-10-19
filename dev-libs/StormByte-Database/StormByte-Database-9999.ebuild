@@ -60,12 +60,22 @@ _sbdb_pg_bindir() {
 	echo "${latest}"
 }
 
-# MariaDB 12 has no --daemonize. Keep the server attached to this shell.
+# MariaDB 12 has no --daemonize. setsid leaves the process group, so the
+# sandbox does not wait on the server and Ctrl-C does not kill it with the client.
 _sbdb_maria_launch() {
 	local server=$1 cnf=$2
 	shift 2
-	"${server}" --defaults-file="${cnf}" "$@" >>"${T}/mariadb.err" 2>&1 &
+	setsid "${server}" --defaults-file="${cnf}" "$@" >>"${T}/mariadb.err" 2>&1 </dev/null &
 	disown $! 2>/dev/null || true
+}
+
+# System my.cnf points at /var/run/mysqld/mysqld.sock and connect-timeout 0,
+# so a bare client waits forever. Talk only to this datadir's socket.
+_sbdb_maria() {
+	local client=$1 sock=$2
+	shift 2
+	"${client}" --no-defaults --protocol=socket --socket="${sock}" \
+		--connect-timeout=2 --skip-ssl "$@"
 }
 
 stormbyte-suite_pgo_start() {
@@ -144,20 +154,20 @@ stormbyte-suite_pgo_start() {
 		_sbdb_maria_launch "${server}" "${cnf}" --skip-grant-tables
 		local i
 		for i in $(seq 1 60); do
-			"${client}" --socket="${sock}" -u root -e "SELECT 1" &>/dev/null && break
+			_sbdb_maria "${client}" "${sock}" -u root -e "SELECT 1" &>/dev/null && break
 			sleep 1
 		done
-		"${client}" --socket="${sock}" -u root -e "SELECT 1" &>/dev/null \
+		_sbdb_maria "${client}" "${sock}" -u root -e "SELECT 1" &>/dev/null \
 			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept connections"; }
 		echo "${port}" > "${root}/mariadb.port" || die
-		"${client}" --socket="${sock}" -u root <<-SQL || die "MariaDB user setup failed"
+		_sbdb_maria "${client}" "${sock}" -u root <<-SQL || die "MariaDB user setup failed"
 			FLUSH PRIVILEGES;
 			CREATE DATABASE IF NOT EXISTS stormbyte_test;
 			CREATE USER IF NOT EXISTS 'testuser'@'127.0.0.1' IDENTIFIED BY 'testpass';
 			GRANT ALL PRIVILEGES ON stormbyte_test.* TO 'testuser'@'127.0.0.1';
 			FLUSH PRIVILEGES;
 		SQL
-		"${client}" --socket="${sock}" -u root -e "SHUTDOWN" || die "MariaDB shutdown failed"
+		_sbdb_maria "${client}" "${sock}" -u root -e "SHUTDOWN" || die "MariaDB shutdown failed"
 		rm -f "${T}/mariadb.pid"
 		local n=0
 		while [[ -S ${sock} && ${n} -lt 60 ]]; do
@@ -167,10 +177,10 @@ stormbyte-suite_pgo_start() {
 		[[ -S ${sock} ]] && die "MariaDB socket stayed after shutdown"
 		_sbdb_maria_launch "${server}" "${cnf}"
 		for i in $(seq 1 60); do
-			"${client}" --socket="${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null && break
+			_sbdb_maria "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null && break
 			sleep 1
 		done
-		"${client}" --socket="${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null \
+		_sbdb_maria "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null \
 			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept the test user"; }
 		export MARIADB_USER=testuser
 		export MARIADB_PASSWORD=testpass
@@ -194,7 +204,7 @@ stormbyte-suite_pgo_stop() {
 		local client
 		client=$(type -P mariadb || type -P mysql || true)
 		if [[ -n ${client} ]]; then
-			"${client}" --socket="${T}/maria.sock" -u root -e "SHUTDOWN" \
+			_sbdb_maria "${client}" "${T}/maria.sock" -u root -e "SHUTDOWN" \
 				|| einfo "MariaDB was already stopped"
 		fi
 	fi
