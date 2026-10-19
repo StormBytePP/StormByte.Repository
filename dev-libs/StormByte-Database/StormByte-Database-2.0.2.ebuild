@@ -34,6 +34,10 @@ BDEPEND+="
 
 src_prepare() {
 	stormbyte-suite_src_prepare
+	# mariadbd probes PSI (memory.pressure) under /sys/fs/cgroup. The
+	# sandbox denies the write and Portage fails the emerge even though
+	# the server starts and the tests pass. Predict it.
+	addpredict /sys/fs/cgroup
 }
 
 # Private servers live here, not on the system ports.
