@@ -60,13 +60,18 @@ _sbdb_pg_bindir() {
 	echo "${latest}"
 }
 
-# MariaDB 12 has no --daemonize. setsid leaves the process group, so the
-# sandbox does not wait on the server and Ctrl-C does not kill it with the client.
+# MariaDB 12 has no --daemonize. A background job of this shell is still a
+# sandbox child, and Portage waits for it. A short-lived bash exits; the
+# server is left in a new session.
 _sbdb_maria_launch() {
 	local server=$1 cnf=$2
 	shift 2
-	setsid "${server}" --defaults-file="${cnf}" "$@" >>"${T}/mariadb.err" 2>&1 </dev/null &
-	disown $! 2>/dev/null || true
+	bash -c '
+		setsid "$1" --defaults-file="$2" "${@:3}" </dev/null >>"$LOG" 2>&1 &
+		echo $! >"$PIDFILE"
+		disown $! 2>/dev/null || true
+		exit 0
+	' _ "${server}" "${cnf}" "$@" || die "could not launch mariadbd"
 }
 
 # System my.cnf points at /var/run/mysqld/mysqld.sock and connect-timeout 0,
@@ -76,6 +81,41 @@ _sbdb_maria() {
 	shift 2
 	"${client}" --no-defaults --protocol=socket --socket="${sock}" \
 		--connect-timeout=2 --skip-ssl "$@"
+}
+
+# install-db prints its banner and then can wait forever on the bootstrap
+# server. The tables are already created at that point.
+_sbdb_maria_install() {
+	local installdb=$1 cnf=$2 data=$3
+	local rc=0
+	timeout --foreground 120 "${installdb}" --defaults-file="${cnf}" \
+		--datadir="${data}" --auth-root-authentication-method=normal \
+		</dev/null || rc=$?
+	if [[ ${rc} -eq 124 ]]; then
+		einfo "PGO: mariadb-install-db did not exit; stopping its server"
+	elif [[ ${rc} -ne 0 ]]; then
+		cat "${T}/mariadb.err" >&2 || true
+		die "mariadb-install-db failed"
+	fi
+	# Only the build user's server. A system mariadbd runs as mysql.
+	pkill -u "$(id -u)" mariadbd 2>/dev/null || true
+	sleep 1
+}
+
+_sbdb_maria_wait() {
+	local client=$1 sock=$2
+	shift 2
+	local i
+	einfo "PGO: waiting for MariaDB socket ${sock}"
+	for i in $(seq 1 30); do
+		_sbdb_maria "${client}" "${sock}" "$@" &>/dev/null && return 0
+		if [[ -f ${T}/mariadb.pid ]] && ! kill -0 "$(<"${T}/mariadb.pid")" 2>/dev/null; then
+			break
+		fi
+		sleep 1
+	done
+	cat "${T}/mariadb.err" >&2 || true
+	return 1
 }
 
 stormbyte-suite_pgo_start() {
@@ -135,6 +175,12 @@ stormbyte-suite_pgo_start() {
 		mkdir -p "${data}" || die
 
 		einfo "PGO: MariaDB datadir ${data} port ${port}"
+		local install_cnf="${root}/mariadb-install.cnf"
+		cat > "${install_cnf}" <<-EOF || die
+			[mysqld]
+			datadir=${data}
+			log-error=${T}/mariadb.err
+		EOF
 		cat > "${cnf}" <<-EOF || die
 			[mysqld]
 			datadir=${data}
@@ -145,20 +191,17 @@ stormbyte-suite_pgo_start() {
 			skip-name-resolve
 			log-error=${T}/mariadb.err
 		EOF
-		"${installdb}" --defaults-file="${cnf}" --datadir="${data}" \
-			--auth-root-authentication-method=normal \
-			|| { cat "${T}/mariadb.err" >&2 || true; die "mariadb-install-db failed"; }
-		# MariaDB 12 dropped --daemonize. The server stays in this shell
-		# until SHUTDOWN. skip-grant-tables is only the first boot, so the
-		# test user can be created; the tests then use a normal server.
+		# Bootstrap only. A socket or pid-file here makes the install server
+		# stay up, and the script never returns.
+		export LOG="${T}/mariadb.err" PIDFILE="${T}/mariadb.pid"
+		_sbdb_maria_install "${installdb}" "${install_cnf}" "${data}"
+		einfo "PGO: MariaDB system tables installed"
+		rm -f "${sock}" "${T}/mariadb.pid"
+		# skip-grant-tables is only the first boot, so the test user can be
+		# created. The tests then use a normal server.
 		_sbdb_maria_launch "${server}" "${cnf}" --skip-grant-tables
-		local i
-		for i in $(seq 1 60); do
-			_sbdb_maria "${client}" "${sock}" -u root -e "SELECT 1" &>/dev/null && break
-			sleep 1
-		done
-		_sbdb_maria "${client}" "${sock}" -u root -e "SELECT 1" &>/dev/null \
-			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept connections"; }
+		_sbdb_maria_wait "${client}" "${sock}" -u root -e "SELECT 1" \
+			|| die "MariaDB did not accept connections"
 		echo "${port}" > "${root}/mariadb.port" || die
 		_sbdb_maria "${client}" "${sock}" -u root <<-SQL || die "MariaDB user setup failed"
 			FLUSH PRIVILEGES;
@@ -170,18 +213,14 @@ stormbyte-suite_pgo_start() {
 		_sbdb_maria "${client}" "${sock}" -u root -e "SHUTDOWN" || die "MariaDB shutdown failed"
 		rm -f "${T}/mariadb.pid"
 		local n=0
-		while [[ -S ${sock} && ${n} -lt 60 ]]; do
+		while [[ -S ${sock} && ${n} -lt 30 ]]; do
 			sleep 1
 			n=$((n + 1))
 		done
 		[[ -S ${sock} ]] && die "MariaDB socket stayed after shutdown"
 		_sbdb_maria_launch "${server}" "${cnf}"
-		for i in $(seq 1 60); do
-			_sbdb_maria "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null && break
-			sleep 1
-		done
-		_sbdb_maria "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test &>/dev/null \
-			|| { cat "${T}/mariadb.err" >&2 || true; die "MariaDB did not accept the test user"; }
+		_sbdb_maria_wait "${client}" "${sock}" -u testuser -ptestpass -e "SELECT 1" stormbyte_test \
+			|| die "MariaDB did not accept the test user"
 		export MARIADB_USER=testuser
 		export MARIADB_PASSWORD=testpass
 		export MARIADB_PORT=${port}
