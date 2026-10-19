@@ -94,7 +94,7 @@ stormbyte-suite_pgo_start() {
 			|| { cat "${root}/postgres.log" >&2 || true; die "pg_ctl start failed"; }
 		echo "${port}" > "${root}/postgres.port" || die
 		echo "${pgsock}" > "${root}/postgres.sockdir" || die
-		"${pg}/psql" -h "${pgsock}" -U testuser -d postgres -v ON_ERROR_STOP=1 \
+		"${pg}/psql" -h "${pgsock}" -p "${port}" -U testuser -d postgres -v ON_ERROR_STOP=1 \
 			-c "CREATE DATABASE stormbyte_test OWNER testuser;" \
 			|| { cat "${root}/postgres.log" >&2 || true; die "CREATE DATABASE stormbyte_test failed"; }
 		export POSTGRES_USER=testuser
