@@ -8,7 +8,7 @@
 # @BLURB: Shared packaging for the StormByte C++ suite
 # @DESCRIPTION:
 # Live and release ebuilds of one module share this eclass:
-# slotting, explicit rebuilds, LTO and the two-pass PGO build.
+# slotting, explicit rebuilds, and the LTO flag.
 #
 # Release slot is "<major>.<minor>/<PV>" (2.0.1 -> 2.0/2.0.1, multimedia
 # 1.0.0 -> 1.0/1.0.0). The subslot is the full version because upstream
@@ -22,18 +22,25 @@
 # and a 9999 install is not a candidate for those atoms.
 #
 # LTO is the USE flag, not CMake IPO. cmake.eclass pins
-# CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF and the suite's
-# optimizations.cmake turns the Release variant back on; this eclass
-# forces both off and, with USE=lto, appends -flto=thin (Clang) or -flto.
+# CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF. The suite's optimizations.cmake
+# turns it back on when ENABLE_LTO is ON, and that fights the flag this
+# eclass injects. ENABLE_LTO stays OFF. With USE=lto the eclass appends
+# -flto=thin (Clang) or -flto after stripping any -flto the user injected.
+#
+# USE=pgo passes -DENABLE_PGO=ON. Training runs inside cmake configure:
+# the project builds an instrumented tree, runs ctest, then configures
+# this directory against the profile. An ebuild that needs services for
+# that ctest defines stormbyte-suite_pgo_start and stormbyte-suite_pgo_stop.
+# They are called around configure, and stop also runs if configure dies.
 #
 # Third-party code is never built from the bundled trees. Consumers pass
 # WITH_*=SYSTEM, or WITH_*=OFF behind a USE flag when upstream allows OFF.
 #
-# An ebuild may set STORMBYTE_NO_PGO=1 before inherit when the test suite
-# cannot train a profile (Database needs servers, users and credentials).
-# It may also define stormbyte-suite_cmake_args, which fills STORMBYTE_CMAKEARGS.
+# An ebuild may define stormbyte-suite_cmake_args, which fills
+# STORMBYTE_CMAKEARGS.
 #
-# Do not set SLOT, KEYWORDS, SRC_URI or BDEPEND in the ebuild.
+# Do not set SLOT, KEYWORDS or SRC_URI in the ebuild. Append to BDEPEND
+# with BDEPEND+= ; assigning BDEPEND= replaces this eclass's dependencies.
 
 case ${EAPI} in
 	8) ;;
@@ -58,16 +65,11 @@ else
 	SLOT="$(ver_cut 1-2)/${PV}"
 fi
 
-: "${STORMBYTE_NO_PGO:=0}"
-if [[ ${STORMBYTE_NO_PGO} == 1 ]]; then
-	IUSE="lto"
-else
-	IUSE="lto pgo"
-fi
+IUSE="lto pgo"
 
 BDEPEND="
 	>=dev-build/cmake-3.28
-	>=dev-build/StormByte-BuildMaster-2.0.3
+	>=dev-build/StormByte-BuildMaster-2.1.2
 	virtual/pkgconfig
 "
 
@@ -87,21 +89,15 @@ stormbyte-suite_dep() {
 	fi
 }
 
-# @FUNCTION: _stormbyte-suite_pgo
-# @INTERNAL
-# @DESCRIPTION:
-# True when this package trains a profile.
-_stormbyte-suite_pgo() {
-	in_iuse pgo && use pgo
-}
-
 # @FUNCTION: _stormbyte-suite_apply_lto
 # @INTERNAL
 # @DESCRIPTION:
 # USE=lto is authoritative: drop any -flto the user injected and add the
-# one flag that matches the compiler.
+# one flag that matches the compiler. CMake IPO stays off.
 _stormbyte-suite_apply_lto() {
 	filter-lto
+	filter-flags '-fprofile-*'
+	filter-ldflags '-fprofile-*'
 
 	if use lto; then
 		local flag
@@ -119,7 +115,8 @@ _stormbyte-suite_apply_lto() {
 # @INTERNAL
 # @USAGE: <ON|OFF>
 # @DESCRIPTION:
-# Configure once. The argument is ENABLE_TEST.
+# Configure once. The argument is ENABLE_PGO. Tests stay off here; the
+# instrumented tree turns them on itself.
 _stormbyte-suite_configure() {
 	if declare -F stormbyte-suite_cmake_args >/dev/null; then
 		stormbyte-suite_cmake_args
@@ -131,37 +128,22 @@ _stormbyte-suite_configure() {
 	local mycmakeargs=(
 		-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
 		-DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=OFF
-		-DENABLE_TEST=${1}
+		-DENABLE_LTO=OFF
+		-DENABLE_PGO=${1}
+		-DENABLE_TEST=OFF
 		"${STORMBYTE_CMAKEARGS[@]}"
 	)
 	cmake_src_configure
 }
 
-# @FUNCTION: _stormbyte-suite_profdata
-# @INTERNAL
-# @DESCRIPTION:
-# llvm-profdata matching the active Clang major, else the unversioned tool.
-_stormbyte-suite_profdata() {
-	local major profdata
-	major=$(clang-major-version)
-	profdata="llvm-profdata-${major}"
-	if ! type -P "${profdata}" >/dev/null 2>&1; then
-		profdata="llvm-profdata"
-	fi
-	type -P "${profdata}" >/dev/null 2>&1 || die "llvm-profdata not found"
-	echo "${profdata}"
-}
-
 # @FUNCTION: stormbyte-suite_src_prepare
 # @DESCRIPTION:
-# Prepare the tree, stub a missing BuildMaster checkout and disable CMake IPO
-# so LTO comes only from USE=lto.
+# Prepare the tree and stub a missing BuildMaster checkout. The system
+# package satisfies find_package; the empty files only cover the fallback
+# add_subdirectory() when that package is missing.
 stormbyte-suite_src_prepare() {
 	cmake_src_prepare
 
-	# Release tarballs omit the BuildMaster submodule. The system package
-	# satisfies find_package; the empty files only cover the fallback
-	# add_subdirectory() when that package is missing.
 	if [[ -d buildmaster ]]; then
 		local stub
 		for stub in CMakeLists.txt helpers.cmake; do
@@ -170,114 +152,33 @@ stormbyte-suite_src_prepare() {
 			fi
 		done
 	fi
-
-	if [[ -f cmake/optimizations.cmake ]]; then
-		sed -i -E \
-			's/set\((CMAKE_INTERPROCEDURAL_OPTIMIZATION(_RELEASE)?)[[:space:]]+TRUE\)/set(\1 FALSE)/' \
-			cmake/optimizations.cmake || die
-	fi
 }
 
 # @FUNCTION: stormbyte-suite_src_configure
 # @DESCRIPTION:
-# Normal configure. With USE=pgo both passes are done from src_compile,
-# where the profile flags are applied.
+# Apply USE=lto, optionally start PGO services, then configure.
+# USE=pgo trains during this configure.
 stormbyte-suite_src_configure() {
-	if _stormbyte-suite_pgo; then
-		return
-	fi
-
-	_stormbyte-suite_apply_lto
-	_stormbyte-suite_configure OFF
-}
-
-# @FUNCTION: stormbyte-suite_src_compile
-# @DESCRIPTION:
-# Build. USE=pgo instruments, runs ctest as the training workload, then
-# rebuilds with the profile. LTO is applied only on that second pass.
-stormbyte-suite_src_compile() {
-	if ! _stormbyte-suite_pgo; then
-		cmake_src_compile
-		return
-	fi
-
-	local pgo_dir="${T}/pgo"
-	mkdir -p "${pgo_dir}" || die
-
-	einfo "PGO: instrumentation pass"
-	filter-flags '-fprofile-*'
-	filter-ldflags '-fprofile-*'
-	filter-lto
-
-	local -a gen=()
-	if tc-is-clang; then
-		gen+=( -fprofile-instr-generate )
-	else
-		gen+=(
-			"-fprofile-generate=${pgo_dir}"
-			"-fprofile-dir=${pgo_dir}"
-			-fprofile-update=atomic
-		)
-		local partial
-		partial=$(test-flags-CC -fprofile-partial-training)
-		[[ -n ${partial} ]] && gen+=( "${partial}" )
-	fi
-	append-flags "${gen[@]}"
-	append-ldflags "${gen[@]}"
-
-	_stormbyte-suite_configure ON
-	cmake_src_compile
-
-	if tc-is-clang; then
-		export LLVM_PROFILE_FILE="${pgo_dir}/default-%p-%m.profraw"
-	fi
-
-	ctest --test-dir "${BUILD_DIR}/test" --output-on-failure \
-		|| die "PGO training (ctest) failed"
-
-	if tc-is-clang; then
-		local -a profraw=()
-		local raw
-		while IFS= read -r -d '' raw; do
-			profraw+=( "${raw}" )
-		done < <(find "${pgo_dir}" "${WORKDIR}" -name '*.profraw' -print0)
-		[[ ${#profraw[@]} -gt 0 ]] || die "PGO produced no .profraw profiles"
-		einfo "PGO: merging ${#profraw[@]} Clang profile(s)"
-		"$(_stormbyte-suite_profdata)" merge -output="${pgo_dir}/default.profdata" \
-			"${profraw[@]}" || die "llvm-profdata merge failed"
-	else
-		local gcda
-		gcda=$(find "${pgo_dir}" "${BUILD_DIR}" -name '*.gcda' -print -quit)
-		[[ -n ${gcda} ]] || die "PGO produced no .gcda profiles"
-	fi
-
-	einfo "PGO: optimized pass"
-	rm -rf "${BUILD_DIR}" || die
-	filter-flags '-fprofile-*'
-	filter-ldflags '-fprofile-*'
-	filter-lto
-
-	local -a use_flags=()
-	if tc-is-clang; then
-		use_flags+=( "-fprofile-instr-use=${pgo_dir}/default.profdata" )
-	else
-		use_flags+=(
-			"-fprofile-use=${pgo_dir}"
-			"-fprofile-dir=${pgo_dir}"
-			-fprofile-correction
-		)
-		local partial
-		partial=$(test-flags-CC -fprofile-partial-training)
-		[[ -n ${partial} ]] && use_flags+=( "${partial}" )
-	fi
-	append-flags "${use_flags[@]}"
-	append-ldflags "${use_flags[@]}"
 	_stormbyte-suite_apply_lto
 
-	_stormbyte-suite_configure OFF
-	cmake_src_compile
+	local pgo=OFF
+	if use pgo; then
+		pgo=ON
+		if declare -F stormbyte-suite_pgo_start >/dev/null; then
+			# Armed first, so a failure while starting still stops what came up.
+			trap 'stormbyte-suite_pgo_stop' EXIT
+			stormbyte-suite_pgo_start
+		fi
+	fi
+
+	_stormbyte-suite_configure "${pgo}"
+
+	if [[ ${pgo} == ON ]] && declare -F stormbyte-suite_pgo_stop >/dev/null; then
+		trap - EXIT
+		stormbyte-suite_pgo_stop
+	fi
 }
 
 fi
 
-EXPORT_FUNCTIONS src_prepare src_configure src_compile
+EXPORT_FUNCTIONS src_prepare src_configure

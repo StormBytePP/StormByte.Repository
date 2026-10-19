@@ -37,8 +37,7 @@ RDEPEND="${DEPEND}"
 src_prepare() {
 	# VAAPI/QSV tests open /dev/dri/renderD* read-write and then pass or skip.
 	# A sandbox denial aborts the build instead of returning an error the
-	# test can handle. PGO runs ctest from src_compile, so this has to be
-	# in place before that phase.
+	# test can handle. USE=pgo runs ctest from src_configure.
 	addwrite /dev/dri
 	stormbyte-suite_src_prepare
 }
