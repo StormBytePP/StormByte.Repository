@@ -1,0 +1,39 @@
+#!/sbin/openrc-run
+# Copyright 1999-2026 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+description="StormByte Alchemist license server"
+
+: "${ALCHEMIST_CONTROL_CONFIG:=/etc/alchemist-control/control.conf}"
+: "${ALCHEMIST_CONTROL_LOG:=/var/log/alchemist-control/control-server.log}"
+
+supervisor="supervise-daemon"
+command="/opt/StormByte-Alchemist/control-server"
+command_args="--config ${ALCHEMIST_CONTROL_CONFIG}"
+command_user="alchemist-control:alchemist-control"
+# The server resolves relative paths from the configuration file, not from here.
+directory="/var/lib/alchemist-control"
+output_log="${ALCHEMIST_CONTROL_LOG}"
+error_log="${ALCHEMIST_CONTROL_LOG}"
+# The database and logs are private to the service; it never needs more rights.
+umask=027
+no_new_privs=yes
+respawn_delay=5
+respawn_max=5
+respawn_period=60
+
+depend() {
+	need net
+	after postgresql mysql
+	use logger dns
+}
+
+start_pre() {
+	checkpath -d -m 0750 -o alchemist-control:alchemist-control /var/lib/alchemist-control
+	checkpath -d -m 0750 -o alchemist-control:alchemist-control "${ALCHEMIST_CONTROL_LOG%/*}"
+	checkpath -f -m 0640 -o alchemist-control:alchemist-control "${ALCHEMIST_CONTROL_LOG}"
+	if [ ! -r "${ALCHEMIST_CONTROL_CONFIG}" ]; then
+		eerror "Missing ${ALCHEMIST_CONTROL_CONFIG}"
+		return 1
+	fi
+}

@@ -1,0 +1,8 @@
+# /etc/conf.d/alchemist-control
+
+# License server configuration. Relative paths inside it (certificate,
+# private key, SQLite database) are resolved from its directory.
+ALCHEMIST_CONTROL_CONFIG="/etc/alchemist-control/control.conf"
+
+# Messages written by the server.
+ALCHEMIST_CONTROL_LOG="/var/log/alchemist-control/control-server.log"
