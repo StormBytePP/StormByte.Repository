@@ -1,0 +1,19 @@
+Allow linking system LunaSVG without adding bundled includes or static definitions.
+
+--- a/thirdparty/lunasvg/CMakeLists.txt
++++ b/thirdparty/lunasvg/CMakeLists.txt
+@@ -1,3 +1,14 @@
++set(WITH_LUNASVG "BUNDLED" CACHE STRING "Use LunaSVG (SYSTEM or BUNDLED)")
++set_property(CACHE WITH_LUNASVG PROPERTY STRINGS SYSTEM BUNDLED)
++if(WITH_LUNASVG STREQUAL "SYSTEM")
++	find_package(lunasvg 3.5.0 CONFIG REQUIRED)
++	set_target_properties(lunasvg::lunasvg PROPERTIES IMPORTED_GLOBAL TRUE)
++	buildmaster_link(StormByte-Multimedia lunasvg::lunasvg)
++	return()
++elseif(NOT WITH_LUNASVG STREQUAL "BUNDLED")
++	message(FATAL_ERROR "WITH_LUNASVG must be SYSTEM or BUNDLED")
++endif()
++
+ target_include_directories(StormByte-Multimedia BEFORE PRIVATE
+ 	"${CMAKE_CURRENT_LIST_DIR}/src/include"
+ )

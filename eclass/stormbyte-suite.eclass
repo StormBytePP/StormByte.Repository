@@ -69,21 +69,26 @@ IUSE="lto pgo"
 
 BDEPEND="
 	>=dev-build/cmake-3.28
-	>=dev-build/StormByte-BuildMaster-2.1.2
+	>=dev-build/StormByte-BuildMaster-2.1.3
 	virtual/pkgconfig
 "
 
 # @FUNCTION: stormbyte-suite_dep
-# @USAGE: <category/package>
+# @USAGE: <category/package> [post]
 # @DESCRIPTION:
 # Atom that tracks this suite's slot and rebuilds the consumer.
-# See the eclass description for the release vs 9999 split.
+# See the eclass description for the release vs 9999 split. "post" omits
+# the rebuild operator, which is not permitted in PDEPEND.
 stormbyte-suite_dep() {
-	[[ ${#} -eq 1 ]] || die "${FUNCNAME}: expected one category/package argument"
+	[[ ${#} -eq 1 || ( ${#} -eq 2 && ${2:-} == post ) ]] \
+		|| die "${FUNCNAME}: expected category/package and optional post"
 
-	local pkg=${1}
+	local pkg=${1} rebuild="="
+	[[ ${2:-} == post ]] && rebuild=""
 	if [[ ${PV} == 9999 ]]; then
-		echo "${pkg}:9999="
+		echo "${pkg}:9999${rebuild}"
+	elif [[ ${2:-} == post ]]; then
+		echo "<${pkg}-9999"
 	else
 		echo "<${pkg}-9999:="
 	fi
@@ -138,19 +143,15 @@ _stormbyte-suite_configure() {
 
 # @FUNCTION: stormbyte-suite_src_prepare
 # @DESCRIPTION:
-# Prepare the tree and stub a missing BuildMaster checkout. The system
-# package satisfies find_package; the empty files only cover the fallback
-# add_subdirectory() when that package is missing.
+# Prepare the tree and require the system BuildMaster package. Never use
+# the bundled fallback, including when configuring PGO's nested build.
 stormbyte-suite_src_prepare() {
 	cmake_src_prepare
 
-	if [[ -d buildmaster ]]; then
-		local stub
-		for stub in CMakeLists.txt helpers.cmake; do
-			if [[ ! -e buildmaster/${stub} ]]; then
-				touch "buildmaster/${stub}" || die
-			fi
-		done
+	if [[ -f cmake/load_buildmaster.cmake ]]; then
+		sed -i \
+			-e 's/find_package(StormByte-BuildMaster 2.1.3 CONFIG QUIET)/find_package(StormByte-BuildMaster 2.1.3 CONFIG REQUIRED)/' \
+			cmake/load_buildmaster.cmake || die
 	fi
 }
 

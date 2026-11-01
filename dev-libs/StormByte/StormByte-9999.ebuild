@@ -8,38 +8,23 @@ inherit stormbyte-suite
 DESCRIPTION="StormByte C++ library"
 HOMEPAGE="https://suite.stormbyte.org/StormByte"
 
-LICENSE="LGPL-3 BSD"
+LICENSE="LGPL-3"
 IUSE+=" buffer config crypto database logger multimedia network system"
 
-# GitHub tag archives leave the sds submodule empty. The library compiles
-# thirdparty/sds/*.c directly, so the release ebuild unpacks that tree.
-# The live ebuild fetches only this submodule.
-if [[ ${PV} == 9999 ]]; then
-	EGIT_SUBMODULES=( thirdparty/sds )
-else
-	SRC_URI+=" https://github.com/StormBytePP/sds/archive/refs/tags/2.0.0.tar.gz -> sds-2.0.0.tar.gz"
-fi
+PATCHES=( "${FILESDIR}/${PN}-2.2.2-system-sds.patch" )
+
+DEPEND=">=dev-libs/sds-2.0.0:="
+RDEPEND="${DEPEND}"
 
 # Modules are optional add-ons installed after the core library.
 # PDEPEND avoids the cycle (every module links this package).
 PDEPEND="
-	buffer? ( $(stormbyte-suite_dep dev-libs/StormByte-Buffer) )
-	config? ( $(stormbyte-suite_dep dev-libs/StormByte-Config) )
-	crypto? ( $(stormbyte-suite_dep dev-libs/StormByte-Crypto) )
-	database? ( $(stormbyte-suite_dep dev-libs/StormByte-Database) )
-	logger? ( $(stormbyte-suite_dep dev-libs/StormByte-Logger) )
-	multimedia? ( $(stormbyte-suite_dep dev-libs/StormByte-Multimedia) )
-	network? ( $(stormbyte-suite_dep dev-libs/StormByte-Network) )
-	system? ( $(stormbyte-suite_dep dev-libs/StormByte-System) )
+	buffer? ( $(stormbyte-suite_dep dev-libs/StormByte-Buffer post) )
+	config? ( $(stormbyte-suite_dep dev-libs/StormByte-Config post) )
+	crypto? ( $(stormbyte-suite_dep dev-libs/StormByte-Crypto post) )
+	database? ( $(stormbyte-suite_dep dev-libs/StormByte-Database post) )
+	logger? ( $(stormbyte-suite_dep dev-libs/StormByte-Logger post) )
+	multimedia? ( $(stormbyte-suite_dep dev-libs/StormByte-Multimedia post) )
+	network? ( $(stormbyte-suite_dep dev-libs/StormByte-Network post) )
+	system? ( $(stormbyte-suite_dep dev-libs/StormByte-System post) )
 "
-
-src_unpack() {
-	if [[ ${PV} == 9999 ]]; then
-		git-r3_src_unpack
-		return
-	fi
-
-	default
-	rm -rf "${S}/thirdparty/sds" || die
-	mv "${WORKDIR}/sds-2.0.0" "${S}/thirdparty/sds" || die
-}

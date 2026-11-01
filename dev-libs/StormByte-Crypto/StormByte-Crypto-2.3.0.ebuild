@@ -19,6 +19,7 @@ DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte-System)
 	app-arch/bzip2:=
 	dev-libs/crypto++:=
+	>=dev-libs/openssl-3.0:=
 	virtual/zlib:=
 "
 RDEPEND="${DEPEND}"
@@ -27,6 +28,7 @@ stormbyte-suite_cmake_args() {
 	STORMBYTE_CMAKEARGS=(
 		-DWITH_BZIP2=SYSTEM
 		-DWITH_CRYPTOPP=SYSTEM
+		-DWITH_OPENSSL=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 	)
 }

@@ -15,18 +15,21 @@ LICENSE="LGPL-3"
 # PGO training ctest fails. Allow the real network stack.
 RESTRICT="network-sandbox"
 
-# The link edge is Buffer. Logger and System are Buffer's public deps and
-# are requested by find_package(); the core library comes with all of them.
+# HTTP/2 uses nghttp2; TLS uses Crypto. All StormByte components requested
+# by find_package() are explicit dependencies.
 DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte)
 	$(stormbyte-suite_dep dev-libs/StormByte-Buffer)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto)
 	$(stormbyte-suite_dep dev-libs/StormByte-Logger)
 	$(stormbyte-suite_dep dev-libs/StormByte-System)
+	net-libs/nghttp2:=
 "
 RDEPEND="${DEPEND}"
 
 stormbyte-suite_cmake_args() {
 	STORMBYTE_CMAKEARGS=(
+		-DWITH_NGHTTP2=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 	)
 }

@@ -1,7 +1,7 @@
 EAPI=8
 
 DESCRIPTION="Declarative CMake build orchestration for CMake and Meson projects"
-HOMEPAGE="https://github.com/StormByte-Suite/StormByte-BuildMaster"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-BuildMaster"
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
