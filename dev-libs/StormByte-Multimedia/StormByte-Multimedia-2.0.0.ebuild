@@ -44,10 +44,6 @@ src_prepare() {
 	# test can handle. USE=pgo runs ctest from src_configure.
 	addwrite /dev/dri
 	stormbyte-suite_src_prepare
-	# The 1.1.0 tag still contains VERSION=1.0.1.
-	if [[ ${PV} != 9999 ]]; then
-		printf '%s\n' "${PV}" > VERSION || die
-	fi
 }
 
 stormbyte-suite_cmake_args() {
