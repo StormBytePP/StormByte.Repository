@@ -11,7 +11,10 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte"
 LICENSE="LGPL-3"
 IUSE+=" buffer config crypto database logger multimedia network system"
 
-PATCHES=( "${FILESDIR}/${PN}-2.2.2-system-sds.patch" )
+PATCHES=(
+	"${FILESDIR}/${PN}-2.2.2-system-sds.patch"
+	"${FILESDIR}/${PN}-2.2.3-network-crypto.patch"
+)
 
 DEPEND=">=dev-libs/sds-2.0.0:="
 RDEPEND="${DEPEND}"
