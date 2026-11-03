@@ -20,7 +20,8 @@ IUSE+=" +gui +lto license-server"
 REQUIRED_USE="|| ( gui license-server )"
 RESTRICT="bindist mirror"
 
-# Alchemy (shared by both programs) links every module except Database.
+# Both programs share the licensing core (Covenant); only the GUI's Alchemy
+# links Multimedia.
 # ControlServer adds Database and selects SQLite, PostgreSQL or MariaDB
 # at runtime, so all three backends are required.
 DEPEND="
@@ -29,10 +30,10 @@ DEPEND="
 	>=dev-libs/StormByte-Config-2.0.6:=
 	>=dev-libs/StormByte-Crypto-2.3.1:=
 	>=dev-libs/StormByte-Logger-2.0.6:=
-	>=dev-libs/StormByte-Multimedia-2.0.0:=
 	>=dev-libs/StormByte-Network-3.1.0:=
 	>=dev-libs/StormByte-System-2.1.3:=
 	gui? (
+		>=dev-libs/StormByte-Multimedia-2.0.0:=
 		dev-qt/qtbase:6[gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
