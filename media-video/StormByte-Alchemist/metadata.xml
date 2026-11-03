@@ -4,7 +4,6 @@
 	<use>
 		<flag name="gui">Build the StormByte Alchemist desktop application</flag>
 		<flag name="license-server">Build the license server (alchemist-control-server)</flag>
-		<flag name="pgo">Unused: StormByte Alchemist has no profile-guided optimization build</flag>
 	</use>
 	<upstream>
 		<remote-id type="github">StormByte-Suite/StormByte-Alchemist</remote-id>

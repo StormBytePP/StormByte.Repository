@@ -3,21 +3,20 @@
 
 EAPI=8
 
-inherit cmake desktop xdg stormbyte-suite
+STORMBYTE_SUITE_NO_PGO=yes
+inherit cmake desktop xdg stormbyte-suite git-r3
 
 DESCRIPTION="StormByte Alchemist media transcoder and license server"
 HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 
-# The repository is private. github-alchemist is an SSH host alias in the
-# portage user's ~/.ssh/config that points to github.com with a read-only
-# deploy key, so no other GitHub access uses that key.
+# The portage user's SSH alias selects the read-only deploy key.
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
-# Nothing is built from these. The GUI embeds their license texts while
-# linking the system QtSvg, libpulse and libsndfile.
-EGIT_SUBMODULES=( "QT - SVG" playback-pulseaudio playback-libsndfile )
+# Nothing is built from these. The GUI embeds their audio license texts
+# while linking the system libraries; QtSvg notices are in the main tree.
+EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
 
 LICENSE="all-rights-reserved"
-IUSE+=" +gui license-server"
+IUSE+=" +gui +lto license-server"
 REQUIRED_USE="|| ( gui license-server )"
 RESTRICT="bindist mirror"
 
@@ -25,14 +24,14 @@ RESTRICT="bindist mirror"
 # ControlServer adds Database and selects SQLite, PostgreSQL or MariaDB
 # at runtime, so all three backends are required.
 DEPEND="
-	>=dev-libs/StormByte-2.2.2:=
-	>=dev-libs/StormByte-Buffer-2.0.5:=
-	>=dev-libs/StormByte-Config-2.0.5:=
-	>=dev-libs/StormByte-Crypto-2.3.0:=
-	>=dev-libs/StormByte-Logger-2.0.5:=
-	>=dev-libs/StormByte-Multimedia-1.1.0:=
-	>=dev-libs/StormByte-Network-3.0.0:=
-	>=dev-libs/StormByte-System-2.1.2:=
+	>=dev-libs/StormByte-2.2.3:=
+	>=dev-libs/StormByte-Buffer-2.0.6:=
+	>=dev-libs/StormByte-Config-2.0.6:=
+	>=dev-libs/StormByte-Crypto-2.3.1:=
+	>=dev-libs/StormByte-Logger-2.0.6:=
+	>=dev-libs/StormByte-Multimedia-2.0.0:=
+	>=dev-libs/StormByte-Network-3.1.0:=
+	>=dev-libs/StormByte-System-2.1.3:=
 	gui? (
 		dev-qt/qtbase:6[gui,opengl,widgets]
 		dev-qt/qtsvg:6
@@ -40,7 +39,7 @@ DEPEND="
 	)
 	license-server? (
 		acct-group/alchemist-control
-		>=dev-libs/StormByte-Database-2.1.2:=[mariadb,postgres,sqlite]
+		>=dev-libs/StormByte-Database-2.1.3:=[mariadb,postgres,sqlite]
 	)
 "
 RDEPEND="
@@ -55,6 +54,13 @@ BDEPEND+="
 # together outside the system library directory.
 ALCHEMIST_PREFIX="/opt/${PN}"
 
+src_unpack() {
+	if ! use gui; then
+		EGIT_SUBMODULES=()
+	fi
+	git-r3_src_unpack
+}
+
 stormbyte-suite_cmake_args() {
 	STORMBYTE_CMAKEARGS=(
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}${ALCHEMIST_PREFIX}"
@@ -62,10 +68,9 @@ stormbyte-suite_cmake_args() {
 		-DENABLE_CONTROL=$(usex license-server ON OFF)
 		-DOPTIMIZATION_FLAGS_LINUX=
 		-DWITH_PULSEAUDIO=SYSTEM
-		-DWITH_QT=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DALCHEMY_LICENSE_SERVER_HOST=alchemist.stormbyte.org
-		-DALCHEMY_LICENSE_SERVER_PORT=6869
+		-DALCHEMY_LICENSE_SERVER_PORT=47800
 	)
 }
 
@@ -80,6 +85,7 @@ src_install() {
 	fi
 
 	if use license-server; then
+		[[ -x ${ED}${ALCHEMIST_PREFIX}/control-server ]] || die "ControlServer was not installed"
 		dosym -r "${ALCHEMIST_PREFIX}/control-server" /usr/bin/alchemist-control-server
 		dodoc components/control/control.conf.example
 
@@ -89,10 +95,9 @@ src_install() {
 		newins "${FILESDIR}"/alchemist-control.logrotate alchemist-control
 
 		# Same port the GUI is built with; the database lives with the service.
-		sed -e 's/^\tport = 47800$/\tport = 6869/' \
-			-e 's|^\tpath = "control.db"$|\tpath = "/var/lib/alchemist-control/control.db"|' \
+		sed -e 's|^\tpath = "control.db"$|\tpath = "/var/lib/alchemist-control/control.db"|' \
 			components/control/control.conf.example > "${T}"/control.conf || die
-		grep -qxF $'\tport = 6869' "${T}"/control.conf || die "control.conf port not set"
+		grep -qxF $'\tport = 47800' "${T}"/control.conf || die "control.conf port not set"
 		grep -qxF $'\tpath = "/var/lib/alchemist-control/control.db"' "${T}"/control.conf \
 			|| die "control.conf database path not set"
 
@@ -110,9 +115,9 @@ pkg_postinst() {
 
 	if use license-server; then
 		elog "Copy the license server certificate chain and private key to"
-		elog "${EROOT}/etc/alchemist-control. Only the service user may read the key:"
-		elog "  chown alchemist-control:alchemist-control license-server.key"
-		elog "  chmod 0400 license-server.key"
+		elog "${EROOT}/etc/alchemist-control. Keep the key root-owned and service-readable:"
+		elog "  chown root:alchemist-control license-server.key"
+		elog "  chmod 0640 license-server.key"
 		elog "  chown root:alchemist-control license-server-chain.crt"
 		elog "  chmod 0640 license-server-chain.crt"
 		elog "Then review ${EROOT}/etc/alchemist-control/control.conf and run:"

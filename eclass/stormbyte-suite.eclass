@@ -65,7 +65,11 @@ else
 	SLOT="$(ver_cut 1-2)/${PV}"
 fi
 
-IUSE="lto pgo"
+# Applications without a training workflow can opt out before inheriting.
+IUSE="lto"
+if [[ ${STORMBYTE_SUITE_NO_PGO} != yes ]]; then
+	IUSE+=" pgo"
+fi
 
 BDEPEND="
 	>=dev-build/cmake-3.28
@@ -163,7 +167,7 @@ stormbyte-suite_src_configure() {
 	_stormbyte-suite_apply_lto
 
 	local pgo=OFF
-	if use pgo; then
+	if [[ ${STORMBYTE_SUITE_NO_PGO} != yes ]] && use pgo; then
 		pgo=ON
 		if declare -F stormbyte-suite_pgo_start >/dev/null; then
 			# Armed first, so a failure while starting still stops what came up.
