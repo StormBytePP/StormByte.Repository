@@ -1,0 +1,22 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 63c89c7..7230105 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -34,6 +34,9 @@ set(_alchemy_required_libraries "${CMAKE_REQUIRED_LIBRARIES}")
+ set(_alchemy_required_includes "${CMAKE_REQUIRED_INCLUDES}")
+ get_target_property(_alchemy_multimedia_includes StormByte-Multimedia INTERFACE_INCLUDE_DIRECTORIES)
+ set(CMAKE_REQUIRED_INCLUDES "${_alchemy_multimedia_includes}")
++if(WITH_STORMBYTE STREQUAL "SYSTEM")
++	set(CMAKE_REQUIRED_LIBRARIES StormByte::Multimedia StormByte::Base)
++else()
+ set(_alchemy_multimedia_prefix "")
+ foreach(_alchemy_multimedia_include IN LISTS _alchemy_multimedia_includes)
+ 	if(IS_ABSOLUTE "${_alchemy_multimedia_include}" AND NOT _alchemy_multimedia_include MATCHES "\\$<")
+@@ -75,6 +78,7 @@ if(NOT _alchemy_stormbyte_library)
+ endif()
+ set(CMAKE_REQUIRED_LIBRARIES "${_alchemy_multimedia_library}")
+ list(APPEND CMAKE_REQUIRED_LIBRARIES "${_alchemy_stormbyte_library}")
++endif()
+ # Link against the selected package: stale SYSTEM/reused-install headers cannot enable absent filters.
+ unset(STORMBYTE_ALCHEMY_MULTIMEDIA_HAS_RUBBERBAND CACHE)
+ unset(STORMBYTE_ALCHEMY_MULTIMEDIA_HAS_VAGUEDENOISER CACHE)
