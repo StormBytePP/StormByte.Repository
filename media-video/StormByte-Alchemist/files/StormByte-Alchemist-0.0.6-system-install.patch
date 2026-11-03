@@ -1,0 +1,13 @@
+diff --git a/cmake/install-runtime.cmake.in b/cmake/install-runtime.cmake.in
+index b83b1a1..fbfbf77 100644
+--- a/cmake/install-runtime.cmake.in
++++ b/cmake/install-runtime.cmake.in
+@@ -91,7 +91,7 @@ if(WIN32)
+ 			endif()
+ 		endif()
+ 	endforeach()
+-else()
++elseif("@WITH_STORMBYTE@" STREQUAL "BUNDLED" OR _playback_libraries)
+ 	list(APPEND _scan_arguments EXECUTABLES ${_executables})
+ 	if(_project_libraries OR _playback_libraries)
+ 		list(APPEND _scan_arguments LIBRARIES ${_project_libraries} ${_playback_libraries})

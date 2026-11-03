@@ -57,7 +57,10 @@ BDEPEND+="
 # together outside the system library directory.
 ALCHEMIST_PREFIX="/opt/${PN}"
 
-PATCHES=( "${FILESDIR}/${PN}-0.0.6-system-capabilities.patch" )
+PATCHES=(
+	"${FILESDIR}/${PN}-0.0.6-system-capabilities.patch"
+	"${FILESDIR}/${PN}-0.0.6-system-install.patch"
+)
 
 src_unpack() {
 	if ! use gui; then
