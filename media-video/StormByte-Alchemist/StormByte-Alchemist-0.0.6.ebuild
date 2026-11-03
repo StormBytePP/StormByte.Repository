@@ -14,7 +14,7 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="b379d2005f07354bc5817e5d586de3241c7225e2"
+EGIT_COMMIT="5442d4be4ee168846ebff8b2d198b589cd321a28"
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
 PROPERTIES="${PROPERTIES//live/}"
 
@@ -56,11 +56,6 @@ BDEPEND+="
 # The programs find their own libraries through $ORIGIN, so they live
 # together outside the system library directory.
 ALCHEMIST_PREFIX="/opt/${PN}"
-
-PATCHES=(
-	"${FILESDIR}/${PN}-0.0.6-system-capabilities.patch"
-	"${FILESDIR}/${PN}-0.0.6-system-install.patch"
-)
 
 src_unpack() {
 	if ! use gui; then
