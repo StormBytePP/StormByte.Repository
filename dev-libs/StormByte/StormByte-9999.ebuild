@@ -11,20 +11,24 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte"
 LICENSE="LGPL-3"
 IUSE+=" buffer config crypto database logger multimedia network system"
 
-PATCHES=( "${FILESDIR}/${PN}-2.2.2-system-sds.patch" )
-
 DEPEND=">=dev-libs/sds-2.0.0:="
 RDEPEND="${DEPEND}"
 
 # Modules are optional add-ons installed after the core library.
 # PDEPEND avoids the cycle (every module links this package).
 PDEPEND="
-	buffer? ( $(stormbyte-suite_dep dev-libs/StormByte-Buffer post) )
-	config? ( $(stormbyte-suite_dep dev-libs/StormByte-Config post) )
-	crypto? ( $(stormbyte-suite_dep dev-libs/StormByte-Crypto post) )
-	database? ( $(stormbyte-suite_dep dev-libs/StormByte-Database post) )
-	logger? ( $(stormbyte-suite_dep dev-libs/StormByte-Logger post) )
-	multimedia? ( $(stormbyte-suite_dep dev-libs/StormByte-Multimedia post) )
-	network? ( $(stormbyte-suite_dep dev-libs/StormByte-Network post) )
-	system? ( $(stormbyte-suite_dep dev-libs/StormByte-System post) )
+	buffer? ( $(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0 post) )
+	config? ( $(stormbyte-suite_dep dev-libs/StormByte-Config 3.0.0 post) )
+	crypto? ( $(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0 post) )
+	database? ( $(stormbyte-suite_dep dev-libs/StormByte-Database 3.0.0 post) )
+	logger? ( $(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0 post) )
+	multimedia? ( $(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0 post) )
+	network? ( $(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.0 post) )
+	system? ( $(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0 post) )
 "
+
+stormbyte-suite_cmake_args() {
+	STORMBYTE_CMAKEARGS=(
+		-DSTORMBYTE_USE_SYSTEM_SDS=ON
+	)
+}

@@ -19,7 +19,8 @@
 #   release: <cat/pkg-9999:=     any release slot, rebuild on slot/subslot change
 #   live:    cat/pkg:9999=       never a release build
 # So a Buffer 2.1.0 (slot 2.1) forces every release consumer to rebuild,
-# and a 9999 install is not a candidate for those atoms.
+# and a 9999 install is not a candidate for those atoms. A release
+# ebuild may pass a minimum version to reject an incompatible ABI.
 #
 # LTO is the USE flag, not CMake IPO. cmake.eclass pins
 # CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF. The suite's optimizations.cmake
@@ -73,28 +74,46 @@ fi
 
 BDEPEND="
 	>=dev-build/cmake-3.28
-	>=dev-build/StormByte-BuildMaster-2.1.3
+	>=dev-build/StormByte-BuildMaster-2.1.5
 	virtual/pkgconfig
 "
 
 # @FUNCTION: stormbyte-suite_dep
-# @USAGE: <category/package> [post]
+# @USAGE: <category/package> [minimum-version] [post]
 # @DESCRIPTION:
 # Atom that tracks this suite's slot and rebuilds the consumer.
-# See the eclass description for the release vs 9999 split. "post" omits
-# the rebuild operator, which is not permitted in PDEPEND.
+# See the eclass description for the release vs 9999 split. A minimum
+# version adds >=cat/pkg-<version> to release atoms; live atoms ignore
+# it. "post" omits the rebuild operator, which is not permitted in PDEPEND.
 stormbyte-suite_dep() {
-	[[ ${#} -eq 1 || ( ${#} -eq 2 && ${2:-} == post ) ]] \
-		|| die "${FUNCNAME}: expected category/package and optional post"
+	[[ ${#} -ge 1 && ${#} -le 3 ]] \
+		|| die "${FUNCNAME}: expected category/package, optional minimum version and optional post"
 
-	local pkg=${1} rebuild="="
-	[[ ${2:-} == post ]] && rebuild=""
+	local pkg=${1} min="" post=""
+	shift
+	if [[ ${#} -gt 0 && ${1} != post ]]; then
+		min=${1}
+		shift
+	fi
+	if [[ ${#} -gt 0 ]]; then
+		[[ ${#} -eq 1 && ${1} == post ]] \
+			|| die "${FUNCNAME}: unexpected arguments: ${*}"
+		post=yes
+	fi
+
+	local rebuild="="
+	[[ ${post} == yes ]] && rebuild=""
 	if [[ ${PV} == 9999 ]]; then
 		echo "${pkg}:9999${rebuild}"
-	elif [[ ${2:-} == post ]]; then
-		echo "<${pkg}-9999"
+		return
+	fi
+
+	local slot=":="
+	[[ ${post} == yes ]] && slot=""
+	if [[ -n ${min} ]]; then
+		echo ">=${pkg}-${min}${slot} <${pkg}-9999"
 	else
-		echo "<${pkg}-9999:="
+		echo "<${pkg}-9999${slot}"
 	fi
 }
 
@@ -153,9 +172,12 @@ stormbyte-suite_src_prepare() {
 	cmake_src_prepare
 
 	if [[ -f cmake/load_buildmaster.cmake ]]; then
-		sed -i \
-			-e 's/find_package(StormByte-BuildMaster 2.1.3 CONFIG QUIET)/find_package(StormByte-BuildMaster 2.1.3 CONFIG REQUIRED)/' \
+		sed -i -E \
+			-e 's/(find_package\(StormByte-BuildMaster [0-9.]+ CONFIG) QUIET\)/\1 REQUIRED)/' \
 			cmake/load_buildmaster.cmake || die
+		grep -qE 'find_package\(StormByte-BuildMaster [0-9.]+ CONFIG REQUIRED\)' \
+			cmake/load_buildmaster.cmake \
+			|| die "cmake/load_buildmaster.cmake no longer matches the system BuildMaster lookup"
 	fi
 }
 

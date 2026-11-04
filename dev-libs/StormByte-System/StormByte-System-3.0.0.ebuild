@@ -5,12 +5,12 @@ EAPI=8
 
 inherit stormbyte-suite
 
-DESCRIPTION="StormByte Logger module"
-HOMEPAGE="https://suite.stormbyte.org/StormByte-Logger"
+DESCRIPTION="StormByte System module"
+HOMEPAGE="https://suite.stormbyte.org/StormByte-System"
 
 LICENSE="LGPL-3"
 
-DEPEND="$(stormbyte-suite_dep dev-libs/StormByte)"
+DEPEND="$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)"
 RDEPEND="${DEPEND}"
 
 stormbyte-suite_cmake_args() {

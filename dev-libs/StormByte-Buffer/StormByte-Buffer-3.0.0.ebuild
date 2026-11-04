@@ -12,9 +12,9 @@ LICENSE="LGPL-3"
 
 # Logger and System are public link dependencies, not only transitive.
 DEPEND="
-	$(stormbyte-suite_dep dev-libs/StormByte)
-	$(stormbyte-suite_dep dev-libs/StormByte-Logger)
-	$(stormbyte-suite_dep dev-libs/StormByte-System)
+	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 "
 RDEPEND="${DEPEND}"
 

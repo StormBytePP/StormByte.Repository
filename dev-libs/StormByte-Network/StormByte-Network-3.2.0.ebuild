@@ -18,11 +18,11 @@ RESTRICT="network-sandbox"
 # HTTP/2 uses nghttp2; TLS uses Crypto. All StormByte components requested
 # by find_package() are explicit dependencies.
 DEPEND="
-	$(stormbyte-suite_dep dev-libs/StormByte)
-	$(stormbyte-suite_dep dev-libs/StormByte-Buffer)
-	$(stormbyte-suite_dep dev-libs/StormByte-Crypto)
-	$(stormbyte-suite_dep dev-libs/StormByte-Logger)
-	$(stormbyte-suite_dep dev-libs/StormByte-System)
+	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	net-libs/nghttp2:=
 "
 RDEPEND="${DEPEND}"

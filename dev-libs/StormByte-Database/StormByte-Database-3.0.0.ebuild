@@ -16,8 +16,8 @@ IUSE+=" +mariadb mssql +postgres +sqlite"
 # The servers are build-time only: USE=pgo trains against a private
 # datadir. MSSQL has no Linux server, so that test keeps skipping.
 DEPEND="
-	$(stormbyte-suite_dep dev-libs/StormByte)
-	$(stormbyte-suite_dep dev-libs/StormByte-Logger)
+	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
 	dev-libs/openssl:=
 	mariadb? ( dev-db/mariadb-connector-c:= )
 	mssql? ( dev-db/freetds:= )

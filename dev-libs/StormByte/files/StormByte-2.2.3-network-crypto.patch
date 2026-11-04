@@ -1,5 +1,0 @@
- --- a/cmake/FindStormByte.cmake
- +++ b/cmake/FindStormByte.cmake
- @@ -44 +44 @@
- -set(_STORMBYTE_COMPONENT_DEPS_Network    "Buffer")
- +set(_STORMBYTE_COMPONENT_DEPS_Network    "Buffer" "Crypto")
