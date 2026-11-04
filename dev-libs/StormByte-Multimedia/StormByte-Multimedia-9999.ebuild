@@ -11,8 +11,6 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Multimedia"
 LICENSE="LGPL-3"
 IUSE+=" +gpl +nonfree"
 
-PATCHES=( "${FILESDIR}/${PN}-1.1.0-system-lunasvg.patch" )
-
 # Buffer public-links Logger and System; the core library is linked by all
 # of them. FFmpeg 9.0.2 is the minimum upstream accepts for WITH_FFMPEG=SYSTEM.
 # gpl/nonfree follow the bundled plugin gates: x264, x265 and rubberband are
