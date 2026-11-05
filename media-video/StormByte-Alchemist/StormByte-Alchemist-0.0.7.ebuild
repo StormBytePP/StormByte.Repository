@@ -14,7 +14,9 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="5442d4be4ee168846ebff8b2d198b589cd321a28"
+EGIT_COMMIT="206c2fbe696449f55e5f7d1d8e17e20b7ab762aa"
+# Nothing is built from these. The GUI embeds their audio license texts
+# while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
 PROPERTIES="${PROPERTIES//live/}"
 
@@ -23,26 +25,27 @@ IUSE+=" +gui +lto license-server"
 REQUIRED_USE="|| ( gui license-server )"
 RESTRICT="bindist mirror"
 
-# Alchemy (shared by both programs) links every module except Database.
+# Both programs share the licensing core (Covenant); only the GUI's Alchemy
+# links Multimedia.
 # ControlServer adds Database and selects SQLite, PostgreSQL or MariaDB
 # at runtime, so all three backends are required.
 DEPEND="
-	>=dev-libs/StormByte-2.2.3:=
-	>=dev-libs/StormByte-Buffer-2.0.6:=
-	>=dev-libs/StormByte-Config-2.0.6:=
-	>=dev-libs/StormByte-Crypto-2.3.1:=
-	>=dev-libs/StormByte-Logger-2.0.6:=
-	>=dev-libs/StormByte-Multimedia-2.0.0:=
-	>=dev-libs/StormByte-Network-3.1.0:=
-	>=dev-libs/StormByte-System-2.1.3:=
+	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Config 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
+		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
 		dev-qt/qtbase:6[gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
 	)
 	license-server? (
 		acct-group/alchemist-control
-		>=dev-libs/StormByte-Database-2.1.3:=[mariadb,postgres,sqlite]
+		$(stormbyte-suite_dep dev-libs/StormByte-Database 3.0.0)[mariadb,postgres,sqlite]
 	)
 "
 RDEPEND="
@@ -69,7 +72,6 @@ stormbyte-suite_cmake_args() {
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}${ALCHEMIST_PREFIX}"
 		-DENABLE_GUI=$(usex gui ON OFF)
 		-DENABLE_CONTROL=$(usex license-server ON OFF)
-		-DOPTIMIZATION_FLAGS_LINUX=
 		-DWITH_PULSEAUDIO=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DALCHEMY_LICENSE_SERVER_HOST=alchemist.stormbyte.org

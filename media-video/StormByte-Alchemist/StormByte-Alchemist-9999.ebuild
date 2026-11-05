@@ -25,22 +25,22 @@ RESTRICT="bindist mirror"
 # ControlServer adds Database and selects SQLite, PostgreSQL or MariaDB
 # at runtime, so all three backends are required.
 DEPEND="
-	>=dev-libs/StormByte-2.2.3:=
-	>=dev-libs/StormByte-Buffer-2.0.6:=
-	>=dev-libs/StormByte-Config-2.0.6:=
-	>=dev-libs/StormByte-Crypto-2.3.1:=
-	>=dev-libs/StormByte-Logger-2.0.6:=
-	>=dev-libs/StormByte-Network-3.1.0:=
-	>=dev-libs/StormByte-System-2.1.3:=
+	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Config 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
-		>=dev-libs/StormByte-Multimedia-2.0.0:=
+		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
 		dev-qt/qtbase:6[gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
 	)
 	license-server? (
 		acct-group/alchemist-control
-		>=dev-libs/StormByte-Database-2.1.3:=[mariadb,postgres,sqlite]
+		$(stormbyte-suite_dep dev-libs/StormByte-Database 3.0.0)[mariadb,postgres,sqlite]
 	)
 "
 RDEPEND="
@@ -67,7 +67,6 @@ stormbyte-suite_cmake_args() {
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}${ALCHEMIST_PREFIX}"
 		-DENABLE_GUI=$(usex gui ON OFF)
 		-DENABLE_CONTROL=$(usex license-server ON OFF)
-		-DOPTIMIZATION_FLAGS_LINUX=
 		-DWITH_PULSEAUDIO=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
 		-DALCHEMY_LICENSE_SERVER_HOST=alchemist.stormbyte.org
