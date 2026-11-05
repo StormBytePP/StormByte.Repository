@@ -48,6 +48,7 @@ RDEPEND="
 	${DEPEND}
 	license-server? ( acct-user/alchemist-control )
 "
+DEPEND+=" license-server? ( >=dev-cpp/nlohmann_json-3.11 )"
 BDEPEND+="
 	gui? (
 		app-arch/gzip
