@@ -76,6 +76,7 @@ stormbyte-suite_cmake_args() {
 		-DENABLE_CONTROL=$(usex license-server ON OFF)
 		-DWITH_PULSEAUDIO=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
+		-DALCHEMY_RELEASE_STAGE=Beta
 		-DALCHEMY_LICENSE_SERVER_HOST=alchemist.stormbyte.org
 		-DALCHEMY_LICENSE_SERVER_PORT=47800
 	)
