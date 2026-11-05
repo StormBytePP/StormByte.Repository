@@ -132,7 +132,7 @@ src_install() {
 }
 
 alchemist_hardware_identity() {
-	[[ ${ROOT} == / ]] || die "Generate hardware identity on the running target system"
+	[[ ${ROOT:-/} == / ]] || die "Generate hardware identity on the running target system"
 	[[ -n ${ALCHEMIST_HARDWARE_PAYLOAD} ]] || die "Missing hardware identity helper payload"
 
 	local directory="${EROOT}/var/lib/stormbyte/alchemist"
@@ -164,7 +164,7 @@ pkg_postinst() {
 	use gui && xdg_pkg_postinst
 
 	if use gui; then
-		if [[ ${ROOT} == / ]]; then
+		if [[ ${ROOT:-/} == / ]]; then
 			alchemist_hardware_identity
 		else
 			ewarn "Hardware identity must be generated on the running target, not the build host."
