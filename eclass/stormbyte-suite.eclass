@@ -10,17 +10,18 @@
 # Live and release ebuilds of one module share this eclass:
 # slotting, explicit rebuilds, and the LTO flag.
 #
-# Release slot is "<major>.<minor>/<PV>" (2.0.1 -> 2.0/2.0.1, multimedia
-# 1.0.0 -> 1.0/1.0.0). The subslot is the full version because upstream
+# The modules install unversioned headers, CMake files and library names,
+# so releases and 9999 cannot coexist and all share slot 0. The subslot is
+# the full version (2.0.1 -> 0/2.0.1, live -> 0/9999) because upstream
 # sets SOVERSION to the project version, so a patch release changes the
-# SONAME. Live ebuilds use slot 9999.
+# SONAME.
 #
 # stormbyte-suite_dep expands to:
-#   release: <cat/pkg-9999:=     any release slot, rebuild on slot/subslot change
-#   live:    cat/pkg:9999=       never a release build
-# So a Buffer 2.1.0 (slot 2.1) forces every release consumer to rebuild,
-# and a 9999 install is not a candidate for those atoms. A release
-# ebuild may pass a minimum version to reject an incompatible ABI.
+#   release: <cat/pkg-9999:=     any release, rebuild on subslot change
+#   live:    ~cat/pkg-9999:=     never a release build
+# So a Buffer 2.1.0 forces every release consumer to rebuild, and a 9999
+# install is not a candidate for release atoms. A release ebuild may pass
+# a minimum version to reject an incompatible ABI.
 #
 # LTO is the USE flag, not CMake IPO. cmake.eclass pins
 # CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF. The suite's optimizations.cmake
@@ -59,11 +60,11 @@ if [[ ${PV} == 9999 ]]; then
 	# System libraries only. Fetching the bundled submodules would pull
 	# ffmpeg, crypto++, postgres, ... which these ebuilds must not build.
 	EGIT_SUBMODULES=()
-	SLOT="9999"
+	SLOT="0/9999"
 else
 	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
-	SLOT="$(ver_cut 1-2)/${PV}"
+	SLOT="0/${PV}"
 fi
 
 # Applications without a training workflow can opt out before inheriting.
@@ -104,7 +105,7 @@ stormbyte-suite_dep() {
 	local rebuild="="
 	[[ ${post} == yes ]] && rebuild=""
 	if [[ ${PV} == 9999 ]]; then
-		echo "${pkg}:9999${rebuild}"
+		echo "~${pkg}-9999${rebuild:+:=}"
 		return
 	fi
 
