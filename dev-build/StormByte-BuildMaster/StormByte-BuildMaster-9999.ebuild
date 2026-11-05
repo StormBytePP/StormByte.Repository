@@ -23,6 +23,14 @@ RDEPEND="
 	virtual/pkgconfig
 "
 
+src_prepare() {
+	default
+	if [[ ${PV} == 9999 ]]; then
+		[[ -f VERSION ]] || die "Missing BuildMaster VERSION file"
+		printf '%s\n' 9999 > VERSION || die "Cannot set live BuildMaster version"
+	fi
+}
+
 src_compile() { :; }
 
 src_install() {

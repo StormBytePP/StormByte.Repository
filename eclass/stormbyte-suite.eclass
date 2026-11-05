@@ -167,10 +167,16 @@ _stormbyte-suite_configure() {
 
 # @FUNCTION: stormbyte-suite_src_prepare
 # @DESCRIPTION:
-# Prepare the tree and require the system BuildMaster package. Never use
+# Prepare the tree, replace VERSION with 9999 for live builds, and require
+# the system BuildMaster package. Never use
 # the bundled fallback, including when configuring PGO's nested build.
 stormbyte-suite_src_prepare() {
 	cmake_src_prepare
+
+	if [[ ${PV} == 9999 ]]; then
+		[[ -f VERSION ]] || die "Missing suite VERSION file"
+		printf '%s\n' 9999 > VERSION || die "Cannot set live suite version"
+	fi
 
 	if [[ -f cmake/load_buildmaster.cmake ]]; then
 		sed -i -E \
