@@ -14,7 +14,7 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="206c2fbe696449f55e5f7d1d8e17e20b7ab762aa"
+EGIT_COMMIT="a2dea02ca3488706308a211c26b68effe4af3a23"
 # Nothing is built from these. The GUI embeds their audio license texts
 # while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
@@ -33,11 +33,12 @@ DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Config 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.1)
 	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.1)
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
+		dev-libs/openssl:=
 		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
 		dev-qt/qtbase:6[gui,opengl,widgets]
 		dev-qt/qtsvg:6
@@ -52,9 +53,15 @@ RDEPEND="
 	${DEPEND}
 	license-server? ( acct-user/alchemist-control )
 "
+DEPEND+=" license-server? ( >=dev-cpp/nlohmann_json-3.11 )"
 BDEPEND+="
-	gui? ( dev-qt/qttools:6[linguist] )
+	gui? (
+		app-arch/gzip
+		dev-qt/qttools:6[linguist]
+		sys-apps/coreutils
+	)
 "
+RDEPEND+=" gui? ( app-arch/gzip sys-apps/coreutils )"
 
 # The programs find their own libraries through $ORIGIN, so they live
 # together outside the system library directory.
@@ -74,15 +81,31 @@ stormbyte-suite_cmake_args() {
 		-DENABLE_CONTROL=$(usex license-server ON OFF)
 		-DWITH_PULSEAUDIO=SYSTEM
 		-DWITH_STORMBYTE=SYSTEM
+		-DALCHEMY_RELEASE_STAGE=Beta
 		-DALCHEMY_LICENSE_SERVER_HOST=alchemist.stormbyte.org
 		-DALCHEMY_LICENSE_SERVER_PORT=47800
 	)
+}
+
+src_compile() {
+	cmake_src_compile
+	if use gui; then
+		cmake --build "${BUILD_DIR}" --target AlchemistHardwareIdentity -j"$(nproc)" \
+			|| die "Hardware identity helper build failed"
+	fi
 }
 
 src_install() {
 	cmake_src_install
 
 	if use gui; then
+		# Portage saves this payload in the binary package's environment, not its image.
+		ALCHEMIST_HARDWARE_PAYLOAD=$(
+			set -o pipefail
+			gzip -cn "${BUILD_DIR}/components/hardwareidentity/alchemist-hardware-identity" | base64
+		) || die "Cannot embed hardware identity helper"
+		[[ -n ${ALCHEMIST_HARDWARE_PAYLOAD} ]] || die "Empty hardware identity helper"
+
 		dosym -r "${ALCHEMIST_PREFIX}/StormByte-Alchemist" /usr/bin/StormByte-Alchemist
 		newicon -s scalable components/alchemist/resources/icons/alchemist.svg ${PN}.svg
 		make_desktop_entry --eapi9 StormByte-Alchemist -n "StormByte Alchemist" \
@@ -115,8 +138,46 @@ src_install() {
 	fi
 }
 
+alchemist_hardware_identity() {
+	[[ ${ROOT:-/} == / ]] || die "Generate hardware identity on the running target system"
+	[[ -n ${ALCHEMIST_HARDWARE_PAYLOAD} ]] || die "Missing hardware identity helper payload"
+
+	local directory="${EROOT}/var/lib/stormbyte/alchemist"
+	install -d -o root -g root -m 0755 "${EROOT}/var/lib/stormbyte" "${directory}" \
+		|| die "Cannot create hardware identity directory"
+	local work
+	work=$(mktemp -d "${directory}/.hardware-install.XXXXXX") \
+		|| die "Cannot create temporary hardware identity directory"
+
+	(
+		trap 'rm -f "${work}/helper.gz" "${work}/helper"; rmdir "${work}"' EXIT
+		base64 --decode > "${work}/helper.gz" <<< "${ALCHEMIST_HARDWARE_PAYLOAD}" \
+			|| die "Cannot decode hardware identity helper"
+		gzip -d "${work}/helper.gz" || die "Cannot decompress hardware identity helper"
+		chmod 0700 "${work}/helper" || die "Cannot secure hardware identity helper"
+		"${work}/helper" --write "${directory}/hardware.identity" \
+			|| die "Cannot generate hardware identity"
+		chown root:root "${directory}/hardware.identity" || die "Cannot set hardware identity owner"
+		chmod 0644 "${directory}/hardware.identity" || die "Cannot set hardware identity permissions"
+	) || die "Hardware identity provisioning failed; run emerge --config =${CATEGORY}/${PF} to retry"
+}
+
+pkg_config() {
+	use gui || die "Hardware identity provisioning requires USE=gui"
+	alchemist_hardware_identity
+}
+
 pkg_postinst() {
 	use gui && xdg_pkg_postinst
+
+	if use gui; then
+		if [[ ${ROOT:-/} == / ]]; then
+			alchemist_hardware_identity
+		else
+			ewarn "Hardware identity must be generated on the running target, not the build host."
+			ewarn "After booting the target, run emerge --config =${CATEGORY}/${PF}"
+		fi
+	fi
 
 	if use license-server; then
 		elog "Copy the license server certificate chain and private key to"
