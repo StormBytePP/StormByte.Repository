@@ -20,7 +20,7 @@ RESTRICT="network-sandbox"
 DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.1)
 	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	net-libs/nghttp2:=
