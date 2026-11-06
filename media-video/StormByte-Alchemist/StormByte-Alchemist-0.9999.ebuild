@@ -36,7 +36,7 @@ DEPEND="
 	gui? (
 		dev-libs/openssl:=
 		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
-		dev-qt/qtbase:6[gui,opengl,widgets]
+		dev-qt/qtbase:6[dbus,gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
 	)
