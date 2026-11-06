@@ -17,7 +17,8 @@ output_log="${ALCHEMIST_CONTROL_LOG}"
 error_log="${ALCHEMIST_CONTROL_LOG}"
 # The database and logs are private to the service; it never needs more rights.
 umask=027
-no_new_privs=yes
+# Local sendmail may use a setuid queue helper (nullmailer). no_new_privs
+# would prevent that helper from submitting mail; the server stays unprivileged.
 respawn_delay=5
 respawn_max=5
 respawn_period=60
