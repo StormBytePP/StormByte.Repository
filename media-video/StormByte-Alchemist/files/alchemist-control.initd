@@ -22,6 +22,14 @@ umask=027
 respawn_delay=5
 respawn_max=5
 respawn_period=60
+extra_started_commands="reconcile"
+description_reconcile="Verify payments and retry unsubmitted license emails now"
+
+reconcile() {
+	ebegin "Requesting Alchemist payment and mail reconciliation"
+	supervise-daemon "${RC_SVCNAME}" --signal USR1
+	eend $?
+}
 
 depend() {
 	need net
