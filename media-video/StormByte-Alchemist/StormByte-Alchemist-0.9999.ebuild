@@ -4,6 +4,7 @@
 EAPI=8
 
 STORMBYTE_SUITE_NO_PGO=yes
+STORMBYTE_SUITE_LIVE=yes
 inherit cmake desktop xdg stormbyte-suite git-r3
 
 DESCRIPTION="StormByte Alchemist media transcoder and license server"

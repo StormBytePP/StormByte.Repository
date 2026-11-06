@@ -40,6 +40,9 @@
 #
 # An ebuild may define stormbyte-suite_cmake_args, which fills
 # STORMBYTE_CMAKEARGS.
+# Set STORMBYTE_SUITE_LIVE=yes before inheriting for a versioned live package
+# such as Alchemist 0.9999. It still uses the suite's 9999 dependencies, but
+# preserves its own PV in VERSION and in the subslot.
 #
 # Do not set SLOT, KEYWORDS or SRC_URI in the ebuild. Append to BDEPEND
 # with BDEPEND+= ; assigning BDEPEND= replaces this eclass's dependencies.
@@ -54,13 +57,13 @@ _STORMBYTE_SUITE_ECLASS=1
 
 inherit cmake flag-o-matic toolchain-funcs
 
-if [[ ${PV} == 9999 ]]; then
+if [[ ${PV} == 9999 || ${STORMBYTE_SUITE_LIVE} == yes ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/StormByte-Suite/${PN}.git"
 	# System libraries only. Fetching the bundled submodules would pull
 	# ffmpeg, crypto++, postgres, ... which these ebuilds must not build.
 	EGIT_SUBMODULES=()
-	SLOT="0/9999"
+	SLOT="0/${PV}"
 else
 	SRC_URI="https://github.com/StormByte-Suite/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
@@ -104,7 +107,7 @@ stormbyte-suite_dep() {
 
 	local rebuild="="
 	[[ ${post} == yes ]] && rebuild=""
-	if [[ ${PV} == 9999 ]]; then
+	if [[ ${PV} == 9999 || ${STORMBYTE_SUITE_LIVE} == yes ]]; then
 		echo "~${pkg}-9999${rebuild:+:=}"
 		return
 	fi
@@ -167,15 +170,15 @@ _stormbyte-suite_configure() {
 
 # @FUNCTION: stormbyte-suite_src_prepare
 # @DESCRIPTION:
-# Prepare the tree, replace VERSION with 9999 for live builds, and require
+# Prepare the tree, replace VERSION with PV for live builds, and require
 # the system BuildMaster package. Never use
 # the bundled fallback, including when configuring PGO's nested build.
 stormbyte-suite_src_prepare() {
 	cmake_src_prepare
 
-	if [[ ${PV} == 9999 ]]; then
+	if [[ ${PV} == 9999 || ${STORMBYTE_SUITE_LIVE} == yes ]]; then
 		[[ -f VERSION ]] || die "Missing suite VERSION file"
-		printf '%s\n' 9999 > VERSION || die "Cannot set live suite version"
+		printf '%s\n' "${PV}" > VERSION || die "Cannot set live suite version"
 	fi
 
 	if [[ -f cmake/load_buildmaster.cmake ]]; then
