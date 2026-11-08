@@ -14,7 +14,7 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="e4584cab46f34c689ac227504487317685b7a304"
+EGIT_COMMIT="759bf9474ae651ac31a5774ed0936444347f5856"
 # Nothing is built from these. The GUI embeds their audio license texts
 # while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
@@ -29,6 +29,8 @@ RESTRICT="bindist mirror"
 # links Multimedia.
 # ControlServer adds Database and selects SQLite, PostgreSQL or MariaDB
 # at runtime, so all three backends are required.
+# Screen readers reach the GUI through the Qt AT-SPI bridge enabled by
+# qtbase[accessibility], which pulls at-spi2-core.
 DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
@@ -40,7 +42,7 @@ DEPEND="
 	gui? (
 		dev-libs/openssl:=
 		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
-		dev-qt/qtbase:6[dbus,gui,opengl,widgets]
+		dev-qt/qtbase:6[accessibility,dbus,gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
 	)
