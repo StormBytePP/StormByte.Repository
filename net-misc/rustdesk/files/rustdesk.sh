@@ -1,2 +1,4 @@
 #!/bin/bash
-exec /usr/share/rustdesk/rustdesk "$@"
+
+cd /usr/share/rustdesk/ || exit
+./rustdesk "$@"
