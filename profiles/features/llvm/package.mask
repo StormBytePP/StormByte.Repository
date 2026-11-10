@@ -37,8 +37,8 @@
 >=llvm-runtimes/openmp-spirv64-intel-23.0.0
 
 # Rust versions that require LLVM-23
-# dev-lang/rust-1.98.1
-# dev-lang/rust-common-1.98.1
-# dev-lang/rust-bin-1.98.1
-# >dev-python/uv-0.11.25
-# >dev-python/uv-build-0.11.25
+>=dev-lang/rust-1.99.0
+>=dev-lang/rust-common-1.99.0
+>=dev-lang/rust-bin-1.90.0
+#>dev-python/uv-0.11.25
+#>dev-python/uv-build-0.11.25
