@@ -14,7 +14,7 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="638ae4871ef9005c6b196de2ce7e86860493993d"
+EGIT_COMMIT="e0a75d25741580c29d5d4e28ddb1c62560e4b1e6"
 # Nothing is built from these. The GUI embeds their audio license texts
 # while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
@@ -33,15 +33,15 @@ RESTRICT="bindist mirror"
 # qtbase[accessibility], which pulls at-spi2-core.
 DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 4.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Config 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.0.1)
+	$(stormbyte-suite_dep dev-libs/StormByte-Crypto 3.1.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Network 3.2.1)
+	$(stormbyte-suite_dep dev-libs/StormByte-Network 4.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
 		dev-libs/openssl:=
-		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.0.0)
+		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.3.0)
 		dev-qt/qtbase:6[accessibility,dbus,gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
