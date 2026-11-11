@@ -17,7 +17,7 @@ IUSE+=" +gpl +nonfree"
 # WITH_GPL; fdk-aac is WITH_NONFREE. The rest are always built.
 DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte 3.0.0)
-	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 3.0.0)
+	$(stormbyte-suite_dep dev-libs/StormByte-Buffer 4.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-Logger 3.0.0)
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	app-text/tesseract:=
