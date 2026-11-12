@@ -10,11 +10,11 @@ DESCRIPTION="StormByte Alchemist media transcoder and license server"
 HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 
 # Private sources use the portage user's read-only deploy-key SSH alias.
-# Pin the released commit so retagging cannot silently change this ebuild.
+# Pin the source commit so retagging cannot silently change this ebuild.
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="e0a75d25741580c29d5d4e28ddb1c62560e4b1e6"
+EGIT_COMMIT="4eed7b651703e99370c9fc20e538fd895dfd5531"
 # Nothing is built from these. The GUI embeds their audio license texts
 # while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
@@ -41,7 +41,7 @@ DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
 		dev-libs/openssl:=
-		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.3.0)
+		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.3.1)
 		dev-qt/qtbase:6[accessibility,dbus,gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
