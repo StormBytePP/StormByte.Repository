@@ -14,7 +14,7 @@ HOMEPAGE="https://suite.stormbyte.org/StormByte-Alchemist"
 SRC_URI=""
 EGIT_REPO_URI="ssh://git@github-alchemist/StormByte-Suite/${PN}.git"
 EGIT_BRANCH=""
-EGIT_COMMIT="c4f3e04d941695c0c8b0196aa43b55d9cb8602b3"
+EGIT_COMMIT="be6e8f6f18439f7a8df6496353b712dea976e17b"
 # Nothing is built from these. The GUI embeds their audio license texts
 # while linking the system libraries; QtSvg notices are in the main tree.
 EGIT_SUBMODULES=( playback-pulseaudio playback-libsndfile )
@@ -41,7 +41,7 @@ DEPEND="
 	$(stormbyte-suite_dep dev-libs/StormByte-System 3.0.0)
 	gui? (
 		dev-libs/openssl:=
-		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.3.1)
+		$(stormbyte-suite_dep dev-libs/StormByte-Multimedia 3.3.2)
 		dev-qt/qtbase:6[accessibility,dbus,gui,opengl,widgets]
 		dev-qt/qtsvg:6
 		>=media-libs/libpulse-16.1
