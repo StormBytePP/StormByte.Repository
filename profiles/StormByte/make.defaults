@@ -109,3 +109,5 @@ RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Cdebuginfo=2 -Csplit-debuginfo=unp
 # CCACHE default config
 CCACHE_DIR="/var/cache/ccache"
 CCACHE_SIZE="30G"
+
+POSTGRES_TARGETS="-* postgres19"
