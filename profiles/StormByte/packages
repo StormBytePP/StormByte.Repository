@@ -3,6 +3,7 @@
 *app-benchmarks/hyperfine
 *app-containers/docker
 *app-containers/docker-cli
+*app-containers/podman
 *app-crypt/gnupg
 *app-crypt/sbsigntools
 *app-misc/resolve-march-native
