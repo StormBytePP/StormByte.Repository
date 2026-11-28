@@ -1,4 +1,5 @@
 *app-benchmarks/hyperfine
+*app-containers/buildah
 *app-containers/docker
 *app-containers/docker-cli
 *app-containers/podman
