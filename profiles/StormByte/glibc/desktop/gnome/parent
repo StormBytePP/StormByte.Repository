@@ -1,8 +1,4 @@
-# StormByte glibc desktop base
-..
-
-# GNOME target
-StormByte:targets/desktop/gnome
-
-# Bugfixes always last to take priority
-StormByte:features/bugfixes
+../../../../base/glibc
+../../../../features/host
+../../../../targets/desktop/gnome
+../../../../features/bugfixes

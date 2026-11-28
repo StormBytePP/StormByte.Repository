@@ -1,8 +1,3 @@
-# Gentoo base profile
-gentoo:default/linux/amd64/23.0/no-multilib
-
-# StormByte customizations
-..
-
-# Bugfixes always last to take priority
-StormByte:features/bugfixes
+../../base/glibc
+../../features/host
+../../features/bugfixes

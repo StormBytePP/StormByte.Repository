@@ -54,58 +54,6 @@ USE_NETWORK="ipv6"
 USE_SYSTEM="dbus system-av1 system-harfbuzz system-icu system-icu system-jpeg system-libevent system-librnp system-libvpx system-pipewire system-png system-python-libs system-webp system-zlib udev zeroconf"
 USE="${USE_BASE} ${USE_CODECS} ${USE_COMPRESSION} ${USE_DEBUG} ${USE_DOCS} ${USE_GRAPHICS} ${USE_KERNEL} ${USE_NETWORK} ${USE_SYSTEM}"
 
-# Compiler custom optimizations
-FLAGS_BASE="-O2 -pipe"
-FLAGS_SECURITY="-fcf-protection=full -mshstk -ftrivial-auto-var-init=zero"
-FLAGS_CLANG="-Wno-unused-command-line-argument"
-FLAGS_CLANG_POLLY="-mllvm -polly -mllvm -polly-vectorizer=stripmine -mllvm -polly-scheduling=dynamic -mllvm -polly-invariant-load-hoisting -mllvm -polly-run-dce"
-FLAGS_CPU="-march=native"
-FLAGS_DEBUG="-ggdb3"
-FLAGS_GCC=""
-FLAGS_GRAPHITE="-fgraphite -fgraphite-identity -floop-block -floop-interchange -floop-parallelize-all -floop-strip-mine -ftree-loop-distribution -ftree-loop-linear"
-FLAGS_LTO="-flto=thin"
-
-# Linker optimizations
-LINKER_BASE="-Wl,-z,pack-relative-relocs -Wl,--as-needed -Wl,-O2 -Wl,--sort-common -Wl,-z,separate-code -Wl,-z,noexecstack"
-LINKER_BFD="-fuse-ld=bfd"
-LINKER_GOLD="-fuse-ld=gold"
-LINKER_LLD="-fuse-ld=lld -Wl,--thinlto-jobs=all -Wl,--threads=16 -Wl,--build-id=uuid"
-LINKER_POLLY="-fopenmp=libomp"
-
-# LLVM vars
-LLVM_MAJOR="22"
-LLVM_TARGETS="X86 NVPTX"
-LLVM_SLOT="-* ${LLVM_MAJOR}"
-
-CC="clang-${LLVM_MAJOR}"
-CXX="clang++-${LLVM_MAJOR}"
-CPP="clang-cpp-${LLVM_MAJOR}"
-ADDR2LINE="llvm-addr2line"
-AS="${CC} -c"
-AR="llvm-ar"
-NM="llvm-nm"
-OBJCOPY="llvm-objcopy"
-OBJDUMP="llvm-objdump"
-RANLIB="llvm-ranlib"
-READELF="llvm-readelf"
-STRINGS="llvm-strings"
-STRIP="llvm-strip"
-LLVM_CONFIG="llvm-config"
-
-# Flags
-CFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_CLANG} ${FLAGS_SECURITY} ${FLAGS_DEBUG}"
-CXXFLAGS="${CFLAGS}"
-FCFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_DEBUG}"
-FFLAGS="${FLAGS_BASE} ${FLAGS_CPU} ${FLAGS_DEBUG}"
-LDFLAGS="${LINKER_BASE} ${LINKER_LLD}"
-RUSTFLAGS="-Ctarget-cpu=native -Copt-level=3 -Cdebuginfo=2 -Csplit-debuginfo=unpacked \
--Clink-arg=-Wl,-z,pack-relative-relocs \
--Clink-arg=-Wl,--as-needed \
--Clink-arg=-Wl,-O2 \
--Clink-arg=-Wl,--sort-common \
--Clink-arg=-Wl,-z,separate-code \
--Clink-arg=-Wl,-z,noexecstack"
-
 # CCACHE default config
 CCACHE_DIR="/var/cache/ccache"
 CCACHE_SIZE="30G"

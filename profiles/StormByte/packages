@@ -1,11 +1,6 @@
 *app-admin/pwgen
 *app-admin/sudo
-*app-benchmarks/hyperfine
-*app-containers/docker
-*app-containers/docker-cli
-*app-containers/podman
 *app-crypt/gnupg
-*app-crypt/sbsigntools
 *app-misc/resolve-march-native
 *app-portage/eix
 *app-portage/genlop
@@ -16,15 +11,8 @@
 *dev-util/sccache
 *dev-vcs/git
 *sec-keys/openpgp-keys-gentoo-developers
-*sys-apps/dmidecode
 *sys-apps/ripgrep
 *sys-apps/StormByte-meta
 *sys-libs/StormByte-functions
-*sys-block/io-scheduler-udev-rules
-*sys-boot/grub
-*sys-boot/mokutil
-*sys-boot/shim
 *sys-devel/binutils
-*sys-fs/btrfs-progs
-*sys-fs/e2fsprogs
 *sys-libs/timezone-data

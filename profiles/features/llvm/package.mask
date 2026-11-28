@@ -1,40 +1,40 @@
 # Mask LLVM to force version
 
 # llvm-core
->=llvm-core/clang-23.0.0
->=llvm-core/clang-common-23.0.0
+>=llvm-core/clang-23
+>=llvm-core/clang-common-23
 >=llvm-core/clang-linker-config-23
 >=llvm-core/clang-toolchain-symlinks-23
->=llvm-core/flang-23.0.0
->=llvm-core/libclc-23.0.0
->=llvm-core/lld-23.0.0
->=llvm-core/lldb-23.0.0
+>=llvm-core/flang-23
+>=llvm-core/libclc-23
+>=llvm-core/lld-23
+>=llvm-core/lldb-23
 >=llvm-core/lld-toolchain-symlinks-23
->=llvm-core/llvm-23.0.0
->=llvm-core/llvm-common-23.0.0
+>=llvm-core/llvm-23
+>=llvm-core/llvm-common-23
 >=llvm-core/llvmgold-23
 >=llvm-core/llvm-toolchain-symlinks-23
->=llvm-core/mlir-23.0.0
->=llvm-core/polly-23.0.0
+>=llvm-core/mlir-23
+>=llvm-core/polly-23
 
 # llvm-runtimes
 >=llvm-runtimes/clang-rtlib-config-23
->=llvm-runtimes/clang-runtime-23.0.0
+>=llvm-runtimes/clang-runtime-23
 >=llvm-runtimes/clang-stdlib-config-23
 >=llvm-runtimes/clang-unwindlib-config-23
->=llvm-runtimes/compiler-rt-23.0.0
->=llvm-runtimes/compiler-rt-sanitizers-23.0.0
->=llvm-runtimes/flang-rt-23.0.0
->=llvm-runtimes/libatomic-stub-23.0.0
->=llvm-runtimes/libcxx-23.0.0
->=llvm-runtimes/libcxxabi-23.0.0
->=llvm-runtimes/libgcc-23.0.0
->=llvm-runtimes/libunwind-23.0.0
->=llvm-runtimes/offload-23.0.0
->=llvm-runtimes/openmp-23.0.0
->=llvm-runtimes/openmp-amdgcn-amd-amdhsa-23.0.0
->=llvm-runtimes/openmp-nvptx64-nvidia-cuda-23.0.0
->=llvm-runtimes/openmp-spirv64-intel-23.0.0
+>=llvm-runtimes/compiler-rt-23
+>=llvm-runtimes/compiler-rt-sanitizers-23
+>=llvm-runtimes/flang-rt-23
+>=llvm-runtimes/libatomic-stub-23
+>=llvm-runtimes/libcxx-23
+>=llvm-runtimes/libcxxabi-23
+>=llvm-runtimes/libgcc-23
+>=llvm-runtimes/libunwind-23
+>=llvm-runtimes/offload-23
+>=llvm-runtimes/openmp-23
+>=llvm-runtimes/openmp-amdgcn-amd-amdhsa-23
+>=llvm-runtimes/openmp-nvptx64-nvidia-cuda-23
+>=llvm-runtimes/openmp-spirv64-intel-23
 
 # Rust versions that require LLVM-23
 >=dev-lang/rust-1.99.0

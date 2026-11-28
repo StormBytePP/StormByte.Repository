@@ -1,8 +1,4 @@
-# StormByte musl base
-..
-
-# Server target
-StormByte:targets/server
-
-# Bugfixes always last to take priority
-StormByte:features/bugfixes
+../../../base/musl
+../../../features/host
+../../../targets/server
+../../../features/bugfixes

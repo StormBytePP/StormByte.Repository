@@ -1,10 +1,10 @@
 # StormByte container profiles
 
-The `StormByte/glibc/Container` and `StormByte/musl/Container` profiles inherit
-their respective StormByte base profiles and share the container target. They
+The `StormByte/glibc/Container` and `StormByte/musl/Container` profiles use
+their respective internal StormByte bases and share the container target. They
 retain the compiler toolchain, security, optimizations and StormByte functions,
-but remove host-oriented packages and debugging tools from `@system` and disable
-the StageManager dependency of `StormByte-meta`.
+without including the host package set or enabling the StageManager dependency
+of `StormByte-meta`. They also remove `e2fsprogs` from Gentoo's `@system`.
 
 Containers use the host kernel. These profiles disable the default
 `dist-kernel`, `kernel-install` and `grub` USE flags; they do not prevent an
