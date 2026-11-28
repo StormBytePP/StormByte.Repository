@@ -11,7 +11,6 @@ HOMEPAGE="https://github.com/StormBytePP/StormByte-StageManager"
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/StormBytePP/StormByte-StageManager.git"
-	KEYWORDS=""
 else
 	SRC_URI="https://github.com/StormBytePP/StormByte-StageManager/archive/${PV}.tar.gz -> ${P}.tar.gz"
 	KEYWORDS="~amd64"
@@ -23,14 +22,23 @@ IUSE="+lbzip2 +pigz +pxz +zram"
 
 RDEPEND="
 	app-admin/sudo
+	app-alternatives/awk
 	app-arch/tar
 	app-arch/zstd
+	app-shells/bash
 	net-misc/curl
+	sec-keys/openpgp-keys-gentoo-release
 	sys-apps/coreutils
 	sys-apps/findutils
+	sys-apps/grep
 	sys-apps/pv
+	sys-apps/sed
 	sys-apps/util-linux
 	sys-fs/e2fsprogs
+	|| (
+		app-alternatives/gpg[reference]
+		app-crypt/gnupg[-alternatives(-)]
+	)
 	lbzip2? ( app-alternatives/bzip2[lbzip2] )
 	!lbzip2? ( app-arch/bzip2 )
 	pigz? ( app-alternatives/gzip[pigz] )
@@ -74,6 +82,7 @@ pkg_postinst() {
 	elog "TARBALL_FOLDER must exist and be writable by the invoking user."
 	elog "use/rebase re-exec sudo -E (mounts, chroot, zram). Other commands do not."
 	elog "Requires StormByte-functions-bash >= 1.3.0."
+	elog "Downloads verify Gentoo signatures using the installed release keys."
 	elog "Example: StormByte-StageManager help"
 	elog "         StormByte-StageManager config"
 }
